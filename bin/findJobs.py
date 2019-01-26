@@ -19,8 +19,6 @@ def main():
     for row in objSchedules:
         scheduleId = str(row[0])
 
-        print(sys.executable)
-
         fullCommand = []
         fullCommand.append(sys.executable)
         fullCommand.append(os.path.abspath(os.path.dirname(sys.argv[0])) + '/execJob.py')
