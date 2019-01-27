@@ -105,7 +105,7 @@ CREATE TABLE schedules
   name character varying(255) NOT NULL, -- Name of Schedule
   description character varying(255), -- Description of Schedule
   is_async smallint NOT NULL DEFAULT 1, -- 0=Disabled 1=Enabled | is_async jobs execute in parallel
-  is_active smallint NOT NULL DEFAULT 0, -- 0=Disabled 1=Enabled
+  is_enabled smallint NOT NULL DEFAULT 0, -- 0=Disabled 1=Enabled
   is_running smallint NOT NULL DEFAULT 0, -- 0=No 1=Yes
   interval_mask character varying(14) NOT NULL, -- When to execute the command | Modeled on unix crontab (minute hour dom month dow)
   first_run_date timestamp(3) without time zone NOT NULL DEFAULT '1000-01-01 00:00:00'::timestamp without time zone, -- The job will not execute before this datetime
@@ -135,7 +135,7 @@ COMMENT ON COLUMN schedules.schedule_order IS 'Run order for this schedule. Lowe
 COMMENT ON COLUMN schedules.name IS 'Name of Schedule';
 COMMENT ON COLUMN schedules.description IS 'Description of Schedule';
 COMMENT ON COLUMN schedules.is_async IS '0=Disabled 1=Enabled | is_async jobs execute in parallel';
-COMMENT ON COLUMN schedules.is_active IS '0=Disabled 1=Enabled';
+COMMENT ON COLUMN schedules.is_enabled IS '0=Disabled 1=Enabled';
 COMMENT ON COLUMN schedules.is_running IS '0=No 1=Yes';
 COMMENT ON COLUMN schedules.interval_mask IS 'When to execute the command | Modeled on unix crontab (minute hour dom month dow)';
 COMMENT ON COLUMN schedules.first_run_date IS 'The job will not execute before this datetime';
@@ -156,14 +156,14 @@ CREATE INDEX schedules_adhoc_execute_idx
   USING btree
   (adhoc_execute);
 
--- Index: schedules_is_active_idx
+-- Index: schedules_is_enabled_idx
 
--- DROP INDEX schedules_is_active_idx;
+-- DROP INDEX schedules_is_enabled_idx;
 
-CREATE INDEX schedules_is_active_idx
+CREATE INDEX schedules_is_enabled_idx
   ON schedules
   USING btree
-  (is_active);
+  (is_enabled);
 
 -- Index: schedules_schedule_group_id_idx
 

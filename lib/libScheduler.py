@@ -31,10 +31,6 @@ def setIsRunning(dbCur, scheduleId):
     """
 
     dbCur.execute(sqlquery)
-    row = dbCur.fetchone()
-    isRunning = row[0]
-
-    return isRunning
 
 
 def resetIsRunning(dbCur, scheduleId):
@@ -45,10 +41,6 @@ def resetIsRunning(dbCur, scheduleId):
     """
 
     dbCur.execute(sqlquery)
-    row = dbCur.fetchone()
-    isRunning = row[0]
-
-    return isRunning
 
 
 def resetAdhocDetails(dbCur, scheduleId):
@@ -153,7 +145,7 @@ def getAllSchedules(dbCur, serverId, isAsync):
           FROM schedules
           WHERE adhoc_execute = 0
             AND server_id = """ + str(serverId) + """
-            AND is_active = 1
+            AND is_enabled = 1
             AND now() >= first_run_date
             AND now() <= last_run_date
           )
