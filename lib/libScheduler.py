@@ -54,7 +54,7 @@ def resetAdhocDetails(dbCur, scheduleId):
     dbCur.execute(sqlquery)
 
 
-def initScheduleLog(dbCur, serverId, scheduleId):
+def initScheduleLog(dbCur, serverId, scheduleId, fullCommand):
     # Get UUID
     sqlquery = """/* Cicada libScheduler */
     SELECT uuid_generate_v1()
@@ -65,9 +65,9 @@ def initScheduleLog(dbCur, serverId, scheduleId):
 
     sqlquery = """/* Cicada libScheduler */
     INSERT INTO schedule_log
-        (schedule_log_id, server_id, schedule_id, start_time, schedule_log_status_id)
+        (schedule_log_id, server_id, schedule_id, full_command, start_time, schedule_log_status_id)
     VALUES
-        ('""" + str(scheduleLogId) + """', """ + str(serverId) + """, """ + str(scheduleId) + """, now() ,1)
+        ('""" + str(scheduleLogId) + """', """ + str(serverId) + """, """ + str(scheduleId) + """, """ + str(full_command) + """, now() ,1)
     """
     dbCur.execute(sqlquery)
 

@@ -39,7 +39,7 @@ def main():
         # Check to see that schedule is not already running
         if libScheduler.getIsRunning(dbCicada, scheduleId) == 0:
             # Initiate schedule log
-            scheduleLogId = libScheduler.initScheduleLog(dbCicada, serverId, scheduleId)
+            scheduleLogId = libScheduler.initScheduleLog(dbCicada, serverId, scheduleId, fullCommand)
             libScheduler.resetAdhocDetails(dbCicada, scheduleId)
             libScheduler.setIsRunning(dbCicada, scheduleId)
 

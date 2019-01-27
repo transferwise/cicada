@@ -203,15 +203,16 @@ VALUES
   (3, 'SCHEDULE_ERROR', 'Error')
 ;
 
--- Table: schedule_log
+-- Table: public.schedule_log
 
--- DROP TABLE schedule_log;
+-- DROP TABLE public.schedule_log;
 
-CREATE TABLE schedule_log
+CREATE TABLE public.schedule_log
 (
   schedule_log_id character varying(64) NOT NULL DEFAULT uuid_generate_v1(),
   server_id integer NOT NULL,
   schedule_id integer NOT NULL,
+  full_command character varying(256) NOT NULL, -- full_command as executed by scheduler
   start_time timestamp(3) without time zone NOT NULL, -- ALWAYS use now() | datetime of when job started
   end_time timestamp(3) without time zone, -- datetime of when job ended
   returncode integer, -- returncode as provided by the executed script
@@ -219,24 +220,24 @@ CREATE TABLE schedule_log
   schedule_log_status_id integer NOT NULL DEFAULT 0,
   CONSTRAINT schedule_log_pkey PRIMARY KEY (schedule_log_id),
   CONSTRAINT schedule_log_schedule_id_fkey FOREIGN KEY (schedule_id)
-      REFERENCES schedules (schedule_id) MATCH SIMPLE
+      REFERENCES public.schedules (schedule_id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT schedule_log_schedule_log_status_id_fkey FOREIGN KEY (schedule_log_status_id)
-      REFERENCES schedule_log_status (schedule_log_status_id) MATCH SIMPLE
+      REFERENCES public.schedule_log_status (schedule_log_status_id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT schedule_log_server_id_fkey FOREIGN KEY (server_id)
-      REFERENCES servers (server_id) MATCH SIMPLE
+      REFERENCES public.servers (server_id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION
 )
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE schedule_log
+ALTER TABLE public.schedule_log
   OWNER TO cicada;
-COMMENT ON COLUMN schedule_log.start_time IS 'ALWAYS use now() | datetime of when job started';
-COMMENT ON COLUMN schedule_log.end_time IS 'datetime of when job ended';
-COMMENT ON COLUMN schedule_log.returncode IS 'returncode as provided by the executed script';
-
+COMMENT ON COLUMN public.schedule_log.full_command IS 'full_command as executed by scheduler';
+COMMENT ON COLUMN public.schedule_log.start_time IS 'ALWAYS use now() | datetime of when job started';
+COMMENT ON COLUMN public.schedule_log.end_time IS 'datetime of when job ended';
+COMMENT ON COLUMN public.schedule_log.returncode IS 'returncode as provided by the executed script';
 
 -- Index: schedule_log_schedule_id_idx
 
