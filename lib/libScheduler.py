@@ -67,7 +67,7 @@ def initScheduleLog(dbCur, serverId, scheduleId, fullCommand):
     INSERT INTO schedule_log
         (schedule_log_id, server_id, schedule_id, full_command, start_time, schedule_log_status_id)
     VALUES
-        ('""" + str(scheduleLogId) + """', """ + str(serverId) + """, """ + str(scheduleId) + """, """ + str(full_command) + """, now() ,1)
+        ('""" + str(scheduleLogId) + """', """ + str(serverId) + """, """ + str(scheduleId) + """, '""" + str(fullCommand) + """', now() ,1)
     """
     dbCur.execute(sqlquery)
 

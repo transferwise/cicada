@@ -36,10 +36,12 @@ def main():
         fullCommand.append(command)
         fullCommand.extend(parameters.split())
 
+        prettyFullCommand = str(' '.join(fullCommand))
+
         # Check to see that schedule is not already running
         if libScheduler.getIsRunning(dbCicada, scheduleId) == 0:
             # Initiate schedule log
-            scheduleLogId = libScheduler.initScheduleLog(dbCicada, serverId, scheduleId, fullCommand)
+            scheduleLogId = libScheduler.initScheduleLog(dbCicada, serverId, scheduleId, prettyFullCommand)
             libScheduler.resetAdhocDetails(dbCicada, scheduleId)
             libScheduler.setIsRunning(dbCicada, scheduleId)
 
