@@ -3,7 +3,7 @@ import urllib
 
 def sendSMS(msgText, msgRecipients):
     if not (isinstance(msgText, str) and isinstance(msgRecipients, list)):
-        print "Error: Parameters of wrong type"
+        print("Error: Parameters of wrong type")
         return
     # Make sure msgText is not longer than 450 characters (3 message parts)
     msgText = msgText[:450]

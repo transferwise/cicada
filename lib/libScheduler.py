@@ -8,7 +8,8 @@
 import datetime
 from croniter import croniter
 
-def isScheduleRunning(dbCur, scheduleId):
+
+def getIsRunning(dbCur, scheduleId):
     sqlquery = """/* Cicada libScheduler */
     SELECT is_running
     FROM schedules
@@ -20,6 +21,45 @@ def isScheduleRunning(dbCur, scheduleId):
     isRunning = row[0]
 
     return isRunning
+
+
+def setIsRunning(dbCur, scheduleId):
+    sqlquery = """/* Cicada libScheduler */
+    UPDATE schedules
+    SET is_running = 1
+    WHERE schedule_id = """ + str(scheduleId) + """
+    """
+
+    dbCur.execute(sqlquery)
+    row = dbCur.fetchone()
+    isRunning = row[0]
+
+    return isRunning
+
+
+def resetIsRunning(dbCur, scheduleId):
+    sqlquery = """/* Cicada libScheduler */
+    UPDATE schedules
+    SET is_running = 0
+    WHERE schedule_id = """ + str(scheduleId) + """
+    """
+
+    dbCur.execute(sqlquery)
+    row = dbCur.fetchone()
+    isRunning = row[0]
+
+    return isRunning
+
+
+def resetAdhocDetails(dbCur, scheduleId):
+    sqlquery = """/* Cicada libScheduler */
+    UPDATE schedules SET
+        adhoc_execute = 0,
+        adhoc_parameters = NULL
+    WHERE schedule_id = """ + str(scheduleId) + """
+    """
+
+    dbCur.execute(sqlquery)
 
 
 def initScheduleLog(dbCur, serverId, scheduleId):
@@ -60,22 +100,10 @@ def finalizeScheduleLog(dbCur, scheduleLogId, returncode, error_detail):
     dbCur.execute(sqlquery)
 
 
-def resetAdhocDetails(dbCur, scheduleId):
-    sqlquery = """/* Cicada libScheduler */
-    UPDATE schedules SET
-        adhoc_execute = 0,
-        adhoc_parameters = NULL
-    WHERE schedule_id = """ + str(scheduleId) + """
-    """
-
-    dbCur.execute(sqlquery)
-
-
 def getScheduleDetails(dbCur, scheduleId):
     """Extract details of a schedule"""
     sqlquery = """/* Cicada libScheduler */
     SELECT
-        interval_mask,
         command,
         COALESCE(adhoc_parameters, parameters, '') AS parameters
     FROM schedules
@@ -95,7 +123,7 @@ def getAllSchedules(dbCur, serverId, isAsync):
     | | +--------- day of the month (1 - 31)
     | | | +--------- month (1 - 12)
     | | | | +--------- day of the week (0 - 7) (Sunday to Saturday; 7 is also Sunday)
-    * * * * * 
+    * * * * *
     """
     sqlquery = """/* Cicada libScheduler */
     SELECT

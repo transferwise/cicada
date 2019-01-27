@@ -21,7 +21,7 @@ def main():
 
         fullCommand = []
         fullCommand.append(sys.executable)
-        fullCommand.append(os.path.abspath(os.path.dirname(sys.argv[0])) + '/execJob.py')
+        fullCommand.append(os.path.abspath(os.path.dirname(sys.argv[0])) + '/execSchedule.py')
         fullCommand.append(str(scheduleId))
 
         with open(os.devnull, 'w') as devnull:
@@ -36,7 +36,7 @@ def main():
 
         fullCommand = []
         fullCommand.append(sys.executable)
-        fullCommand.append(os.path.abspath(os.path.dirname(sys.argv[0])) + '/execJob.py')
+        fullCommand.append(os.path.abspath(os.path.dirname(sys.argv[0])) + '/execSchedule.py')
         fullCommand.append(str(scheduleId))
 
         with open(os.devnull, 'w') as devnull:

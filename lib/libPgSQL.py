@@ -69,7 +69,8 @@ def getServerId(dbCur):
         serverId = str(row[0])
         return serverId
     except Exception as e:
-        print("ERROR : host " + hostname + " not defined in table servers")
+        error_detail = e.output
+        print("ERROR : " + hostname + " not defined in table servers | DETAILS : " + error_detail)
         sys.exit()
 
 

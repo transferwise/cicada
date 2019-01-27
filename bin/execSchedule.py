@@ -29,20 +29,19 @@ def main():
     objScheduleDetails = libScheduler.getScheduleDetails(dbCicada, scheduleId)
 
     for row in objScheduleDetails.fetchall():
-        intervalMask = str(row[0])
-        command = str(row[1])
-        parameters = str(row[2])
+        command = str(row[0])
+        parameters = str(row[1])
 
         fullCommand = []
         fullCommand.append(command)
         fullCommand.extend(parameters.split())
 
         # Check to see that schedule is not already running
-        if libScheduler.isScheduleRunning(dbCicada, scheduleId) == 0:
-            libScheduler.resetAdhocDetails(dbCicada, scheduleId)
-            
+        if libScheduler.getIsRunning(dbCicada, scheduleId) == 0:
             # Initiate schedule log
             scheduleLogId = libScheduler.initScheduleLog(dbCicada, serverId, scheduleId)
+            libScheduler.resetAdhocDetails(dbCicada, scheduleId)
+            libScheduler.setIsRunning(dbCicada, scheduleId)
 
             # Execute schedule and wait for result
             error_detail = ""
@@ -56,6 +55,7 @@ def main():
                 error_detail = e.output
 
             # Finalize schedule log
+            libScheduler.resetIsRunning(dbCicada, scheduleId)
             libScheduler.finalizeScheduleLog(dbCicada, scheduleLogId, returncode, error_detail)
 
     libPgSQL.close_db(dbCicada)

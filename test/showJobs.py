@@ -20,7 +20,7 @@ def main():
     print("now\t\t: " + str(datetime.datetime.now()))
     print("nowMinute\t: " + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:00'))
     print("===========================================================================================")
-    print("scheduleId\tintervalMask\t\tadhoc\tCommand\t\t\tParameters")
+    print("scheduleId\tCommand\t\t\tParameters")
     print("-------------------------------------------------------------------------------------------")
     print("-- Asynchronous Schedules -----------------------------------------------------------------")
     print("-------------------------------------------------------------------------------------------")
@@ -30,11 +30,10 @@ def main():
 
         objScheduleDetails = libScheduler.getScheduleDetails(dbCicada, scheduleId)
         for dRow in objScheduleDetails.fetchall():
-            intervalMask = str(dRow[0])
-            command = str(dRow[1])
-            parameters = str(dRow[2])
+            command = str(dRow[0])
+            parameters = str(dRow[1])
 
-            print(scheduleId + "\t\t" + intervalMask + "\t" + command + "\t\t" + parameters)
+            print(scheduleId + "\t" + command + "\t\t\t" + parameters)
 
     # Get all Synchronous Schedules
     objSchedules = libScheduler.getAllSchedules(dbCicada, serverId, 0)
@@ -49,11 +48,10 @@ def main():
 
         objScheduleDetails = libScheduler.getScheduleDetails(dbCicada, scheduleId)
         for dRow in objScheduleDetails.fetchall():
-            intervalMask = str(dRow[0])
-            command = str(dRow[1])
-            parameters = str(dRow[2])
+            command = str(dRow[0])
+            parameters = str(dRow[1])
 
-            print(scheduleId + "\t\t" + intervalMask + "\t" + command + "\t\t" + parameters)
+            print(scheduleId + "\t" + command + "\t\t\t" + parameters)
 
     print("===========================================================================================")
     print("")

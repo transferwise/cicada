@@ -24,5 +24,6 @@ def main():
 
     libSMS.sendSMS(msgText, msgTo)
 
+
 if __name__ == "__main__":
     main()
