@@ -33,7 +33,7 @@ def main():
         parameters = str(row[1])
 
         fullCommand = []
-        fullCommand.append(command)
+        fullCommand.extend(command.split())
         fullCommand.extend(parameters.split())
 
         prettyFullCommand = str(' '.join(fullCommand))
