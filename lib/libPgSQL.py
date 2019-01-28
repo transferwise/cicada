@@ -18,11 +18,13 @@ import yaml
 #    http://initd.org/psycopg/docs/connection.html
 import psycopg2
 
-# Get short hostname
+# Get hostname
+fqdn = socket.getfqdn()
 hostname = socket.gethostname()
-i = hostname.find(".")
-if i != -1:
-    hostname = hostname[:i]
+if hostname.find(".") != -1:
+    hostname = fqdn[:i]
+else:
+    hostname = fqdn
 
 
 # Create a PgSQL database connection based on definition requested
@@ -59,7 +61,7 @@ def getServerId(dbCur):
     sqlquery = """/* DB Management libPgSQL */
     SELECT server_id
     FROM servers
-    WHERE name='""" + hostname + """'
+    WHERE hostname='""" + hostname + """'
     """
 
     dbCur.execute(sqlquery)

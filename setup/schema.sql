@@ -50,12 +50,12 @@ CREATE TABLE servers
 (
   server_id serial NOT NULL,
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
-  name character varying(16) NOT NULL,
-  long_name character varying(256) NOT NULL,
+  hostname character varying(16) NOT NULL,
+  fqdn character varying(256) NOT NULL,
   ip4_address character varying(256) NOT NULL,
   CONSTRAINT servers_pkey PRIMARY KEY (server_id),
   CONSTRAINT servers_ip4_address_key UNIQUE (ip4_address),
-  CONSTRAINT servers_name_key UNIQUE (name)
+  CONSTRAINT servers_name_key UNIQUE (hostname)
 )
 WITH (
   OIDS=FALSE

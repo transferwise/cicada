@@ -173,7 +173,6 @@ def getAllSchedules(dbCur, serverId, isAsync):
     """
 
     dbCur.execute(sqlquery)
-
     curSchedules = dbCur
 
     objSchedules = list()
