@@ -29,14 +29,14 @@ else:
 
 # Create a PgSQL database connection based on definition requested
 def init_db():
-    with open(os.path.abspath(os.path.dirname(sys.argv[0]) + '/../config/env_def.yml'), 'r') as env_def_yml:
-        env_def = yaml.load(env_def_yml)
+    with open(os.path.abspath(os.path.dirname(sys.argv[0]) + '/../config/definitions.yml'), 'r') as definitions_yml:
+        definitions = yaml.load(definitions_yml)
 
-    host = env_def['db_config']['host']
-    port = env_def['db_config']['port']
-    dbname = env_def['db_config']['dbname']
-    user = env_def['db_config']['user']
-    password = env_def['db_config']['password']
+    host = definitions['db_cicada']['host']
+    port = definitions['db_cicada']['port']
+    dbname = definitions['db_cicada']['dbname']
+    user = definitions['db_cicada']['user']
+    password = definitions['db_cicada']['password']
 
     conn_string = "host='{0}' port='{1}' dbname='{2}' user='{3}' password='{4}'".format(host, port, dbname, user, password)
     database = psycopg2.connect(conn_string)

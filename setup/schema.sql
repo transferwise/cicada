@@ -1,22 +1,3 @@
-/** Run as postgres user on postgres database
-
--- Create cicada user with password 'randomstring'
-CREATE ROLE cicada LOGIN ENCRYPTED PASSWORD 'md5a4bdbc5247bf7e877e24f2d66d99e07b' SUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;
-
--- Database: db_cicada
-
--- DROP DATABASE db_cicada;
-
-CREATE DATABASE db_cicada
-  WITH OWNER = cicada
-       ENCODING = 'UTF8'
-       TABLESPACE = pg_default
-       LC_COLLATE = 'en_US.UTF-8'
-       LC_CTYPE = 'en_US.UTF-8'
-       CONNECTION LIMIT = -1;
-**/
-
-
 /** Run as cicada user on db_cicada database **/
 -- Add PostgreSQL extention required for uuid_generate_v1()
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -102,7 +83,6 @@ CREATE TABLE schedules
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
   server_id integer NOT NULL, -- The one server where the job will run
   schedule_order integer NOT NULL, -- Run order for this schedule. Lowest is first. Async jobs will be executed all at once
-  name character varying(255) NOT NULL, -- Name of Schedule
   description character varying(255), -- Description of Schedule
   is_async smallint NOT NULL DEFAULT 1, -- 0=Disabled 1=Enabled | is_async jobs execute in parallel
   is_enabled smallint NOT NULL DEFAULT 0, -- 0=Disabled 1=Enabled
@@ -132,7 +112,6 @@ ALTER TABLE schedules
 COMMENT ON COLUMN schedules.auto_update_time IS 'auto populated datetime when the record last updated';
 COMMENT ON COLUMN schedules.server_id IS 'The one server where the job will run';
 COMMENT ON COLUMN schedules.schedule_order IS 'Run order for this schedule. Lowest is first. Async jobs will be executed all at once';
-COMMENT ON COLUMN schedules.name IS 'Name of Schedule';
 COMMENT ON COLUMN schedules.description IS 'Description of Schedule';
 COMMENT ON COLUMN schedules.is_async IS '0=Disabled 1=Enabled | is_async jobs execute in parallel';
 COMMENT ON COLUMN schedules.is_enabled IS '0=Disabled 1=Enabled';

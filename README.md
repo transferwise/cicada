@@ -23,6 +23,10 @@ Verified on **PostgreSQL** versions *9.6* to *11.1*
 
 Verified on *Ubuntu 18.04.1 LTS*
 
+Prerequisites
+
+- ntpd
+
 ```bash
 # Add required Python3 components
 apt install -y git python3 python3-pip python3-venv
@@ -40,6 +44,37 @@ vim /opt/cicada-venv/cicada-scheduler/config/env_def.yml
 
 # Add linux CRON job to check central scheduler every minute
 adduser cicada --disabled-login --gecos ""
+sudo su - cicada
+echo "* * * * * /opt/cicada-venv/bin/python3 /opt/cicada-venv/cicada-scheduler/bin/findSchedules.py" | crontab
+exit
+```
+
+#### CentOS Node
+
+Verified on *CentOS Linux release 7.6.1810 (Core)*
+
+Prerequisites
+
+* epel-release
+* ntpd
+
+```bash
+# Add required Python3 components
+yum install -y git python36
+yum upgrade -y
+
+# Deploy cicada-scheduler in Python3 virtual environment
+python36 -m venv /opt/cicada-venv
+source /opt/cicada-venv/bin/activate
+python3 -m pip install --upgrade pip
+python3 -m pip install croniter psycopg2-binary pyyaml
+git clone git@github.com:transferwise/cicada-scheduler.git /opt/cicada-venv/cicada-scheduler
+
+# Update the db_cicada section of the environmental config file
+vim /opt/cicada-venv/cicada-scheduler/config/env_def.yml
+
+# Add linux CRON job to check central scheduler every minute
+adduser cicada
 sudo su - cicada
 echo "* * * * * /opt/cicada-venv/bin/python3 /opt/cicada-venv/cicada-scheduler/bin/findSchedules.py" | crontab
 exit

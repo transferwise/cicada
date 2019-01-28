@@ -1,0 +1,6 @@
+db_cicada:
+    host: db_cicada
+    port: 5432
+    dbname: db_cicada
+    user: cicada
+    password: randomstring

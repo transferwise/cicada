@@ -125,22 +125,22 @@ def getAllSchedules(dbCur, serverId, isAsync):
       ( /* bar */
       SELECT
         schedule_id,
-        name,
         interval_mask,
         command,
         parameters,
         adhoc_execute,
-        is_async
+        is_async,
+        is_running
       FROM
         ( /* foo */
           (SELECT
             schedule_id,
-            name,
             interval_mask,
             command,
             COALESCE(adhoc_parameters, parameters, '') AS parameters,
             adhoc_execute,
             is_async,
+            is_running,
             schedule_order
           FROM schedules
           WHERE adhoc_execute = 0
@@ -154,12 +154,12 @@ def getAllSchedules(dbCur, serverId, isAsync):
 
           (SELECT
             schedule_id,
-            name,
             '* * * * *' AS interval_mask,
             command,
             COALESCE(adhoc_parameters, parameters, '') AS parameters,
             adhoc_execute,
             is_async,
+            is_running,
             schedule_order
           FROM schedules
           WHERE adhoc_execute = 1
@@ -169,7 +169,8 @@ def getAllSchedules(dbCur, serverId, isAsync):
       ORDER BY schedule_order
       ) bar
 
-    WHERE is_async = """ + str(isAsync) + """
+    WHERE is_running = 0
+        AND is_async = """ + str(isAsync) + """
     """
 
     dbCur.execute(sqlquery)
