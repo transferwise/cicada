@@ -2,7 +2,9 @@
 *Centralised Distributed Scheduler*
 
 Requires a central database for setting up and monitoring simple schedules for nodes
+
 Nodes are responsible for retrieving and executing schedules
+
 Moving schedules from one node to another is centralized and trivial
 
 ## Setup
