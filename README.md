@@ -40,7 +40,7 @@ python3 -m pip install croniter psycopg2-binary pyyaml
 git clone git@github.com:transferwise/cicada-scheduler.git /opt/cicada-venv/cicada-scheduler
 
 # Update the db_cicada section of the environmental config file
-vim /opt/cicada-venv/cicada-scheduler/config/env_def.yml
+vim /opt/cicada-venv/cicada-scheduler/config/definitions.yml
 
 # Add linux CRON job to check central scheduler every minute
 adduser cicada --disabled-login --gecos ""
@@ -71,7 +71,7 @@ python3 -m pip install croniter psycopg2-binary pyyaml
 git clone git@github.com:transferwise/cicada-scheduler.git /opt/cicada-venv/cicada-scheduler
 
 # Update the db_cicada section of the environmental config file
-vim /opt/cicada-venv/cicada-scheduler/config/env_def.yml
+vim /opt/cicada-venv/cicada-scheduler/config/definitions.yml
 
 # Add linux CRON job to check central scheduler every minute
 adduser cicada
@@ -92,4 +92,4 @@ VALUES
 
 ## Administration
 
-![erd](/setup/erd.png)
+![erd](/docs/erd.png)
