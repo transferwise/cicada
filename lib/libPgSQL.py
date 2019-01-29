@@ -19,12 +19,13 @@ import yaml
 import psycopg2
 
 # Get hostname
-fqdn = socket.getfqdn()
 hostname = socket.gethostname()
+fqdn = socket.getfqdn()
 if hostname.find(".") != -1:
-    hostname = fqdn[:i]
+    hostname = fqdn[:hostname.find(".")]
 else:
     hostname = fqdn
+ip4Address = socket.gethostbyname(fqdn)
 
 
 # Create a PgSQL database connection based on definition requested
@@ -57,6 +58,22 @@ def close_db(cursor):
 # #####################################################
 # ## PgSQL related utilities ##########################
 # #####################################################
+def singleCommand(dbCur, command):
+    sqlquery = command
+    dbCur.execute(sqlquery)
+
+
+def registerServer(dbCur):
+    sqlquery = """/* Cicada libScheduler */
+    INSERT INTO servers (hostname, fqdn, ip4_address)
+      VALUES
+    ('""" + hostname + """','""" + fqdn + """','""" + ip4Address + """')
+    ON CONFLICT DO NOTHING
+    """
+
+    dbCur.execute(sqlquery)
+
+
 def getServerId(dbCur):
     sqlquery = """/* DB Management libPgSQL */
     SELECT server_id
@@ -74,8 +91,3 @@ def getServerId(dbCur):
         error_detail = e.output
         print("ERROR : " + hostname + " not defined in table servers | DETAILS : " + error_detail)
         sys.exit()
-
-
-def singleCommand(dbCur, command):
-    sqlquery = command
-    dbCur.execute(sqlquery)
