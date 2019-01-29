@@ -17,6 +17,8 @@ Verified on **PostgreSQL** versions *9.6* to *11.1*
 2. Change **cicada** user password
 3. Execute as **cicada** user [setup/schema.sql](setup/schema.sql)
 
+
+
 ### Scheduler Node
 
 #### Ubuntu Node
@@ -49,6 +51,8 @@ echo "* * * * * /opt/cicada-venv/bin/python3 /opt/cicada-venv/cicada-scheduler/b
 exit
 ```
 
+
+
 #### CentOS Node
 
 Verified on *CentOS Linux release 7.6.1810 (Core)*
@@ -80,7 +84,17 @@ echo "* * * * * /opt/cicada-venv/bin/python3 /opt/cicada-venv/cicada-scheduler/b
 exit
 ```
 
+
+
 #### Add new Node to Database
+
+##### Method1
+
+```bash
+/opt/cicada-venv/bin/python3 /opt/cicada-venv/cicada-scheduler/bin/registerServer.py
+```
+
+##### Method2
 
 ```sql
 INSERT INTO servers
