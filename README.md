@@ -86,7 +86,7 @@ exit
 
 
 
-#### Add new Node to Database
+#### Register new Node in Database
 
 ##### Method1
 
