@@ -2,3 +2,6 @@
 __pycache__/
 *.py[cod]
 *.swp
+
+# cicada-sceduler definitions file
+config/definitions.yml
