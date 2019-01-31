@@ -38,7 +38,8 @@ apt upgrade -y
 mkdir /opt/app
 cd /opt/app
 git clone git@github.com:transferwise/cicada-scheduler.git
-bash install.sh
+cd cicada-scheduler
+./install.sh
 
 # Update the db_cicada section of the environmental config file
 cp /opt/cicada-venv/cicada-scheduler/config/example.yml /opt/cicada-venv/cicada-scheduler/config/definitions.yml
