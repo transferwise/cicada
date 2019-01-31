@@ -2,6 +2,10 @@
 __pycache__/
 *.py[cod]
 *.swp
+*$py.class
+
+# Python virtual environments
+.virtualenvs
 
 # cicada-sceduler definitions file
 config/definitions.yml
