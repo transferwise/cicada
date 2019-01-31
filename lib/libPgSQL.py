@@ -20,11 +20,13 @@ import psycopg2
 
 # Get hostname
 hostname = socket.gethostname()
-fqdn = socket.getfqdn()
 if hostname.find(".") != -1:
-    hostname = fqdn[:hostname.find(".")]
+    hostname = hostname[:hostname.find(".")]
 else:
-    hostname = fqdn
+    hostname = hostname
+
+fqdn = socket.getfqdn()
+
 ip4Address = socket.gethostbyname(fqdn)
 
 

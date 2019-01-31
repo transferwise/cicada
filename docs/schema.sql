@@ -12,7 +12,7 @@ CREATE TABLE global_settings
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
   name character varying(64) NOT NULL,
   value character varying(64) NOT NULL,
-  description character varying(256) NOT NULL,
+  description character varying(255) NOT NULL,
   CONSTRAINT global_settings_pkey PRIMARY KEY (global_setting_id),
   CONSTRAINT global_settings_name_key UNIQUE (name)
 )
@@ -31,9 +31,9 @@ CREATE TABLE servers
 (
   server_id serial NOT NULL,
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
-  hostname character varying(16) NOT NULL,
-  fqdn character varying(256) NOT NULL,
-  ip4_address character varying(256) NOT NULL,
+  hostname character varying(255) NOT NULL,
+  fqdn character varying(255) NOT NULL,
+  ip4_address character varying(255) NOT NULL,
   CONSTRAINT servers_pkey PRIMARY KEY (server_id),
   CONSTRAINT servers_ip4_address_key UNIQUE (ip4_address),
   CONSTRAINT servers_name_key UNIQUE (hostname)
@@ -191,11 +191,11 @@ CREATE TABLE public.schedule_log
   schedule_log_id character varying(64) NOT NULL DEFAULT uuid_generate_v1(),
   server_id integer NOT NULL,
   schedule_id integer NOT NULL,
-  full_command character varying(256) NOT NULL, -- full_command as executed by scheduler
+  full_command character varying(255) NOT NULL, -- full_command as executed by scheduler
   start_time timestamp(3) without time zone NOT NULL, -- ALWAYS use now() | datetime of when job started
   end_time timestamp(3) without time zone, -- datetime of when job ended
   returncode integer, -- returncode as provided by the executed script
-  error_detail character varying(256) DEFAULT NULL::character varying,
+  error_detail character varying(255) DEFAULT NULL::character varying,
   schedule_log_status_id integer NOT NULL DEFAULT 0,
   CONSTRAINT schedule_log_pkey PRIMARY KEY (schedule_log_id),
   CONSTRAINT schedule_log_schedule_id_fkey FOREIGN KEY (schedule_id)
