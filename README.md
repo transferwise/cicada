@@ -53,8 +53,6 @@ echo "* * * * * $DIR/cicada-scheduler/.virtualenvs/bin/python3 $DIR/cicada-sched
 
 # Register new Node in Database
 $DIR/cicada-scheduler/.virtualenvs/bin/python3 $DIR/cicada-scheduler/bin/registerServer.py
-
-$DIR/.virtualenvs/bin/python3 $DIR/bin/registerServer.py
 ```
 
 ## Administration
