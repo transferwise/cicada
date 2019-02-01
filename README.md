@@ -37,37 +37,24 @@ apt upgrade -y
 # initiate cicada-scheduler
 mkdir /opt/app
 cd /opt/app
+DIR=$(pwd)
+
+cd $DIR
 git clone git@github.com:transferwise/cicada-scheduler.git
 cd cicada-scheduler
 bash install.sh
 
 # Update the db_cicada section of the environmental config file
-cp /opt/cicada-venv/cicada-scheduler/config/example.yml /opt/cicada-venv/cicada-scheduler/config/definitions.yml
-vim /opt/cicada-venv/cicada-scheduler/config/definitions.yml
+cp $DIR/cicada-scheduler/config/example.yml $DIR/cicada-scheduler/config/definitions.yml
+vim $DIR/cicada-scheduler/config/definitions.yml
 
 # Add linux CRON job to check central scheduler every minute
-adduser cicada --disabled-login --gecos ""
-sudo su - cicada
-echo "* * * * * /opt/app/cicada-scheduler/.virtualenvs/bin/python3 /opt/app/cicada-scheduler/bin/findSchedules.py" | crontab
-exit
-```
+echo "* * * * * $DIR/cicada-scheduler/.virtualenvs/bin/python3 $DIR/cicada-scheduler/bin/findSchedules.py" | crontab
 
-#### Register new Node in Database
+# Register new Node in Database
+$DIR/cicada-scheduler/.virtualenvs/bin/python3 $DIR/cicada-scheduler/bin/registerServer.py
 
-##### Method1
-
-```bash
-/opt/cicada-venv/bin/python3 /opt/cicada-venv/cicada-scheduler/bin/registerServer.py
-```
-
-##### Method2
-
-```sql
-INSERT INTO servers
-  (hostname, fqdn, ip4_address)
-VALUES
-  ('{hostname}', '{fqdn}', '{ip4_address}')
-;
+$DIR/.virtualenvs/bin/python3 $DIR/bin/registerServer.py
 ```
 
 ## Administration
