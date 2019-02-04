@@ -35,7 +35,6 @@ CREATE TABLE servers
   fqdn character varying(255) NOT NULL,
   ip4_address character varying(255) NOT NULL,
   CONSTRAINT servers_pkey PRIMARY KEY (server_id),
-  CONSTRAINT servers_ip4_address_key UNIQUE (ip4_address),
   CONSTRAINT servers_name_key UNIQUE (hostname)
 )
 WITH (
