@@ -19,8 +19,6 @@ CREATE TABLE global_settings
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE global_settings
-  OWNER TO cicada;
 COMMENT ON COLUMN global_settings.auto_update_time IS 'auto populated datetime when the record last updated';
 
 -- Table: servers
@@ -40,8 +38,6 @@ CREATE TABLE servers
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE servers
-  OWNER TO cicada;
 COMMENT ON COLUMN servers.auto_update_time IS 'auto populated datetime when the record last updated';
 
 -- Table: schedule_groups
@@ -60,8 +56,6 @@ CREATE TABLE schedule_groups
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE schedule_groups
-  OWNER TO cicada;
 COMMENT ON COLUMN schedule_groups.auto_update_time IS 'auto populated datetime when the record last updated';
 
 INSERT INTO schedule_groups
@@ -106,8 +100,6 @@ CREATE TABLE schedules
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE schedules
-  OWNER TO cicada;
 COMMENT ON COLUMN schedules.auto_update_time IS 'auto populated datetime when the record last updated';
 COMMENT ON COLUMN schedules.server_id IS 'The one server where the job will run';
 COMMENT ON COLUMN schedules.schedule_order IS 'Run order for this schedule. Lowest is first. Async jobs will be executed all at once';
@@ -152,6 +144,38 @@ CREATE INDEX schedules_schedule_group_id_idx
   USING btree
   (schedule_group_id);
 
+-- Table: public.schedule_details
+
+-- DROP TABLE public.schedule_details;
+
+CREATE TABLE public.schedule_details
+(
+    schedule_details_id serial NOT NULL,
+    schedule_id integer NOT NULL,
+    name character varying(255) COLLATE pg_catalog."default",
+    value character varying(255) COLLATE pg_catalog."default",
+    CONSTRAINT schedule_details_pkey PRIMARY KEY (schedule_details_id),
+    CONSTRAINT schedule_details_schedule_id_name_key UNIQUE (schedule_id, name)
+,
+    CONSTRAINT schedule_details_schedule_id_fkey FOREIGN KEY (schedule_id)
+        REFERENCES public.schedules (schedule_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
+WITH (
+    OIDS = FALSE
+)
+;
+
+-- Index: fki_schedule_id
+
+-- DROP INDEX public.fki_schedule_id;
+
+CREATE INDEX fki_schedule_id
+    ON public.schedule_details USING btree
+    (schedule_id)
+;
+
 -- Table: schedule_log_status
 
 -- DROP TABLE schedule_log_status;
@@ -167,8 +191,6 @@ CREATE TABLE schedule_log_status
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE schedule_log_status
-  OWNER TO cicada;
 COMMENT ON COLUMN schedule_log_status.constant IS 'CONSTANT used by code';
 COMMENT ON COLUMN schedule_log_status.name IS 'Human Friendly Label';
 
@@ -210,8 +232,6 @@ CREATE TABLE public.schedule_log
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE public.schedule_log
-  OWNER TO cicada;
 COMMENT ON COLUMN public.schedule_log.full_command IS 'full_command as executed by scheduler';
 COMMENT ON COLUMN public.schedule_log.start_time IS 'ALWAYS use now() | datetime of when job started';
 COMMENT ON COLUMN public.schedule_log.end_time IS 'datetime of when job ended';
@@ -243,3 +263,13 @@ CREATE INDEX schedule_log_server_id_schedule_id_schedule_log_status_id_idx
   ON schedule_log
   USING btree
   (server_id, schedule_id, schedule_log_status_id);
+
+-- Index: public.schedule_log_schedule_id_start_time_idx
+
+-- DROP INDEX public.schedule_log_schedule_id_start_time_idx;
+
+CREATE INDEX schedule_log_schedule_id_start_time_idx
+  ON public.schedule_log
+  USING btree
+  (schedule_id, start_time);
+
