@@ -16,14 +16,12 @@ def main():
     # Get all Asynchronous Schedules
     objSchedules = libScheduler.getAllSchedules(dbCicada, serverId, 1)
 
-    print("===========================================================================================")
-    print("now\t\t: " + str(datetime.datetime.now()))
-    print("nowMinute\t: " + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:00'))
-    print("===========================================================================================")
+    print("serverId : " + serverId)
+    print("now : " + str(datetime.datetime.now()))
+    print("nowMinute : " + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:00'))
+    print("-------------------------------------------------------------------------------------------")
+    print("Asynchronous Schedules :")
     print("scheduleId\tFull Command")
-    print("-------------------------------------------------------------------------------------------")
-    print("-- Asynchronous Schedules -----------------------------------------------------------------")
-    print("-------------------------------------------------------------------------------------------")
 
     for sRow in objSchedules:
         scheduleId = str(sRow[0])
@@ -40,8 +38,8 @@ def main():
 
     print("")
     print("-------------------------------------------------------------------------------------------")
-    print("-- Synchronous Schedules ------------------------------------------------------------------")
-    print("-------------------------------------------------------------------------------------------")
+    print("Synchronous Schedules :")
+    print("scheduleId\tFull Command")
 
     for sRow in objSchedules:
         scheduleId = str(sRow[0])
