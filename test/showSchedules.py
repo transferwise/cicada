@@ -24,9 +24,7 @@ def main():
     print("Asynchronous Schedules :")
     print("scheduleId\tFull Command")
 
-    for sRow in objSchedules:
-        scheduleId = str(sRow[0])
-
+    for scheduleId in objSchedules:
         objScheduleDetails = libScheduler.getScheduleDetails(dbCicada, scheduleId)
         for dRow in objScheduleDetails.fetchall():
             command = str(dRow[0])
@@ -41,9 +39,7 @@ def main():
     print("Synchronous Schedules :")
     print("scheduleId\tFull Command")
 
-    for sRow in objSchedules:
-        scheduleId = str(sRow[0])
-
+    for scheduleId in objSchedules:
         objScheduleDetails = libScheduler.getScheduleDetails(dbCicada, scheduleId)
         for dRow in objScheduleDetails.fetchall():
             command = str(dRow[0])

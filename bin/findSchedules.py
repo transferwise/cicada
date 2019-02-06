@@ -16,9 +16,7 @@ def main():
     # Get all schedules and execute asynchronously
     objSchedules = libScheduler.getAllSchedules(dbCicada, serverId, 1)
 
-    for row in objSchedules:
-        scheduleId = str(row[0])
-
+    for scheduleId in objSchedules:
         fullCommand = []
         fullCommand.append(sys.executable)
         fullCommand.append(os.path.abspath(os.path.dirname(sys.argv[0])) + '/execSchedule.py')
@@ -31,9 +29,7 @@ def main():
     # Get all schedules and execute synchronously
     objSchedules = libScheduler.getAllSchedules(dbCicada, serverId, 0)
 
-    for row in objSchedules:
-        scheduleId = str(row[0])
-
+    for scheduleId in objSchedules:
         fullCommand = []
         fullCommand.append(sys.executable)
         fullCommand.append(os.path.abspath(os.path.dirname(sys.argv[0])) + '/execSchedule.py')
