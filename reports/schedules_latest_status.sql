@@ -24,7 +24,7 @@ INNER JOIN
 
 ( /* foo */
 SELECT
-  servers.server_id AS server_id,
+  schedule_log.server_id AS server_id,
   servers.hostname AS server_name,
   schedule_id,
   description AS schedule_description,
