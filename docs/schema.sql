@@ -94,8 +94,7 @@ CREATE TABLE schedules
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT schedules_server_id_fkey FOREIGN KEY (server_id)
       REFERENCES servers (server_id) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT schedules_server_id_schedule_order_key UNIQUE (server_id, schedule_order)
+      ON UPDATE NO ACTION ON DELETE NO ACTION
 )
 WITH (
   OIDS=FALSE
@@ -143,6 +142,15 @@ CREATE INDEX schedules_schedule_group_id_idx
   ON schedules
   USING btree
   (schedule_group_id);
+
+-- Index: public.schedules_server_id_idx
+
+-- DROP INDEX public.schedules_server_id_idx;
+
+CREATE INDEX schedules_server_id_idx
+  ON public.schedules
+  USING btree
+  (server_id);
 
 -- Table: public.schedule_details
 
