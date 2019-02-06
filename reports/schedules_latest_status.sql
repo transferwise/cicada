@@ -1,6 +1,7 @@
 -- Shows the status of the latest run of each schedule, except test schedules
 
 SELECT
+  schedule_log_id,
   server_id,
   server_name,
   schedule_id,
@@ -24,6 +25,7 @@ INNER JOIN
 
 ( /* foo */
 SELECT
+  schedule_log_id,
   schedule_log.server_id AS server_id,
   servers.hostname AS server_name,
   schedule_id,
