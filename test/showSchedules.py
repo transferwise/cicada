@@ -16,6 +16,7 @@ def main():
     # Get all Asynchronous Schedules
     objSchedules = libScheduler.getAllSchedules(dbCicada, serverId, 1)
 
+    print("")
     print("serverId : " + serverId)
     print("now : " + str(datetime.datetime.now()))
     print("nowMinute : " + datetime.datetime.now().strftime('%Y-%m-%d %H:%M:00'))
@@ -30,7 +31,6 @@ def main():
         for dRow in objScheduleDetails.fetchall():
             command = str(dRow[0])
             parameters = str(dRow[1])
-
             print(scheduleId + "\t\t" + command + " " + parameters)
 
     # Get all Synchronous Schedules
@@ -48,10 +48,8 @@ def main():
         for dRow in objScheduleDetails.fetchall():
             command = str(dRow[0])
             parameters = str(dRow[1])
-
             print(scheduleId + "\t\t" + command + " " + parameters)
 
-    print("===========================================================================================")
     print("")
 
     libPgSQL.close_db(dbCicada)
