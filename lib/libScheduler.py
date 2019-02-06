@@ -166,7 +166,7 @@ def getAllSchedules(dbCur, serverId, isAsync):
             AND server_id = """ + str(serverId) + """
           )
         ) foo
-      ORDER BY schedule_order
+      ORDER BY schedule_order, schedule_id
       ) bar
 
     WHERE is_running = 0
