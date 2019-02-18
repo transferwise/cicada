@@ -72,7 +72,7 @@ VALUES
 
 CREATE TABLE schedules
 (
-  schedule_id serial NOT NULL,
+  schedule_id integer NOT NULL,
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
   server_id integer NOT NULL, -- The one server where the job will run
   schedule_order integer NOT NULL, -- Run order for this schedule. Lowest is first. Async jobs will be executed all at once
