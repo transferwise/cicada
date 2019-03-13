@@ -33,7 +33,7 @@ SELECT
   is_enabled,
   start_time,
   end_time,
-  (COALESCE(end_time, now()) - start_time) AS run_duration,
+  (COALESCE(end_time, now()::timestamp(3)) - start_time) AS run_duration,
   schedule_log_status.name AS schedule_status
 FROM schedules
   INNER JOIN servers USING (server_id)
