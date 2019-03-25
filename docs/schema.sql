@@ -2,6 +2,22 @@
 -- Add PostgreSQL extention required for uuid_generate_v1()
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- FUNCTION: public.set_auto_update_time()
+
+-- DROP FUNCTION public.set_auto_update_time();
+
+CREATE FUNCTION public.set_auto_update_time()
+    RETURNS trigger
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE NOT LEAKPROOF 
+AS $BODY$
+BEGIN
+  NEW.auto_update_time = now()::timestamp without time zone;
+  RETURN NEW;
+END;
+$BODY$;
+
 -- Table: global_settings
 
 -- DROP TABLE global_settings;
@@ -20,6 +36,13 @@ WITH (
   OIDS=FALSE
 );
 COMMENT ON COLUMN global_settings.auto_update_time IS 'auto populated datetime when the record last updated';
+
+CREATE TRIGGER tr_global_settings
+    BEFORE UPDATE 
+    ON public.global_settings
+    FOR EACH ROW
+    EXECUTE PROCEDURE public.set_auto_update_time()
+;
 
 -- Table: servers
 
@@ -40,6 +63,13 @@ WITH (
 );
 COMMENT ON COLUMN servers.auto_update_time IS 'auto populated datetime when the record last updated';
 
+CREATE TRIGGER tr_servers
+    BEFORE UPDATE 
+    ON public.servers
+    FOR EACH ROW
+    EXECUTE PROCEDURE public.set_auto_update_time()
+;
+
 -- Table: schedule_groups
 
 -- DROP TABLE schedule_groups;
@@ -57,6 +87,13 @@ WITH (
   OIDS=FALSE
 );
 COMMENT ON COLUMN schedule_groups.auto_update_time IS 'auto populated datetime when the record last updated';
+
+CREATE TRIGGER tr_schedule_groups
+    BEFORE UPDATE 
+    ON public.schedule_groups
+    FOR EACH ROW
+    EXECUTE PROCEDURE public.set_auto_update_time()
+;
 
 INSERT INTO schedule_groups
   (schedule_group_id, name, description)
@@ -115,7 +152,6 @@ COMMENT ON COLUMN schedules.adhoc_execute IS '0=Disabled 1=Enabled | The job wil
 COMMENT ON COLUMN schedules.adhoc_parameters IS 'If specified, will overwrite parameters for next run';
 COMMENT ON COLUMN schedules.schedule_group_id IS 'Optional field to help group schedules';
 
-
 -- Index: schedules_adhoc_execute_idx
 
 -- DROP INDEX schedules_adhoc_execute_idx;
@@ -151,6 +187,13 @@ CREATE INDEX schedules_server_id_idx
   ON public.schedules
   USING btree
   (server_id);
+
+CREATE TRIGGER tr_schedules
+    BEFORE UPDATE 
+    ON public.schedules
+    FOR EACH ROW
+    EXECUTE PROCEDURE public.set_auto_update_time()
+;
 
 -- Table: public.schedule_details
 
@@ -218,6 +261,7 @@ VALUES
 CREATE TABLE public.schedule_log
 (
   schedule_log_id character varying(64) NOT NULL DEFAULT uuid_generate_v1(),
+  auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
   server_id integer NOT NULL,
   schedule_id integer NOT NULL,
   full_command character varying(255) NOT NULL, -- full_command as executed by scheduler
@@ -240,6 +284,7 @@ CREATE TABLE public.schedule_log
 WITH (
   OIDS=FALSE
 );
+COMMENT ON COLUMN public.schedules.auto_update_time IS 'auto populated datetime when the record last updated';
 COMMENT ON COLUMN public.schedule_log.full_command IS 'full_command as executed by scheduler';
 COMMENT ON COLUMN public.schedule_log.start_time IS 'ALWAYS use now() | datetime of when job started';
 COMMENT ON COLUMN public.schedule_log.end_time IS 'datetime of when job ended';
@@ -281,3 +326,9 @@ CREATE INDEX schedule_log_schedule_id_start_time_idx
   USING btree
   (schedule_id, start_time);
 
+CREATE TRIGGER tr_schedule_log
+    BEFORE UPDATE 
+    ON public.schedule_log
+    FOR EACH ROW
+    EXECUTE PROCEDURE public.set_auto_update_time()
+;
