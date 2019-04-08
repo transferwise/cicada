@@ -55,6 +55,7 @@ CREATE TABLE servers
   hostname character varying(255) NOT NULL,
   fqdn character varying(255) NOT NULL,
   ip4_address character varying(255) NOT NULL,
+  is_enabled smallint NOT NULL DEFAULT 0, -- 0=Disabled 1=Enabled,
   CONSTRAINT servers_pkey PRIMARY KEY (server_id),
   CONSTRAINT servers_name_key UNIQUE (hostname)
 )
@@ -62,6 +63,7 @@ WITH (
   OIDS=FALSE
 );
 COMMENT ON COLUMN servers.auto_update_time IS 'auto populated datetime when the record last updated';
+COMMENT ON COLUMN public.servers.is_enabled IS '0=Disabled 1=Enabled';
 
 CREATE TRIGGER tr_servers
     BEFORE UPDATE 
