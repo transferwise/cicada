@@ -1,4 +1,4 @@
-# cicada-scheduler
+# Cicada scheduler
 *Centralised Distributed Scheduler*
 
 Requires a central database for setting up and monitoring simple schedules for nodes
