@@ -30,7 +30,7 @@ SELECT
   servers.hostname AS server_name,
   schedule_id,
   description AS schedule_description,
-  is_enabled,
+  schedules.is_enabled,
   start_time,
   end_time,
   (COALESCE(end_time, now()::timestamp(3)) - start_time) AS run_duration,
