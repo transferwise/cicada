@@ -111,22 +111,22 @@ VALUES
 
 CREATE TABLE schedules
 (
-  schedule_id integer NOT NULL,
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
+  schedule_id integer NOT NULL,
+  schedule_name character varying(255) NOT NULL, -- Name of Schedule
   server_id integer NOT NULL, -- The one server where the job will run
   schedule_order integer NOT NULL, -- Run order for this schedule. Lowest is first. Async jobs will be executed all at once
-  schedule_name character varying(255) NOT NULL, -- Name of Schedule
   is_async smallint NOT NULL DEFAULT 1, -- 0=Disabled 1=Enabled | is_async jobs execute in parallel
   is_enabled smallint NOT NULL DEFAULT 0, -- 0=Disabled 1=Enabled
   interval_mask character varying(14) NOT NULL, -- When to execute the command | Modeled on unix crontab (minute hour dom month dow)
-  first_run_date timestamp(3) without time zone NOT NULL DEFAULT '1000-01-01 00:00:00'::timestamp without time zone, -- The job will not execute before this datetime
-  last_run_date timestamp(3) without time zone NOT NULL DEFAULT '9999-12-31 23:59:59'::timestamp without time zone, -- The job will not execute after this datetime
+  first_run_date timestamp(3) without time zone NOT NULL DEFAULT '1000-01-01 00:00:00.000'::timestamp without time zone, -- The schedule will not execute before this datetime
+  last_run_date timestamp(3) without time zone NOT NULL DEFAULT '9999-12-31 23:59:59.999'::timestamp without time zone, -- The schedule will not execute after this datetime
   command character varying(255) NOT NULL, -- Command to execute
   parameters character varying(255), -- Exact string of parameters for command
   adhoc_parameters character varying(255), -- If specified, will overwrite parameters
   is_running smallint NOT NULL DEFAULT 0, -- 0=No 1=Yes
   adhoc_execute smallint NOT NULL DEFAULT 0, -- 0=Disabled 1=Enabled | The job will execute at next minute, regardless of other schedule time settings
-  schedule_group_id integer, -- Optional field to help group schedules
+  schedule_group_id integer, -- Optional field to help with schedule grouping
   schedule_comments character varying(255), -- Schedule Comments
   CONSTRAINT schedules_pkey PRIMARY KEY (schedule_id),
   CONSTRAINT schedules_schedule_group_id_fkey FOREIGN KEY (schedule_group_id)
