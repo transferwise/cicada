@@ -134,7 +134,8 @@ CREATE TABLE schedules
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT schedules_server_id_fkey FOREIGN KEY (server_id)
       REFERENCES servers (server_id) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT schedules_schedule_name_key UNIQUE (schedule_name)
 )
 WITH (
   OIDS=FALSE
