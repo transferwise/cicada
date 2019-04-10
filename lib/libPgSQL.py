@@ -33,7 +33,7 @@ ip4Address = socket.gethostbyname(fqdn)
 # Create a PgSQL database connection based on definition requested
 def init_db():
     with open(os.path.abspath(os.path.dirname(sys.argv[0]) + '/../config/definitions.yml'), 'r') as definitions_yml:
-        definitions = yaml.load(definitions_yml, Loader=yaml.FullLoader)
+        definitions = yaml.load(definitions_yml)
 
     host = definitions['db_cicada']['host']
     port = definitions['db_cicada']['port']
