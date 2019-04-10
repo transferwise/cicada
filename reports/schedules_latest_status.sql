@@ -5,13 +5,12 @@ SELECT
   server_id,
   server_name,
   schedule_id,
-  schedule_name,
+  schedule_description,
   is_enabled,
   start_time,
   end_time,
   run_duration,
-  schedule_status,
-  schedule_comments
+  schedule_status
 FROM
 
 ( /* bar */
@@ -30,13 +29,12 @@ SELECT
   schedule_log.server_id AS server_id,
   servers.hostname AS server_name,
   schedule_id,
-  schedule_name,
+  schedule_description,
   schedules.is_enabled,
   start_time,
   end_time,
   (COALESCE(end_time, now()::timestamp(3)) - start_time) AS run_duration,
-  schedule_log_status.name AS schedule_status,
-  schedule_comments
+  schedule_log_status.name AS schedule_status
 FROM schedules
   INNER JOIN servers USING (server_id)
   INNER JOIN schedule_log USING (schedule_id)
