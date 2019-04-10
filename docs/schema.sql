@@ -113,7 +113,7 @@ CREATE TABLE schedules
 (
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
   schedule_id integer NOT NULL,
-  schedule_name character varying(255) NOT NULL, -- Name of Schedule
+  schedule_description character varying(255) NOT NULL, -- Schedule Description and Comments
   server_id integer NOT NULL, -- The one server where the job will run
   schedule_order integer NOT NULL, -- Run order for this schedule. Lowest is first. Async jobs will be executed all at once
   is_async smallint NOT NULL DEFAULT 1, -- 0=Disabled 1=Enabled | is_async jobs execute in parallel
@@ -127,15 +127,13 @@ CREATE TABLE schedules
   is_running smallint NOT NULL DEFAULT 0, -- 0=No 1=Yes
   adhoc_execute smallint NOT NULL DEFAULT 0, -- 0=Disabled 1=Enabled | The job will execute at next minute, regardless of other schedule time settings
   schedule_group_id integer, -- Optional field to help with schedule grouping
-  schedule_comments character varying(255), -- Schedule Comments
   CONSTRAINT schedules_pkey PRIMARY KEY (schedule_id),
   CONSTRAINT schedules_schedule_group_id_fkey FOREIGN KEY (schedule_group_id)
       REFERENCES schedule_groups (schedule_group_id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT schedules_server_id_fkey FOREIGN KEY (server_id)
       REFERENCES servers (server_id) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT schedules_schedule_name_key UNIQUE (schedule_name)
+      ON UPDATE NO ACTION ON DELETE NO ACTION
 )
 WITH (
   OIDS=FALSE
@@ -143,7 +141,7 @@ WITH (
 COMMENT ON COLUMN schedules.auto_update_time IS 'auto populated datetime when the record last updated';
 COMMENT ON COLUMN schedules.server_id IS 'The one server where the job will run';
 COMMENT ON COLUMN schedules.schedule_order IS 'Run order for this schedule. Lowest is first. Async jobs will be executed all at once';
-COMMENT ON COLUMN schedules.schedule_name IS 'Name of Schedule';
+COMMENT ON COLUMN schedules.schedule_description IS 'Schedule Description and Comments';
 COMMENT ON COLUMN schedules.is_async IS '0=Disabled 1=Enabled | is_async jobs execute in parallel';
 COMMENT ON COLUMN schedules.is_enabled IS '0=Disabled 1=Enabled';
 COMMENT ON COLUMN schedules.is_running IS '0=No 1=Yes';
@@ -155,7 +153,6 @@ COMMENT ON COLUMN schedules.parameters IS 'Exact string of parameters for comman
 COMMENT ON COLUMN schedules.adhoc_execute IS '0=Disabled 1=Enabled | The job will execute at next minute, regardless of other schedule time settings';
 COMMENT ON COLUMN schedules.adhoc_parameters IS 'If specified, will overwrite parameters for next run';
 COMMENT ON COLUMN schedules.schedule_group_id IS 'Optional field to help group schedules';
-COMMENT ON COLUMN schedules.schedule_comments IS 'Schedule Comments';
 
 -- Index: schedules_adhoc_execute_idx
 
@@ -198,38 +195,6 @@ CREATE TRIGGER tr_schedules
     ON public.schedules
     FOR EACH ROW
     EXECUTE PROCEDURE public.set_auto_update_time()
-;
-
--- Table: public.schedule_details
-
--- DROP TABLE public.schedule_details;
-
-CREATE TABLE public.schedule_details
-(
-    schedule_details_id serial NOT NULL,
-    schedule_id integer NOT NULL,
-    name character varying(255) COLLATE pg_catalog."default",
-    value character varying(255) COLLATE pg_catalog."default",
-    CONSTRAINT schedule_details_pkey PRIMARY KEY (schedule_details_id),
-    CONSTRAINT schedule_details_schedule_id_name_key UNIQUE (schedule_id, name)
-,
-    CONSTRAINT schedule_details_schedule_id_fkey FOREIGN KEY (schedule_id)
-        REFERENCES public.schedules (schedule_id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-)
-WITH (
-    OIDS = FALSE
-)
-;
-
--- Index: fki_schedule_id
-
--- DROP INDEX public.fki_schedule_id;
-
-CREATE INDEX fki_schedule_id
-    ON public.schedule_details USING btree
-    (schedule_id)
 ;
 
 -- Table: schedule_log_status
