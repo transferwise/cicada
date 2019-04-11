@@ -4,14 +4,14 @@ SELECT
   schedule_log_id,
   server_id,
   server_name,
+  server_is_enabled,
   schedule_id,
-  schedule_name,
-  is_enabled,
+  schedule_description,
+  schedule_is_enabled,
   start_time,
   end_time,
   run_duration,
-  schedule_status,
-  schedule_comments
+  schedule_status
 FROM
 
 ( /* bar */
@@ -29,14 +29,14 @@ SELECT
   schedule_log_id,
   schedule_log.server_id AS server_id,
   servers.hostname AS server_name,
+  servers.is_enabled AS server_is_enabled,
   schedule_id,
-  schedule_name,
-  schedules.is_enabled,
+  schedule_description,
+  schedules.is_enabled AS schedule_is_enabled,
   start_time,
   end_time,
   (COALESCE(end_time, now()::timestamp(3)) - start_time) AS run_duration,
-  schedule_log_status.name AS schedule_status,
-  schedule_comments
+  schedule_log_status.name AS schedule_status
 FROM schedules
   INNER JOIN servers USING (server_id)
   INNER JOIN schedule_log USING (schedule_id)

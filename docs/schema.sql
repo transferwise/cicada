@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- DROP FUNCTION public.set_auto_update_time();
 
-CREATE FUNCTION public.set_auto_update_time()
+CREATE OR REPLACE FUNCTION public.set_auto_update_time()
     RETURNS trigger
     LANGUAGE 'plpgsql'
     COST 100
@@ -101,8 +101,7 @@ INSERT INTO schedule_groups
   (schedule_group_id, name, description)
 VALUES
   (1, 'Other', ''),
-  (2, 'General Test', ''),
-  (10, 'Pilelinewise job', '')
+  (2, 'General Test', '')
 ;
 
 -- Table: schedules
@@ -111,23 +110,22 @@ VALUES
 
 CREATE TABLE schedules
 (
-  schedule_id integer NOT NULL,
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
+  schedule_id character varying(255) NOT NULL DEFAULT uuid_generate_v1(),
+  schedule_description character varying(255) NOT NULL, -- Schedule Description and Comments
   server_id integer NOT NULL, -- The one server where the job will run
   schedule_order integer NOT NULL, -- Run order for this schedule. Lowest is first. Async jobs will be executed all at once
-  schedule_name character varying(255) NOT NULL, -- Name of Schedule
   is_async smallint NOT NULL DEFAULT 1, -- 0=Disabled 1=Enabled | is_async jobs execute in parallel
   is_enabled smallint NOT NULL DEFAULT 0, -- 0=Disabled 1=Enabled
+  adhoc_execute smallint NOT NULL DEFAULT 0, -- 0=Disabled 1=Enabled | The job will execute at next minute, regardless of other schedule time settings
+  is_running smallint NOT NULL DEFAULT 0, -- 0=No 1=Yes
   interval_mask character varying(14) NOT NULL, -- When to execute the command | Modeled on unix crontab (minute hour dom month dow)
-  first_run_date timestamp(3) without time zone NOT NULL DEFAULT '1000-01-01 00:00:00'::timestamp without time zone, -- The job will not execute before this datetime
-  last_run_date timestamp(3) without time zone NOT NULL DEFAULT '9999-12-31 23:59:59'::timestamp without time zone, -- The job will not execute after this datetime
+  first_run_date timestamp(3) without time zone NOT NULL DEFAULT '1000-01-01 00:00:00.000'::timestamp without time zone, -- The schedule will not execute before this datetime
+  last_run_date timestamp(3) without time zone NOT NULL DEFAULT '9999-12-31 23:59:59.999'::timestamp without time zone, -- The schedule will not execute after this datetime
   command character varying(255) NOT NULL, -- Command to execute
   parameters character varying(255), -- Exact string of parameters for command
   adhoc_parameters character varying(255), -- If specified, will overwrite parameters
-  is_running smallint NOT NULL DEFAULT 0, -- 0=No 1=Yes
-  adhoc_execute smallint NOT NULL DEFAULT 0, -- 0=Disabled 1=Enabled | The job will execute at next minute, regardless of other schedule time settings
-  schedule_group_id integer, -- Optional field to help group schedules
-  schedule_comments character varying(255), -- Schedule Comments
+  schedule_group_id integer, -- Optional field to help with schedule grouping
   CONSTRAINT schedules_pkey PRIMARY KEY (schedule_id),
   CONSTRAINT schedules_schedule_group_id_fkey FOREIGN KEY (schedule_group_id)
       REFERENCES schedule_groups (schedule_group_id) MATCH SIMPLE
@@ -142,7 +140,7 @@ WITH (
 COMMENT ON COLUMN schedules.auto_update_time IS 'auto populated datetime when the record last updated';
 COMMENT ON COLUMN schedules.server_id IS 'The one server where the job will run';
 COMMENT ON COLUMN schedules.schedule_order IS 'Run order for this schedule. Lowest is first. Async jobs will be executed all at once';
-COMMENT ON COLUMN schedules.schedule_name IS 'Name of Schedule';
+COMMENT ON COLUMN schedules.schedule_description IS 'Schedule Description and Comments';
 COMMENT ON COLUMN schedules.is_async IS '0=Disabled 1=Enabled | is_async jobs execute in parallel';
 COMMENT ON COLUMN schedules.is_enabled IS '0=Disabled 1=Enabled';
 COMMENT ON COLUMN schedules.is_running IS '0=No 1=Yes';
@@ -154,7 +152,6 @@ COMMENT ON COLUMN schedules.parameters IS 'Exact string of parameters for comman
 COMMENT ON COLUMN schedules.adhoc_execute IS '0=Disabled 1=Enabled | The job will execute at next minute, regardless of other schedule time settings';
 COMMENT ON COLUMN schedules.adhoc_parameters IS 'If specified, will overwrite parameters for next run';
 COMMENT ON COLUMN schedules.schedule_group_id IS 'Optional field to help group schedules';
-COMMENT ON COLUMN schedules.schedule_comments IS 'Schedule Comments';
 
 -- Index: schedules_adhoc_execute_idx
 
@@ -199,38 +196,6 @@ CREATE TRIGGER tr_schedules
     EXECUTE PROCEDURE public.set_auto_update_time()
 ;
 
--- Table: public.schedule_details
-
--- DROP TABLE public.schedule_details;
-
-CREATE TABLE public.schedule_details
-(
-    schedule_details_id serial NOT NULL,
-    schedule_id integer NOT NULL,
-    name character varying(255) COLLATE pg_catalog."default",
-    value character varying(255) COLLATE pg_catalog."default",
-    CONSTRAINT schedule_details_pkey PRIMARY KEY (schedule_details_id),
-    CONSTRAINT schedule_details_schedule_id_name_key UNIQUE (schedule_id, name)
-,
-    CONSTRAINT schedule_details_schedule_id_fkey FOREIGN KEY (schedule_id)
-        REFERENCES public.schedules (schedule_id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-)
-WITH (
-    OIDS = FALSE
-)
-;
-
--- Index: fki_schedule_id
-
--- DROP INDEX public.fki_schedule_id;
-
-CREATE INDEX fki_schedule_id
-    ON public.schedule_details USING btree
-    (schedule_id)
-;
-
 -- Table: schedule_log_status
 
 -- DROP TABLE schedule_log_status;
@@ -267,7 +232,7 @@ CREATE TABLE public.schedule_log
   schedule_log_id character varying(64) NOT NULL DEFAULT uuid_generate_v1(),
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
   server_id integer NOT NULL,
-  schedule_id integer NOT NULL,
+  schedule_id character varying(255) NOT NULL,
   full_command character varying(255) NOT NULL, -- full_command as executed by scheduler
   start_time timestamp(3) without time zone NOT NULL, -- ALWAYS use now() | datetime of when job started
   end_time timestamp(3) without time zone, -- datetime of when job ended
