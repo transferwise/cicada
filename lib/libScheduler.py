@@ -13,7 +13,7 @@ def getIsRunning(dbCur, scheduleId):
     sqlquery = """/* Cicada libScheduler */
     SELECT is_running
     FROM schedules
-    WHERE schedule_id = """ + str(scheduleId) + """
+    WHERE schedule_id = '""" + str(scheduleId) + """'
     """
 
     dbCur.execute(sqlquery)
@@ -27,7 +27,7 @@ def setIsRunning(dbCur, scheduleId):
     sqlquery = """/* Cicada libScheduler */
     UPDATE schedules
     SET is_running = 1
-    WHERE schedule_id = """ + str(scheduleId) + """
+    WHERE schedule_id = '""" + str(scheduleId) + """'
     """
 
     dbCur.execute(sqlquery)
@@ -37,7 +37,7 @@ def resetIsRunning(dbCur, scheduleId):
     sqlquery = """/* Cicada libScheduler */
     UPDATE schedules
     SET is_running = 0
-    WHERE schedule_id = """ + str(scheduleId) + """
+    WHERE schedule_id = '""" + str(scheduleId) + """'
     """
 
     dbCur.execute(sqlquery)
@@ -48,7 +48,7 @@ def resetAdhocDetails(dbCur, scheduleId):
     UPDATE schedules SET
         adhoc_execute = 0,
         adhoc_parameters = NULL
-    WHERE schedule_id = """ + str(scheduleId) + """
+    WHERE schedule_id = '""" + str(scheduleId) + """'
     """
 
     dbCur.execute(sqlquery)
@@ -67,7 +67,7 @@ def initScheduleLog(dbCur, serverId, scheduleId, fullCommand):
     INSERT INTO schedule_log
         (schedule_log_id, server_id, schedule_id, full_command, start_time, schedule_log_status_id)
     VALUES
-        ('""" + str(scheduleLogId) + """', """ + str(serverId) + """, """ + str(scheduleId) + """, '""" + str(fullCommand) + """', now() ,1)
+        ('""" + str(scheduleLogId) + """', """ + str(serverId) + """, '""" + str(scheduleId) + """', '""" + str(fullCommand) + """', now() ,1)
     """
     dbCur.execute(sqlquery)
 
@@ -99,7 +99,7 @@ def getScheduleDetails(dbCur, scheduleId):
         command,
         COALESCE(adhoc_parameters, parameters, '') AS parameters
     FROM schedules
-        WHERE schedule_id = """ + str(scheduleId) + """
+        WHERE schedule_id = '""" + str(scheduleId) + """'
     LIMIT 1
     """
 
@@ -143,6 +143,7 @@ def getAllSchedules(dbCur, serverId, isAsync):
             is_running,
             schedule_order
           FROM schedules
+            INNER JOIN servers USING (server_id)
           WHERE adhoc_execute = 0
             AND server_id = """ + str(serverId) + """
             AND schedules.is_enabled = 1
@@ -163,8 +164,10 @@ def getAllSchedules(dbCur, serverId, isAsync):
             is_running,
             schedule_order
           FROM schedules
+            INNER JOIN servers USING (server_id)
           WHERE adhoc_execute = 1
             AND server_id = """ + str(serverId) + """
+            AND servers.is_enabled = 1
           )
         ) foo
       ORDER BY schedule_order, schedule_id

@@ -6,14 +6,9 @@ import argparse
 sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../lib"))
 import libPgSQL
 
-commands = [
-  'upsert'
-]
-
 def main():
     parser = argparse.ArgumentParser(description='Add or change a schedule in Cicada', add_help=True)
-    # parser.add_argument('command', type=str, help=', '.join(commands))
-    parser.add_argument('--schedule_id', type=int, help="Id of the schedule")
+    parser.add_argument('--schedule_id', type=str, required=True, help="Id of the schedule")
     parser.add_argument('--schedule_name', type=str, help="Name of schedule")
     parser.add_argument('--server_id', type=int, default=1, help="Id of the server where the job will run")
     parser.add_argument('--schedule_order', type=int, default=1, help="run order for the schedule. lowest is first. is_async jobs will be executed all at once")
