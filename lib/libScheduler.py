@@ -145,7 +145,8 @@ def getAllSchedules(dbCur, serverId, isAsync):
           FROM schedules
           WHERE adhoc_execute = 0
             AND server_id = """ + str(serverId) + """
-            AND is_enabled = 1
+            AND schedules.is_enabled = 1
+            AND servers.is_enabled = 1
             AND now() >= first_run_date
             AND now() <= last_run_date
           )
