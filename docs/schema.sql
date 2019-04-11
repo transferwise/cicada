@@ -112,7 +112,7 @@ VALUES
 CREATE TABLE schedules
 (
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
-  schedule_id integer NOT NULL,
+  schedule_id character varying(255) NOT NULL DEFAULT uuid_generate_v1(),
   schedule_description character varying(255) NOT NULL, -- Schedule Description and Comments
   server_id integer NOT NULL, -- The one server where the job will run
   schedule_order integer NOT NULL, -- Run order for this schedule. Lowest is first. Async jobs will be executed all at once
@@ -233,7 +233,7 @@ CREATE TABLE public.schedule_log
   schedule_log_id character varying(64) NOT NULL DEFAULT uuid_generate_v1(),
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
   server_id integer NOT NULL,
-  schedule_id integer NOT NULL,
+  schedule_id character varying(255) NOT NULL,
   full_command character varying(255) NOT NULL, -- full_command as executed by scheduler
   start_time timestamp(3) without time zone NOT NULL, -- ALWAYS use now() | datetime of when job started
   end_time timestamp(3) without time zone, -- datetime of when job ended
