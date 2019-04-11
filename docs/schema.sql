@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- DROP FUNCTION public.set_auto_update_time();
 
-CREATE FUNCTION public.set_auto_update_time()
+CREATE OR REPLACE FUNCTION public.set_auto_update_time()
     RETURNS trigger
     LANGUAGE 'plpgsql'
     COST 100
