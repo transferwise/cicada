@@ -118,7 +118,6 @@ CREATE TABLE schedules
   is_async smallint NOT NULL DEFAULT 1, -- 0=Disabled 1=Enabled | is_async jobs execute in parallel
   is_enabled smallint NOT NULL DEFAULT 0, -- 0=Disabled 1=Enabled
   adhoc_execute smallint NOT NULL DEFAULT 0, -- 0=Disabled 1=Enabled | The job will execute at next minute, regardless of other schedule time settings
-  is_running smallint NOT NULL DEFAULT 0, -- 0=No 1=Yes
   interval_mask character varying(14) NOT NULL, -- When to execute the command | Modeled on unix crontab (minute hour dom month dow)
   first_run_date timestamp(3) without time zone NOT NULL DEFAULT '1000-01-01 00:00:00.000'::timestamp without time zone, -- The schedule will not execute before this datetime
   last_run_date timestamp(3) without time zone NOT NULL DEFAULT '9999-12-31 23:59:59.999'::timestamp without time zone, -- The schedule will not execute after this datetime
@@ -126,6 +125,7 @@ CREATE TABLE schedules
   parameters character varying(255), -- Exact string of parameters for command
   adhoc_parameters character varying(255), -- If specified, will overwrite parameters
   schedule_group_id integer, -- Optional field to help with schedule grouping
+  is_running smallint NOT NULL DEFAULT 0, -- 0=No 1=Yes
   CONSTRAINT schedules_pkey PRIMARY KEY (schedule_id),
   CONSTRAINT schedules_schedule_group_id_fkey FOREIGN KEY (schedule_group_id)
       REFERENCES schedule_groups (schedule_group_id) MATCH SIMPLE
