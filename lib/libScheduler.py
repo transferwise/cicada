@@ -96,8 +96,19 @@ def getScheduleDetails(dbCur, scheduleId):
     """Extract details of a schedule"""
     sqlquery = """/* Cicada libScheduler */
     SELECT
+        schedule_description,
+        server_id,
+        schedule_order,
+        is_async,
+        is_enabled,
+        adhoc_execute,
+        interval_mask,
+        first_run_date,
+        last_run_date,
         command,
-        COALESCE(adhoc_parameters, parameters, '') AS parameters
+        parameters,
+        adhoc_parameters,
+        schedule_group_id
     FROM schedules
         WHERE schedule_id = '""" + str(scheduleId) + """'
     LIMIT 1
@@ -106,6 +117,22 @@ def getScheduleDetails(dbCur, scheduleId):
     dbCur.execute(sqlquery)
     objScheduleDetails = dbCur
     return objScheduleDetails
+
+
+def getScheduleExecutable(dbCur, scheduleId):
+    """Extract details of executable of a schedule"""
+    sqlquery = """/* Cicada libScheduler */
+    SELECT
+        command,
+        COALESCE(adhoc_parameters, parameters, '') AS parameters
+    FROM schedules
+        WHERE schedule_id = '""" + str(scheduleId) + """'
+    LIMIT 1
+    """
+
+    dbCur.execute(sqlquery)
+    objScheduleExecutable = dbCur
+    return objScheduleExecutable
 
 
 def getAllSchedules(dbCur, serverId, isAsync):
