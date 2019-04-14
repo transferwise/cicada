@@ -6,7 +6,7 @@ VENV_DIR=$HOME/cicada-scheduler/.virtualenvs
 python3 -m venv $VENV_DIR
 source $VENV_DIR/bin/activate
 python3 -m pip install --upgrade pip
-python3 -m pip install croniter psycopg2-binary pyyaml
+python3 -m pip install croniter psycopg2-binary pyyaml prettytable
 deactivate
 
 echo
