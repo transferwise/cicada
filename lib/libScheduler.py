@@ -108,7 +108,8 @@ def getScheduleDetails(dbCur, scheduleId):
         command,
         parameters,
         adhoc_parameters,
-        schedule_group_id
+        schedule_group_id,
+        is_running
     FROM schedules
         WHERE schedule_id = '""" + str(scheduleId) + """'
     LIMIT 1
@@ -117,6 +118,31 @@ def getScheduleDetails(dbCur, scheduleId):
     dbCur.execute(sqlquery)
     objScheduleDetails = dbCur
     return objScheduleDetails
+
+
+def setScheduleDetails(dbCicada, scheduleId, scheduleDescription, serverId, scheduleOrder,
+            isAsync, isEnabled, adhocExecute, intervalMask, firstRunDate, lastRunDate, execCommand,
+            parameters, adhocParameters, scheduleGroupId)
+    """Set details of a schedule"""
+    sqlquery = """/* Cicada libScheduler */
+    UPDATE schedules SET
+        schedule_description = '""" + str(scheduleDescription) + """',
+        server_id = '""" + str(serverId) + """', 
+        schedule_order = '""" + str(scheduleOrder) + """',
+        is_async = '""" + str(isAsync) + """',
+        is_enabled = '""" + str(isEnabled) + """',
+        adhoc_execute = '""" + str(adhocExecute) + """',
+        interval_mask = '""" + str(intervalMask) + """',
+        first_run_date = '""" + str(firstRunDate) + """',
+        last_run_date = '""" + str(lastRunDate) + """',
+        command = '""" + str(execCommand) + """',
+        parameters = '""" + str(parameters) + """',
+        adhoc_parameters = '""" + str(adhocParameters) + """',
+        schedule_group_id = '""" + str(scheduleGroupId) + """'
+    WHERE schedule_id = '""" + str(scheduleId) + """'
+    """
+
+    dbCur.execute(sqlquery)
 
 
 def getScheduleExecutable(dbCur, scheduleId):
