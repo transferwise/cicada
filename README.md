@@ -30,17 +30,13 @@ Prerequisites
 - ntpd
 
 ```bash
-# Add required Python3 components
-apt install -y git python3 python3-pip python3-venv
-apt upgrade -y
-
-# initiate cicada-scheduler
+# Install Cicada Scheduler
 mkdir /opt/app
 cd /opt/app
 DIR=$(pwd)
 
 cd $DIR
-git clone git@github.com:transferwise/cicada-scheduler.git
+git clone git@github.com:transferwise/cicada.git cicada-scheduler
 cd cicada-scheduler
 bash install.sh
 
@@ -49,7 +45,7 @@ cp $DIR/cicada-scheduler/config/example.yml $DIR/cicada-scheduler/config/definit
 vim $DIR/cicada-scheduler/config/definitions.yml
 
 # Register new Node in Database
-$DIR/cicada-scheduler/.virtualenvs/bin/python3 $DIR/cicada-scheduler/bin/registerServer.py
+$DIR/cicada-scheduler/.virtualenvs/bin/python3 $DIR/cicada-scheduler/bin/manageSchedule.py upsert --help
 
 # Add linux CRON job to check central scheduler every minute
 echo "* * * * * $DIR/cicada-scheduler/.virtualenvs/bin/python3 $DIR/cicada-scheduler/bin/findSchedules.py" | crontab

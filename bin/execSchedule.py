@@ -26,7 +26,7 @@ def main():
     serverId = libPgSQL.getServerId(dbCicada)
 
     # Get schedule details and execute
-    objScheduleDetails = libScheduler.getScheduleDetails(dbCicada, scheduleId)
+    objScheduleDetails = libScheduler.getScheduleExecutable(dbCicada, scheduleId)
 
     for row in objScheduleDetails.fetchall():
         command = str(row[0])

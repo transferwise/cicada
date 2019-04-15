@@ -25,7 +25,7 @@ def main():
     print("scheduleId\tFull Command")
 
     for scheduleId in objSchedules:
-        objScheduleDetails = libScheduler.getScheduleDetails(dbCicada, scheduleId)
+        objScheduleDetails = libScheduler.getScheduleExecutable(dbCicada, scheduleId)
         for dRow in objScheduleDetails.fetchall():
             command = str(dRow[0])
             parameters = str(dRow[1])
@@ -40,7 +40,7 @@ def main():
     print("scheduleId\tFull Command")
 
     for scheduleId in objSchedules:
-        objScheduleDetails = libScheduler.getScheduleDetails(dbCicada, scheduleId)
+        objScheduleDetails = libScheduler.getScheduleExecutable(dbCicada, scheduleId)
         for dRow in objScheduleDetails.fetchall():
             command = str(dRow[0])
             parameters = str(dRow[1])

@@ -112,7 +112,7 @@ CREATE TABLE schedules
 (
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
   schedule_id character varying(255) NOT NULL DEFAULT uuid_generate_v1(),
-  schedule_description character varying(255) NOT NULL, -- Schedule Description and Comments
+  schedule_description character varying(255), -- Schedule Description and Comments
   server_id integer NOT NULL, -- The one server where the job will run
   schedule_order integer NOT NULL, -- Run order for this schedule. Lowest is first. Async jobs will be executed all at once
   is_async smallint NOT NULL DEFAULT 1, -- 0=Disabled 1=Enabled | is_async jobs execute in parallel
