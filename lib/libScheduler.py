@@ -125,21 +125,26 @@ def setScheduleDetails(dbCur, scheduleId, scheduleDescription, serverId, schedul
     """Set details of a schedule"""
     sqlquery = """/* Cicada libScheduler */
     UPDATE schedules SET
-        schedule_description = '""" + str(scheduleDescription) + """',
-        server_id = '""" + str(serverId) + """', 
-        schedule_order = '""" + str(scheduleOrder) + """',
-        is_async = '""" + str(isAsync) + """',
-        is_enabled = '""" + str(isEnabled) + """',
-        adhoc_execute = '""" + str(adhocExecute) + """',
-        interval_mask = '""" + str(intervalMask) + """',
-        first_run_date = '""" + str(firstRunDate) + """',
-        last_run_date = '""" + str(lastRunDate) + """',
-        command = '""" + str(execCommand) + """',
-        parameters = '""" + str(parameters) + """',
-        adhoc_parameters = '""" + str(adhocParameters) + """',
-        schedule_group_id = '""" + str(scheduleGroupId) + """'
-    WHERE schedule_id = '""" + str(scheduleId) + """'
+        schedule_description = '""" + str(scheduleDescription) + """'
+        ,server_id = '""" + str(serverId) + """'
+        ,schedule_order = '""" + str(scheduleOrder) + """'
+        ,is_async = '""" + str(isAsync) + """'
+        ,is_enabled = '""" + str(isEnabled) + """'
+        ,adhoc_execute = '""" + str(adhocExecute) + """'
+        ,interval_mask = '""" + str(intervalMask) + """'
+        ,first_run_date = '""" + str(firstRunDate) + """'
+        ,last_run_date = '""" + str(lastRunDate) + """'
+        ,command = '""" + str(execCommand) + """'
+        ,parameters = '""" + str(parameters) + """'
     """
+    if adhocParameters != 'None':
+        sqlquery = sqlquery + """ ,adhoc_parameters = '""" + str(adhocParameters) + """'"""
+    if scheduleGroupId != 'None':
+        sqlquery = sqlquery + """ ,schedule_group_id = '""" + str(scheduleGroupId) + """'"""
+    sqlquery = sqlquery + """ WHERE schedule_id = '""" + str(scheduleId) + """'
+    """
+
+    # print(sqlquery)
 
     dbCur.execute(sqlquery)
 
