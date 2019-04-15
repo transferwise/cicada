@@ -124,30 +124,68 @@ def setScheduleDetails(dbCur, scheduleId, scheduleDescription, serverId, schedul
             parameters, adhocParameters, scheduleGroupId):
     """Set details of a schedule"""
     sqlquery = """/* Cicada libScheduler */
-    UPDATE schedules SET
-        server_id = '""" + str(serverId) + """'
+    INSERT INTO schedules (
+    schedule_id
+    ,server_id
+    ,schedule_order
+    ,is_async
+    ,is_enabled
+    ,interval_mask
+    ,first_run_date
+    ,last_run_date
+    ,command
+    ,parameters """
+    if adhocExecute != 'None' and adhocExecute is not None:
+        sqlquery = sqlquery + """ ,adhoc_execute"""
+    if scheduleDescription != 'None' and scheduleDescription is not None:
+        sqlquery = sqlquery + """ ,schedule_description"""
+    if adhocParameters != 'None' and adhocParameters is not None:
+        sqlquery = sqlquery + """ ,adhoc_parameters"""
+    if scheduleGroupId != 'None' and scheduleGroupId is not None:
+        sqlquery = sqlquery + """ ,schedule_group_id"""
+    sqlquery = sqlquery + """)
+    VALUES
+    ("""
+    sqlquery = sqlquery + """'""" + str(scheduleId) + """'"""
+    sqlquery = sqlquery + """,""" + str(serverId)
+    sqlquery = sqlquery + """,'""" + str(scheduleOrder) + """'"""
+    sqlquery = sqlquery + """,""" + str(isAsync)
+    sqlquery = sqlquery + """,""" + str(isEnabled)
+    sqlquery = sqlquery + """,'""" + str(intervalMask) + """'"""
+    sqlquery = sqlquery + """,'""" + str(firstRunDate) + """'"""
+    sqlquery = sqlquery + """,'""" + str(lastRunDate) + """'"""
+    sqlquery = sqlquery + """,'""" + str(execCommand) + """'"""
+    sqlquery = sqlquery + """,'""" + str(parameters) + """'"""
+    if adhocExecute != 'None' and adhocExecute is not None:
+        sqlquery = sqlquery + """ ,""" + str(adhocExecute)
+    if scheduleDescription != 'None' and scheduleDescription is not None:
+        sqlquery = sqlquery + """ ,'""" + str(scheduleDescription) + """'"""
+    if adhocParameters != 'None' and adhocParameters is not None:
+        sqlquery = sqlquery + """ ,'""" + str(adhocParameters) + """'"""
+    if scheduleGroupId != 'None' and scheduleGroupId is not None:
+        sqlquery = sqlquery + """ ,'""" + str(scheduleGroupId) + """'"""
+    sqlquery = sqlquery + """
+    )
+    ON CONFLICT (schedule_id) DO UPDATE SET
+        server_id = """ + str(serverId) + """
         ,schedule_order = '""" + str(scheduleOrder) + """'
-        ,is_async = '""" + str(isAsync) + """'
-        ,is_enabled = '""" + str(isEnabled) + """'
-
+        ,is_async = """ + str(isAsync) + """
+        ,is_enabled = """ + str(isEnabled) + """
         ,interval_mask = '""" + str(intervalMask) + """'
         ,first_run_date = '""" + str(firstRunDate) + """'
         ,last_run_date = '""" + str(lastRunDate) + """'
         ,command = '""" + str(execCommand) + """'
-        ,parameters = '""" + str(parameters) + """'
-    """
-    if adhocExecute != 'None':
-        sqlquery = sqlquery + """ ,adhoc_execute = '""" + str(adhocExecute) + """'"""
-    if scheduleDescription != 'None':
+        ,parameters = '""" + str(parameters) + """'"""
+    if adhocExecute != 'None' and adhocExecute is not None:
+        sqlquery = sqlquery + """,adhoc_execute = """ + str(adhocExecute)
+    if scheduleDescription != 'None' and scheduleDescription is not None:
         sqlquery = sqlquery + """ ,schedule_description = '""" + str(scheduleDescription) + """'"""
-    if adhocParameters != 'None':
+    if adhocParameters != 'None' and adhocParameters is not None:
         sqlquery = sqlquery + """ ,adhoc_parameters = '""" + str(adhocParameters) + """'"""
-    if scheduleGroupId != 'None':
+    if scheduleGroupId != 'None' and scheduleGroupId is not None:
         sqlquery = sqlquery + """ ,schedule_group_id = '""" + str(scheduleGroupId) + """'"""
-    sqlquery = sqlquery + """ WHERE schedule_id = '""" + str(scheduleId) + """'
-    """
-
-    # print(sqlquery)
+    # sqlquery = sqlquery + """)"""
+    # sqlquery = sqlquery + """ WHERE schedule_id = '""" + str(scheduleId) + """'
 
     dbCur.execute(sqlquery)
 
