@@ -129,13 +129,15 @@ def setScheduleDetails(dbCur, scheduleId, scheduleDescription, serverId, schedul
         ,schedule_order = '""" + str(scheduleOrder) + """'
         ,is_async = '""" + str(isAsync) + """'
         ,is_enabled = '""" + str(isEnabled) + """'
-        ,adhoc_execute = '""" + str(adhocExecute) + """'
+
         ,interval_mask = '""" + str(intervalMask) + """'
         ,first_run_date = '""" + str(firstRunDate) + """'
         ,last_run_date = '""" + str(lastRunDate) + """'
         ,command = '""" + str(execCommand) + """'
         ,parameters = '""" + str(parameters) + """'
     """
+    if adhocExecute != 'None':
+        sqlquery = sqlquery + """ ,adhoc_execute = '""" + str(adhocExecute) + """'"""
     if scheduleDescription != 'None':
         sqlquery = sqlquery + """ ,schedule_description = '""" + str(scheduleDescription) + """'"""
     if adhocParameters != 'None':
