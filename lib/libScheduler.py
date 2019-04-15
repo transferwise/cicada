@@ -125,8 +125,7 @@ def setScheduleDetails(dbCur, scheduleId, scheduleDescription, serverId, schedul
     """Set details of a schedule"""
     sqlquery = """/* Cicada libScheduler */
     UPDATE schedules SET
-        schedule_description = '""" + str(scheduleDescription) + """'
-        ,server_id = '""" + str(serverId) + """'
+        server_id = '""" + str(serverId) + """'
         ,schedule_order = '""" + str(scheduleOrder) + """'
         ,is_async = '""" + str(isAsync) + """'
         ,is_enabled = '""" + str(isEnabled) + """'
@@ -137,6 +136,8 @@ def setScheduleDetails(dbCur, scheduleId, scheduleDescription, serverId, schedul
         ,command = '""" + str(execCommand) + """'
         ,parameters = '""" + str(parameters) + """'
     """
+    if scheduleDescription != 'None':
+        sqlquery = sqlquery + """ ,schedule_description = '""" + str(scheduleDescription) + """'"""
     if adhocParameters != 'None':
         sqlquery = sqlquery + """ ,adhoc_parameters = '""" + str(adhocParameters) + """'"""
     if scheduleGroupId != 'None':
