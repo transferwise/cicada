@@ -119,10 +119,9 @@ def getScheduleDetails(dbCur, scheduleId):
     objScheduleDetails = dbCur
     return objScheduleDetails
 
-
-def setScheduleDetails(dbCicada, scheduleId, scheduleDescription, serverId, scheduleOrder,
+def setScheduleDetails(dbCur, scheduleId, scheduleDescription, serverId, scheduleOrder,
             isAsync, isEnabled, adhocExecute, intervalMask, firstRunDate, lastRunDate, execCommand,
-            parameters, adhocParameters, scheduleGroupId)
+            parameters, adhocParameters, scheduleGroupId):
     """Set details of a schedule"""
     sqlquery = """/* Cicada libScheduler */
     UPDATE schedules SET
