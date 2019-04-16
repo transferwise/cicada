@@ -84,11 +84,36 @@ def main():
 
         # Upsert with currentScheduleDetails = update Schedule
         else:
-            # write all current values into new values
-            # overwrite all new values where args is set
-            libScheduler.updateScheduleDetails(dbCicada, currentScheduleDetails)
+            newScheduleDetails = currentScheduleDetails.copy()
+
+            if args.scheduleDescription is not None:
+                newScheduleDetails['scheduleDescription'] = args.scheduleDescription
+            if args.serverId is not None:
+                newScheduleDetails['serverId'] = args.serverId
+            if args.scheduleOrder is not None:
+                newScheduleDetails['scheduleOrder'] = args.scheduleOrder
+            if args.isAsync is not None:
+                newScheduleDetails['isAsync'] = args.isAsync
+            if args.isEnabled is not None:
+                newScheduleDetails['isEnabled'] = args.isEnabled
+            if args.adhocExecute is not None:
+                newScheduleDetails['adhocExecute'] = args.adhocExecute
+            if args.intervalMask is not None:
+                newScheduleDetails['intervalMask'] = args.intervalMask
+            if args.firstRunDate is not None:
+                newScheduleDetails['firstRunDate'] = args.firstRunDate
+            if args.lastRunDate is not None:
+                newScheduleDetails['lastRunDate'] = args.lastRunDate
+            if args.execCommand is not None:
+                newScheduleDetails['execCommand'] = args.execCommand
+            if args.parameters is not None:
+                newScheduleDetails['parameters'] = args.parameters
+            if args.adhocParameters is not None:
+                newScheduleDetails['adhocParameters'] = args.adhocParameters
+            if args.scheduleGroupId is not None:
+                newScheduleDetails['scheduleGroupId'] = args.scheduleGroupId
             
-            # libScheduler.updateScheduleDetails(dbCicada, newScheduleDetails)
+            libScheduler.updateScheduleDetails(dbCicada, newScheduleDetails)
 
     print(tabulate(newScheduleDetails.items(), ['Detail', 'Value'], tablefmt="psql"))
     exit(0)

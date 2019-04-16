@@ -241,9 +241,7 @@ def updateScheduleDetails(dbCur, scheduleSettings):
         sqlquery = sqlquery + " ,schedule_groupId = " + str(scheduleSettings['scheduleGroupId'])
     sqlquery = sqlquery + " WHERE schedule_id = '" + str(scheduleSettings['scheduleId']) + "'"
 
-    print(sqlquery)
-
-    # dbCur.execute(sqlquery)
+    dbCur.execute(sqlquery)
 
 
 def getScheduleExecutable(dbCur, scheduleId):
