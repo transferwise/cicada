@@ -29,164 +29,70 @@ def main():
     parser.add_argument('--execCommand', type=str, help='Command to execute')
     parser.add_argument('--parameters', type=str, help='Exact string of parameters for command')
     parser.add_argument('--adhocParameters', type=str, help='If specified, will override parameters for next run')
-    parser.add_argument('--scheduleGroupId', type=str, help='Optional field to help with schedule grouping')
+    parser.add_argument('--scheduleGroupId', type=int, help='Optional field to help with schedule grouping')
     args = parser.parse_args()
-
-    # Declare variables
-    scheduleId = args.scheduleId
-    scheduleDescription = None
-    serverId = None
-    scheduleOrder = None
-    isAsync = None
-    isEnabled = None
-    adhocExecute = None
-    intervalMask = None
-    firstRunDate = None
-    lastRunDate = None
-    execCommand = None
-    parameters = None
-    adhocParameters = None
-    scheduleGroupId = None
 
     # Get schedule details
     dbCicada = libPgSQL.init_db()
-    objScheduleDetails = libScheduler.getScheduleDetails(dbCicada, scheduleId)
-    for row in objScheduleDetails.fetchall():
-        scheduleDescription = str(row[0])
-        serverId = str(row[1])
-        scheduleOrder = str(row[2])
-        isAsync = str(row[3])
-        isEnabled = str(row[4])
-        adhocExecute = str(row[5])
-        intervalMask = str(row[6])
-        firstRunDate = str(row[7])
-        lastRunDate = str(row[8])
-        execCommand = str(row[9])
-        parameters = str(row[10])
-        adhocParameters = str(row[11])
-        scheduleGroupId = str(row[12])
-        isRunning = str(row[13])
+    currentScheduleDetails = libScheduler.getScheduleDetails(dbCicada, str(args.scheduleId))
 
-
-    # Perform "print" command
-    if (args.command == 'show'):
-        if serverId is not None:
-            table = [
-            ['Setting', 'Value'],
-            ['scheduleId', scheduleId],
-            ['scheduleDescription', scheduleDescription],
-            ['serverId', serverId],
-            ['scheduleOrder', scheduleOrder],
-            ['isAsync', isAsync],
-            ['isEnabled', isEnabled],
-            ['adhocExecute', adhocExecute],
-            ['intervalMask', intervalMask],
-            ['firstRunDate', firstRunDate],
-            ['lastRunDate', lastRunDate],
-            ['execCommand', execCommand],
-            ['parameters', parameters],
-            ['adhocParameters', adhocParameters],
-            ['scheduleGroupId', scheduleGroupId],
-            ['isRunning', isRunning]
-            ]
-            print(tabulate(table, headers="firstrow", tablefmt="psql"))
+    # Perform "show" command only if currentScheduleDetails has values
+    if args.command == 'show':
+        if currentScheduleDetails:
+            print(tabulate(currentScheduleDetails.items(), ['Detail', 'Value'], tablefmt="psql"))
             exit(0)
         else:
-            print('ERROR: Schedule \"' + scheduleId + '\" not found')
-            exit(1)
+            print('ERROR: scheduleId \'' + str(args.scheduleId) + '\' not found')
+            exit(1)  
 
 
     # Perform "upsert" command
+    newScheduleDetails = dict()
     if (args.command == 'upsert'):
-        if args.scheduleDescription is not None:
-            scheduleDescription = args.scheduleDescription
-
-        if args.serverId is not None:
-            serverId = args.serverId
-        else:
-            if serverId is None:
-                serverId = 1
-
-        if args.scheduleOrder is not None:
-            scheduleOrder = args.scheduleOrder
-        else:
-            if scheduleOrder is None:
-                scheduleOrder = 1
-
-        if args.isAsync is not None:
-            isAsync = args.isAsync
-        else:
-            if isAsync is None:
-                isAsync = 1
-
-        if args.isEnabled is not None:
-            isEnabled = args.isEnabled
-        else:
-            if isEnabled is None:
-                isEnabled = 0
-
-        if args.adhocExecute is not None:
-            adhocExecute = args.adhocExecute
-
-        if args.intervalMask is not None:
-            intervalMask = args.intervalMask
-        else:
-            if intervalMask is None:
-                print('intervalMask cannot be None')
+        # Upsert with no currentScheduleDetails = insert Schedule
+        if not currentScheduleDetails:
+            if args.intervalMask is None:
+                print('ERROR: intervalMask is required for new schedule')
                 exit(1)
 
-        if args.firstRunDate is not None:
-            firstRunDate = args.firstRunDate
-        else:
-            if firstRunDate is None:
-                firstRunDate = '1000-01-01 00:00:00.000'
-
-        if args.lastRunDate is not None:
-            lastRunDate = args.lastRunDate
-        else:
-            if lastRunDate is None:
-                lastRunDate = '9999-12-31 23:59:59.999'
-
-        if args.execCommand is not None:
-            execCommand = args.execCommand
-        else:
-            if execCommand is None:
-                print('execCommand cannot be None')
+            if args.execCommand is None:
+                print('ERROR: execCommand is required for a new schedule')
                 exit(1)
 
-        if args.parameters is not None:
-            parameters = args.parameters
+            if args.serverId is None:
+                args.serverId = 1
 
-        if args.adhocParameters is not None:
-            adhocParameters = args.adhocParameters
+            if args.scheduleOrder is None:
+                args.scheduleOrder = 1
 
-        if args.scheduleGroupId is not None:
-            scheduleGroupId = args.scheduleGroupId
+            newScheduleDetails['scheduleId'] = str(args.scheduleId)
+            newScheduleDetails['scheduleDescription'] = args.scheduleDescription
+            newScheduleDetails['serverId'] = args.serverId
+            newScheduleDetails['scheduleOrder'] = args.scheduleOrder
+            newScheduleDetails['isAsync'] = args.isAsync
+            newScheduleDetails['isEnabled'] = args.isEnabled
+            newScheduleDetails['adhocExecute'] = args.adhocExecute
+            newScheduleDetails['intervalMask'] = args.intervalMask
+            newScheduleDetails['firstRunDate'] = args.firstRunDate
+            newScheduleDetails['lastRunDate'] = args.lastRunDate
+            newScheduleDetails['execCommand'] = args.execCommand
+            newScheduleDetails['parameters'] = args.parameters
+            newScheduleDetails['adhocParameters'] = args.adhocParameters
+            newScheduleDetails['scheduleGroupId'] = args.scheduleGroupId
 
-        libScheduler.setScheduleDetails(dbCicada, scheduleId, scheduleDescription, serverId, scheduleOrder,
-            isAsync, isEnabled, adhocExecute, intervalMask, firstRunDate, lastRunDate, execCommand,
-            parameters, adhocParameters, scheduleGroupId)
+            libScheduler.insertScheduleDetails(dbCicada, newScheduleDetails)
 
-        table = [
-        ['Setting', 'Value'],
-        ['scheduleId', scheduleId],
-        ['scheduleDescription', scheduleDescription],
-        ['serverId', serverId],
-        ['scheduleOrder', scheduleOrder],
-        ['isAsync', isAsync],
-        ['isEnabled', isEnabled],
-        ['adhocExecute', adhocExecute],
-        ['intervalMask', intervalMask],
-        ['firstRunDate', firstRunDate],
-        ['lastRunDate', lastRunDate],
-        ['execCommand', execCommand],
-        ['parameters', parameters],
-        ['adhocParameters', adhocParameters],
-        ['scheduleGroupId', scheduleGroupId]
-        ]
-        print(tabulate(table, headers="firstrow", tablefmt="psql"))
+        # Upsert with currentScheduleDetails = update Schedule
+        else:
+            # write all current values into new values
+            # overwrite all new values where args is set
+            libScheduler.updateScheduleDetails(dbCicada, currentScheduleDetails)
+            
+            # libScheduler.updateScheduleDetails(dbCicada, newScheduleDetails)
 
-        exit(0)
+    print(tabulate(newScheduleDetails.items(), ['Detail', 'Value'], tablefmt="psql"))
+    exit(0)
+
 
 if __name__ == '__main__':
     main()

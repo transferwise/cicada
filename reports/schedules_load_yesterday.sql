@@ -2,7 +2,7 @@
 
 select
     schedule_id,
-    SUM(end_time - start_time)
+    sum(end_time - start_time) as total_run_duration
 from schedule_log
 where start_time > to_char(now() - interval '1 DAY', 'YYYY-MM-DD 00:00:00')::timestamp
     and start_time < to_char(now(), 'YYYY-MM-DD 00:00:00')::timestamp
