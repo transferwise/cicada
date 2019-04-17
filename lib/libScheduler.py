@@ -375,12 +375,8 @@ def getSchedulesLoadYesterday(dbCur):
 def getEnabledServers(dbCur):
     """Extract details of executable of a schedule"""
     sqlquery = """/* Cicada libScheduler */
-    select server_id from servers where is_enabled = 1
+    select server_id from servers where is_enabled = 1 order by server_id
     """
-
-    # dbCur.execute(sqlquery)
-    # objEnabledServers = dbCur
-    # return objEnabledServers
 
     dbCur.execute(sqlquery)
     curEnabledServers = dbCur
