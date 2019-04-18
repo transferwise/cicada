@@ -49,8 +49,8 @@ def main():
     # Perform "upsert" command
     newScheduleDetails = dict()
     if (args.command == 'upsert'):
-        # Upsert with no currentScheduleDetails = insert Schedule
         if not currentScheduleDetails:
+        # not currentScheduleDetails = new Schedule
             if args.intervalMask is None:
                 print('ERROR: intervalMask is required for new schedule')
                 exit(1)
@@ -82,8 +82,8 @@ def main():
 
             libScheduler.insertScheduleDetails(dbCicada, newScheduleDetails)
 
-        # Upsert with currentScheduleDetails = update Schedule
         else:
+        # existing currentScheduleDetails = existing Schedule
             newScheduleDetails = currentScheduleDetails.copy()
 
             if args.scheduleDescription is not None:
