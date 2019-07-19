@@ -44,6 +44,7 @@ def main():
             scheduleLogId = libScheduler.initScheduleLog(dbCicada, serverId, scheduleId, prettyFullCommand)
             libScheduler.resetAdhocDetails(dbCicada, scheduleId)
             libScheduler.setIsRunning(dbCicada, scheduleId)
+            libPgSQL.close_db(dbCicada)
 
             # Execute schedule and wait for result
             error_detail = ""
@@ -57,6 +58,7 @@ def main():
                 error_detail = e.output
 
             # Finalize schedule log
+            dbCicada = libPgSQL.init_db()
             libScheduler.resetIsRunning(dbCicada, scheduleId)
             libScheduler.finalizeScheduleLog(dbCicada, scheduleLogId, returncode, error_detail)
 
