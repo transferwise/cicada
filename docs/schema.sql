@@ -240,9 +240,6 @@ CREATE TABLE public.schedule_log
   error_detail character varying(255) DEFAULT NULL::character varying,
   schedule_log_status_id integer NOT NULL DEFAULT 0,
   CONSTRAINT schedule_log_pkey PRIMARY KEY (schedule_log_id),
-  CONSTRAINT schedule_log_schedule_id_fkey FOREIGN KEY (schedule_id)
-      REFERENCES public.schedules (schedule_id) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT schedule_log_schedule_log_status_id_fkey FOREIGN KEY (schedule_log_status_id)
       REFERENCES public.schedule_log_status (schedule_log_status_id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
