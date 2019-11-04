@@ -118,7 +118,7 @@ CREATE TABLE schedules
   is_async smallint NOT NULL DEFAULT 1, -- 0=Disabled 1=Enabled | is_async jobs execute in parallel
   is_enabled smallint NOT NULL DEFAULT 0, -- 0=Disabled 1=Enabled
   adhoc_execute smallint NOT NULL DEFAULT 0, -- 0=Disabled 1=Enabled | The job will execute at next minute, regardless of other schedule time settings
-  interval_mask character varying(14) NOT NULL, -- When to execute the command | Modeled on unix crontab (minute hour dom month dow)
+  interval_mask character varying(32) NOT NULL, -- When to execute the command | Modeled on unix crontab (minute hour dom month dow)
   first_run_date timestamp(3) without time zone NOT NULL DEFAULT '1000-01-01 00:00:00.000'::timestamp without time zone, -- The schedule will not execute before this datetime
   last_run_date timestamp(3) without time zone NOT NULL DEFAULT '9999-12-31 23:59:59.999'::timestamp without time zone, -- The schedule will not execute after this datetime
   command character varying(255) NOT NULL, -- Command to execute
