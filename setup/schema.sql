@@ -10,7 +10,7 @@ CREATE OR REPLACE FUNCTION public.set_auto_update_time()
     RETURNS trigger
     LANGUAGE 'plpgsql'
     COST 100
-    VOLATILE NOT LEAKPROOF 
+    VOLATILE NOT LEAKPROOF
 AS $BODY$
 BEGIN
   NEW.auto_update_time = now()::timestamp without time zone;
@@ -38,7 +38,7 @@ WITH (
 COMMENT ON COLUMN global_settings.auto_update_time IS 'auto populated datetime when the record last updated';
 
 CREATE TRIGGER tr_global_settings
-    BEFORE UPDATE 
+    BEFORE UPDATE
     ON public.global_settings
     FOR EACH ROW
     EXECUTE PROCEDURE public.set_auto_update_time()
@@ -66,7 +66,7 @@ COMMENT ON COLUMN servers.auto_update_time IS 'auto populated datetime when the 
 COMMENT ON COLUMN public.servers.is_enabled IS '0=Disabled 1=Enabled';
 
 CREATE TRIGGER tr_servers
-    BEFORE UPDATE 
+    BEFORE UPDATE
     ON public.servers
     FOR EACH ROW
     EXECUTE PROCEDURE public.set_auto_update_time()
@@ -91,7 +91,7 @@ WITH (
 COMMENT ON COLUMN schedule_groups.auto_update_time IS 'auto populated datetime when the record last updated';
 
 CREATE TRIGGER tr_schedule_groups
-    BEFORE UPDATE 
+    BEFORE UPDATE
     ON public.schedule_groups
     FOR EACH ROW
     EXECUTE PROCEDURE public.set_auto_update_time()
@@ -190,7 +190,7 @@ CREATE INDEX schedules_server_id_idx
   (server_id);
 
 CREATE TRIGGER tr_schedules
-    BEFORE UPDATE 
+    BEFORE UPDATE
     ON public.schedules
     FOR EACH ROW
     EXECUTE PROCEDURE public.set_auto_update_time()
@@ -293,7 +293,7 @@ CREATE INDEX schedule_log_schedule_id_start_time_idx
   (schedule_id, start_time);
 
 CREATE TRIGGER tr_schedule_log
-    BEFORE UPDATE 
+    BEFORE UPDATE
     ON public.schedule_log
     FOR EACH ROW
     EXECUTE PROCEDURE public.set_auto_update_time()
