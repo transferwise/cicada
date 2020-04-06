@@ -17,10 +17,12 @@ def main():
 
     INSERT INTO public.schedule_log_historical
     SELECT * FROM public.schedule_log sl
-    WHERE sl.start_time < CURRENT_DATE;
+    WHERE sl.start_time < CURRENT_DATE
+    AND end_time is not NULL;
 
     DELETE FROM public.schedule_log sl
-    WHERE sl.start_time < CURRENT_DATE;
+    WHERE sl.start_time < CURRENT_DATE
+    AND end_time is not NULL;
 
     COMMIT TRANSACTION;
     """
