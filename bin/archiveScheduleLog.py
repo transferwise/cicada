@@ -14,6 +14,7 @@ def main():
 
     sqlquery = """/* Cicada libScheduler */
     START TRANSACTION;
+    SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 
     INSERT INTO public.schedule_log_historical
     SELECT * FROM public.schedule_log sl
