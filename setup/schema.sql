@@ -298,3 +298,26 @@ CREATE TRIGGER tr_schedule_log
     FOR EACH ROW
     EXECUTE PROCEDURE public.set_auto_update_time()
 ;
+
+
+-- Table: schedule_log_historical
+
+-- DROP TABLE schedule_log_historical;
+
+CREATE TABLE schedule_log_historical
+(
+    schedule_log_id character varying(64) NOT NULL,
+    auto_update_time timestamp without time zone NOT NULL,
+    server_id integer NOT NULL,
+    schedule_id character varying(255) NOT NULL,
+    full_command character varying(255) NOT NULL,
+    start_time timestamp(3) without time zone NOT NULL,
+    end_time timestamp(3) without time zone,
+    returncode integer,
+    error_detail character varying(255),
+    schedule_log_status_id integer NOT NULL
+)
+WITH (
+    OIDS = FALSE
+)
+;
