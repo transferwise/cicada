@@ -53,4 +53,4 @@ echo "* * * * * $DIR/cicada-scheduler/.virtualenvs/bin/python3 $DIR/cicada-sched
 
 ## Administration
 
-![erd](/docs/erd.png)
+![erd](erd.png)
