@@ -45,7 +45,7 @@ cp $DIR/cicada-scheduler/config/example.yml $DIR/cicada-scheduler/config/definit
 vim $DIR/cicada-scheduler/config/definitions.yml
 
 # Register new Node in Database
-$DIR/cicada-scheduler/.virtualenvs/bin/python3 $DIR/cicada-scheduler/bin/manageSchedule.py upsert --help
+$DIR/cicada-scheduler/.virtualenvs/bin/python3 $DIR/cicada-scheduler/bin/registerServer.py
 
 # Add linux CRON job to check central scheduler every minute
 echo "* * * * * $DIR/cicada-scheduler/.virtualenvs/bin/python3 $DIR/cicada-scheduler/bin/findSchedules.py" | crontab
