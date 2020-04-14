@@ -69,7 +69,7 @@ def registerServer(dbCur):
     sqlquery = """/* Cicada libScheduler */
     INSERT INTO servers (hostname, fqdn, ip4_address, is_enabled)
       VALUES
-    ('""" + hostname + """','""" + fqdn + """','""" + ip4Address + """', 0 )
+    ('""" + hostname + """','""" + fqdn + """','""" + ip4Address + """', 1 )
     ON CONFLICT DO NOTHING
     """
 
