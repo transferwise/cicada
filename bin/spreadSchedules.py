@@ -28,14 +28,14 @@ def main():
     from_nodes = str_list_to_int_list(args.fromNodes) if args.fromNodes else None
     to_nodes = str_list_to_int_list(args.toNodes) if args.toNodes else None
 
-    objEnabledServers = libScheduler.getEnabledServers(dbCicada, to_nodes)
+    objEnabledServers = libScheduler.getServers(dbCicada, serverIds=to_nodes)
     enabledServerCount = len(objEnabledServers)
 
     if enabledServerCount == 0:
         if from_nodes:
-            print("ERROR: Cannot find enabled target server in the provided --toNodes list")
+            print("ERROR: Cannot find target server in the provided --toNodes list")
         else:
-            print("ERROR: Cannot find enabled target server")
+            print("ERROR: Cannot find target server")
         exit(1)
 
     nextEnabledServer = 0

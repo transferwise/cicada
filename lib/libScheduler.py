@@ -378,16 +378,18 @@ def getSchedulesLoadYesterday(dbCur, serverIds: [int] = None):
     return objSchedulesLoadYesterday
 
 
-def getEnabledServers(dbCur, serverIds: [int] = None):
+def getServers(dbCur, enabled_only: bool = False, serverIds: [int] = None):
     """Extract details of executable of a schedule"""
+    sqlEnabledFilter = " and is_enabled = 1" if enabled_only else ""
     sqlServerIdFilter = ""
     if serverIds:
         sqlServerIds = ','.join(str(serverId) for serverId in serverIds)
-        sqlServerIdFilter = "and server_id in (" + sqlServerIds + ")"
+        sqlServerIdFilter = " and server_id in (" + sqlServerIds + ")"
 
     sqlquery = """/* Cicada libScheduler */
     select server_id from servers
-    where is_enabled = 1
+    where 1 = 1
+    """ + sqlEnabledFilter + """
     """ + sqlServerIdFilter + """
     order by server_id
     """
