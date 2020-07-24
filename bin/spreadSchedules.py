@@ -33,9 +33,9 @@ def main():
 
     if enabledServerCount == 0:
         if from_nodes:
-            print("ERROR: No enabled target server in the provided --fromNodes list")
+            print("ERROR: Cannot find enabled target server in the provided --toNodes list")
         else:
-            print("ERROR: No enabled target server")
+            print("ERROR: Cannot find enabled target server")
         exit(1)
 
     nextEnabledServer = 0
