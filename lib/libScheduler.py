@@ -378,7 +378,7 @@ def getSchedulesLoadYesterday(dbCur, serverIds: [int] = None):
     return objSchedulesLoadYesterday
 
 
-def getServers(dbCur, enabled_only: bool = False, serverIds: [int] = None):
+def getServers(dbCur, enabled_only: bool = True, serverIds: [int] = None):
     """Extract details of executable of a schedule"""
     sqlEnabledFilter = " and is_enabled = 1" if enabled_only else ""
     sqlServerIdFilter = ""
