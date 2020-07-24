@@ -349,8 +349,13 @@ def getAllSchedules(dbCur, serverId, isAsync):
     return objSchedules
 
 
-def getSchedulesLoadYesterday(dbCur):
+def getSchedulesLoadYesterday(dbCur, serverIds: [int] = None):
     """Extract details of executable of a schedule"""
+    sqlServerIdFilter = ""
+    if serverIds:
+        sqlServerIds = ','.join(str(serverId) for serverId in serverIds)
+        sqlServerIdFilter = "and server_id in (" + sqlServerIds + ")"
+
     sqlquery = """/* Cicada libScheduler */
     select
         schedule_id,
@@ -358,6 +363,7 @@ def getSchedulesLoadYesterday(dbCur):
     from schedule_log
     where start_time > to_char(now() - interval '1 DAY', 'YYYY-MM-DD 00:00:00')::timestamp
         and start_time < to_char(now(), 'YYYY-MM-DD 00:00:00')::timestamp
+        """ + sqlServerIdFilter + """
     group by schedule_id
     order by 2 desc
     """
@@ -372,10 +378,18 @@ def getSchedulesLoadYesterday(dbCur):
     return objSchedulesLoadYesterday
 
 
-def getEnabledServers(dbCur):
+def getEnabledServers(dbCur, serverIds: [int] = None):
     """Extract details of executable of a schedule"""
+    sqlServerIdFilter = ""
+    if serverIds:
+        sqlServerIds = ','.join(str(serverId) for serverId in serverIds)
+        sqlServerIdFilter = "and server_id in (" + sqlServerIds + ")"
+
     sqlquery = """/* Cicada libScheduler */
-    select server_id from servers where is_enabled = 1 order by server_id
+    select server_id from servers
+    where is_enabled = 1
+    """ + sqlServerIdFilter + """
+    order by server_id
     """
 
     dbCur.execute(sqlquery)
