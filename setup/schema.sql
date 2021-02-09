@@ -321,3 +321,13 @@ WITH (
     OIDS = FALSE
 )
 ;
+
+-- Index: public.schedule_log_historical_schedule_id
+
+-- DROP INDEX public.schedule_log_historical_schedule_id;
+
+CREATE INDEX schedule_log_historical_schedule_id
+  ON public.schedule_log_historical
+  USING btree
+  (schedule_id)
+;
