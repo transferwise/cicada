@@ -315,19 +315,10 @@ CREATE TABLE schedule_log_historical
     end_time timestamp(3) without time zone,
     returncode integer,
     error_detail character varying(255),
-    schedule_log_status_id integer NOT NULL
+    schedule_log_status_id integer NOT NULL,
+    CONSTRAINT schedule_log_historical_pkey PRIMARY KEY (schedule_log_id)
 )
 WITH (
     OIDS = FALSE
 )
-;
-
--- Index: public.schedule_log_historical_schedule_id
-
--- DROP INDEX public.schedule_log_historical_schedule_id;
-
-CREATE INDEX schedule_log_historical_schedule_id
-  ON public.schedule_log_historical
-  USING btree
-  (schedule_id)
 ;
