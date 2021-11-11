@@ -1,11 +1,11 @@
 /** Run as cicada user on db_cicada database **/
+START TRANSACTION;
+
 -- Add PostgreSQL extention required for uuid_generate_v1()
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- FUNCTION: public.set_auto_update_time()
-
 -- DROP FUNCTION public.set_auto_update_time();
-
 CREATE OR REPLACE FUNCTION public.set_auto_update_time()
     RETURNS trigger
     LANGUAGE 'plpgsql'
@@ -19,10 +19,8 @@ END;
 $BODY$;
 
 -- Table: global_settings
-
 -- DROP TABLE global_settings;
-
-CREATE TABLE global_settings
+CREATE TABLE IF NOT EXISTS global_settings
 (
   global_setting_id serial NOT NULL,
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
@@ -37,18 +35,17 @@ WITH (
 );
 COMMENT ON COLUMN global_settings.auto_update_time IS 'auto populated datetime when the record last updated';
 
+DROP TRIGGER IF EXISTS tr_global_settings ON global_settings;
 CREATE TRIGGER tr_global_settings
     BEFORE UPDATE
-    ON public.global_settings
+    ON global_settings
     FOR EACH ROW
     EXECUTE PROCEDURE public.set_auto_update_time()
 ;
 
 -- Table: servers
-
 -- DROP TABLE servers;
-
-CREATE TABLE servers
+CREATE TABLE IF NOT EXISTS servers
 (
   server_id serial NOT NULL,
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
@@ -57,7 +54,8 @@ CREATE TABLE servers
   ip4_address character varying(255) NOT NULL,
   is_enabled smallint NOT NULL DEFAULT 0, -- 0=Disabled 1=Enabled,
   CONSTRAINT servers_pkey PRIMARY KEY (server_id),
-  CONSTRAINT servers_name_key UNIQUE (hostname)
+  CONSTRAINT servers_name_key UNIQUE (hostname),
+  CONSTRAINT servers_ip4_address_key UNIQUE (ip4_address)
 )
 WITH (
   OIDS=FALSE
@@ -65,18 +63,17 @@ WITH (
 COMMENT ON COLUMN servers.auto_update_time IS 'auto populated datetime when the record last updated';
 COMMENT ON COLUMN public.servers.is_enabled IS '0=Disabled 1=Enabled';
 
+DROP TRIGGER IF EXISTS tr_servers ON servers;
 CREATE TRIGGER tr_servers
     BEFORE UPDATE
-    ON public.servers
+    ON servers
     FOR EACH ROW
     EXECUTE PROCEDURE public.set_auto_update_time()
 ;
 
 -- Table: schedule_groups
-
 -- DROP TABLE schedule_groups;
-
-CREATE TABLE schedule_groups
+CREATE TABLE IF NOT EXISTS schedule_groups
 (
   schedule_group_id serial NOT NULL,
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
@@ -90,9 +87,10 @@ WITH (
 );
 COMMENT ON COLUMN schedule_groups.auto_update_time IS 'auto populated datetime when the record last updated';
 
+DROP TRIGGER IF EXISTS tr_schedule_groups ON schedule_groups;
 CREATE TRIGGER tr_schedule_groups
     BEFORE UPDATE
-    ON public.schedule_groups
+    ON schedule_groups
     FOR EACH ROW
     EXECUTE PROCEDURE public.set_auto_update_time()
 ;
@@ -102,13 +100,12 @@ INSERT INTO schedule_groups
 VALUES
   (1, 'Other', ''),
   (2, 'General Test', '')
+ON CONFLICT DO NOTHING
 ;
 
 -- Table: schedules
-
 -- DROP TABLE schedules;
-
-CREATE TABLE schedules
+CREATE TABLE IF NOT EXISTS schedules
 (
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
   schedule_id character varying(255) NOT NULL DEFAULT uuid_generate_v1(),
@@ -154,53 +151,44 @@ COMMENT ON COLUMN schedules.adhoc_parameters IS 'If specified, will overwrite pa
 COMMENT ON COLUMN schedules.schedule_group_id IS 'Optional field to help group schedules';
 
 -- Index: schedules_adhoc_execute_idx
-
 -- DROP INDEX schedules_adhoc_execute_idx;
-
-CREATE INDEX schedules_adhoc_execute_idx
+CREATE INDEX IF NOT EXISTS schedules_adhoc_execute_idx
   ON schedules
   USING btree
   (adhoc_execute);
 
 -- Index: schedules_is_enabled_idx
-
 -- DROP INDEX schedules_is_enabled_idx;
-
-CREATE INDEX schedules_is_enabled_idx
+CREATE INDEX IF NOT EXISTS schedules_is_enabled_idx
   ON schedules
   USING btree
   (is_enabled);
 
 -- Index: schedules_schedule_group_id_idx
-
 -- DROP INDEX schedules_schedule_group_id_idx;
-
-CREATE INDEX schedules_schedule_group_id_idx
+CREATE INDEX IF NOT EXISTS schedules_schedule_group_id_idx
   ON schedules
   USING btree
   (schedule_group_id);
 
 -- Index: public.schedules_server_id_idx
-
 -- DROP INDEX public.schedules_server_id_idx;
-
-CREATE INDEX schedules_server_id_idx
+CREATE INDEX IF NOT EXISTS schedules_server_id_idx
   ON public.schedules
   USING btree
   (server_id);
 
+DROP TRIGGER IF EXISTS tr_schedules ON schedules;
 CREATE TRIGGER tr_schedules
     BEFORE UPDATE
-    ON public.schedules
+    ON schedules
     FOR EACH ROW
     EXECUTE PROCEDURE public.set_auto_update_time()
 ;
 
 -- Table: schedule_log_status
-
 -- DROP TABLE schedule_log_status;
-
-CREATE TABLE schedule_log_status
+CREATE TABLE IF NOT EXISTS schedule_log_status
 (
   schedule_log_status_id integer NOT NULL,
   constant character varying(30) NOT NULL, -- CONSTANT used by code
@@ -221,13 +209,12 @@ VALUES
   (1, 'SCHEDULE_RUNNING', 'Running'),
   (2, 'SCHEDULE_COMPLETE', 'Complete'),
   (3, 'SCHEDULE_ERROR', 'Error')
+ON CONFLICT DO NOTHING
 ;
 
 -- Table: public.schedule_log
-
 -- DROP TABLE public.schedule_log;
-
-CREATE TABLE public.schedule_log
+CREATE TABLE IF NOT EXISTS public.schedule_log
 (
   schedule_log_id character varying(64) NOT NULL DEFAULT uuid_generate_v1(),
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
@@ -257,54 +244,44 @@ COMMENT ON COLUMN public.schedule_log.end_time IS 'datetime of when job ended';
 COMMENT ON COLUMN public.schedule_log.returncode IS 'returncode as provided by the executed script';
 
 -- Index: schedule_log_schedule_id_idx
-
 -- DROP INDEX schedule_log_schedule_id_idx;
-
-CREATE INDEX schedule_log_schedule_id_idx
+CREATE INDEX IF NOT EXISTS schedule_log_schedule_id_idx
   ON schedule_log
   USING btree
   (schedule_id);
 
 -- Index: schedule_log_schedule_log_status_id_idx
-
 -- DROP INDEX schedule_log_schedule_log_status_id_idx;
-
-CREATE INDEX schedule_log_schedule_log_status_id_idx
+CREATE INDEX IF NOT EXISTS schedule_log_schedule_log_status_id_idx
   ON schedule_log
   USING btree
   (schedule_log_status_id);
 
 -- Index: schedule_log_server_id_schedule_id_schedule_log_status_id_idx
-
 -- DROP INDEX schedule_log_server_id_schedule_id_schedule_log_status_id_idx;
-
-CREATE INDEX schedule_log_server_id_schedule_id_schedule_log_status_id_idx
+CREATE INDEX IF NOT EXISTS schedule_log_server_id_schedule_id_schedule_log_status_id_idx
   ON schedule_log
   USING btree
   (server_id, schedule_id, schedule_log_status_id);
 
 -- Index: public.schedule_log_schedule_id_start_time_idx
-
 -- DROP INDEX public.schedule_log_schedule_id_start_time_idx;
-
-CREATE INDEX schedule_log_schedule_id_start_time_idx
+CREATE INDEX IF NOT EXISTS schedule_log_schedule_id_start_time_idx
   ON public.schedule_log
   USING btree
   (schedule_id, start_time);
 
+DROP TRIGGER IF EXISTS tr_schedule_log ON schedule_log;
 CREATE TRIGGER tr_schedule_log
     BEFORE UPDATE
-    ON public.schedule_log
+    ON schedule_log
     FOR EACH ROW
     EXECUTE PROCEDURE public.set_auto_update_time()
 ;
 
-
 -- Table: schedule_log_historical
-
 -- DROP TABLE schedule_log_historical;
-
-CREATE TABLE schedule_log_historical
+CREATE TABLE IF NOT EXISTS schedule_log_historical
 (
     schedule_log_id character varying(64) NOT NULL,
     auto_update_time timestamp without time zone NOT NULL,
@@ -322,3 +299,5 @@ WITH (
     OIDS = FALSE
 )
 ;
+
+COMMIT TRANSACTION;
