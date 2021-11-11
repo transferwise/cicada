@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Deploy cicada-scheduler in Python3 virtual environment
+# Use virtual environment for Python3
 python3 -m venv .virtualenvs
 source .virtualenvs/bin/activate
 python3 -m pip install --upgrade pip
