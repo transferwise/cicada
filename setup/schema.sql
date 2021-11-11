@@ -4,9 +4,9 @@ START TRANSACTION;
 -- Add PostgreSQL extention required for uuid_generate_v1()
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- FUNCTION: public.set_auto_update_time()
--- DROP FUNCTION public.set_auto_update_time();
-CREATE OR REPLACE FUNCTION public.set_auto_update_time()
+-- FUNCTION: set_auto_update_time()
+-- DROP FUNCTION set_auto_update_time();
+CREATE OR REPLACE FUNCTION set_auto_update_time()
     RETURNS trigger
     LANGUAGE 'plpgsql'
     COST 100
@@ -40,7 +40,7 @@ CREATE TRIGGER tr_global_settings
     BEFORE UPDATE
     ON global_settings
     FOR EACH ROW
-    EXECUTE PROCEDURE public.set_auto_update_time()
+    EXECUTE PROCEDURE set_auto_update_time()
 ;
 
 -- Table: servers
@@ -61,14 +61,14 @@ WITH (
   OIDS=FALSE
 );
 COMMENT ON COLUMN servers.auto_update_time IS 'auto populated datetime when the record last updated';
-COMMENT ON COLUMN public.servers.is_enabled IS '0=Disabled 1=Enabled';
+COMMENT ON COLUMN servers.is_enabled IS '0=Disabled 1=Enabled';
 
 DROP TRIGGER IF EXISTS tr_servers ON servers;
 CREATE TRIGGER tr_servers
     BEFORE UPDATE
     ON servers
     FOR EACH ROW
-    EXECUTE PROCEDURE public.set_auto_update_time()
+    EXECUTE PROCEDURE set_auto_update_time()
 ;
 
 -- Table: schedule_groups
@@ -92,7 +92,7 @@ CREATE TRIGGER tr_schedule_groups
     BEFORE UPDATE
     ON schedule_groups
     FOR EACH ROW
-    EXECUTE PROCEDURE public.set_auto_update_time()
+    EXECUTE PROCEDURE set_auto_update_time()
 ;
 
 INSERT INTO schedule_groups
@@ -171,10 +171,10 @@ CREATE INDEX IF NOT EXISTS schedules_schedule_group_id_idx
   USING btree
   (schedule_group_id);
 
--- Index: public.schedules_server_id_idx
--- DROP INDEX public.schedules_server_id_idx;
+-- Index: schedules_server_id_idx
+-- DROP INDEX schedules_server_id_idx;
 CREATE INDEX IF NOT EXISTS schedules_server_id_idx
-  ON public.schedules
+  ON schedules
   USING btree
   (server_id);
 
@@ -183,7 +183,7 @@ CREATE TRIGGER tr_schedules
     BEFORE UPDATE
     ON schedules
     FOR EACH ROW
-    EXECUTE PROCEDURE public.set_auto_update_time()
+    EXECUTE PROCEDURE set_auto_update_time()
 ;
 
 -- Table: schedule_log_status
@@ -212,9 +212,9 @@ VALUES
 ON CONFLICT DO NOTHING
 ;
 
--- Table: public.schedule_log
--- DROP TABLE public.schedule_log;
-CREATE TABLE IF NOT EXISTS public.schedule_log
+-- Table: schedule_log
+-- DROP TABLE schedule_log;
+CREATE TABLE IF NOT EXISTS schedule_log
 (
   schedule_log_id character varying(64) NOT NULL DEFAULT uuid_generate_v1(),
   auto_update_time timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone, -- auto populated datetime when the record last updated
@@ -228,20 +228,20 @@ CREATE TABLE IF NOT EXISTS public.schedule_log
   schedule_log_status_id integer NOT NULL DEFAULT 0,
   CONSTRAINT schedule_log_pkey PRIMARY KEY (schedule_log_id),
   CONSTRAINT schedule_log_schedule_log_status_id_fkey FOREIGN KEY (schedule_log_status_id)
-      REFERENCES public.schedule_log_status (schedule_log_status_id) MATCH SIMPLE
+      REFERENCES schedule_log_status (schedule_log_status_id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT schedule_log_server_id_fkey FOREIGN KEY (server_id)
-      REFERENCES public.servers (server_id) MATCH SIMPLE
+      REFERENCES servers (server_id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION
 )
 WITH (
   OIDS=FALSE
 );
-COMMENT ON COLUMN public.schedules.auto_update_time IS 'auto populated datetime when the record last updated';
-COMMENT ON COLUMN public.schedule_log.full_command IS 'full_command as executed by scheduler';
-COMMENT ON COLUMN public.schedule_log.start_time IS 'ALWAYS use now() | datetime of when job started';
-COMMENT ON COLUMN public.schedule_log.end_time IS 'datetime of when job ended';
-COMMENT ON COLUMN public.schedule_log.returncode IS 'returncode as provided by the executed script';
+COMMENT ON COLUMN schedules.auto_update_time IS 'auto populated datetime when the record last updated';
+COMMENT ON COLUMN schedule_log.full_command IS 'full_command as executed by scheduler';
+COMMENT ON COLUMN schedule_log.start_time IS 'ALWAYS use now() | datetime of when job started';
+COMMENT ON COLUMN schedule_log.end_time IS 'datetime of when job ended';
+COMMENT ON COLUMN schedule_log.returncode IS 'returncode as provided by the executed script';
 
 -- Index: schedule_log_schedule_id_idx
 -- DROP INDEX schedule_log_schedule_id_idx;
@@ -264,10 +264,10 @@ CREATE INDEX IF NOT EXISTS schedule_log_server_id_schedule_id_schedule_log_statu
   USING btree
   (server_id, schedule_id, schedule_log_status_id);
 
--- Index: public.schedule_log_schedule_id_start_time_idx
--- DROP INDEX public.schedule_log_schedule_id_start_time_idx;
+-- Index: schedule_log_schedule_id_start_time_idx
+-- DROP INDEX schedule_log_schedule_id_start_time_idx;
 CREATE INDEX IF NOT EXISTS schedule_log_schedule_id_start_time_idx
-  ON public.schedule_log
+  ON schedule_log
   USING btree
   (schedule_id, start_time);
 
@@ -276,7 +276,7 @@ CREATE TRIGGER tr_schedule_log
     BEFORE UPDATE
     ON schedule_log
     FOR EACH ROW
-    EXECUTE PROCEDURE public.set_auto_update_time()
+    EXECUTE PROCEDURE set_auto_update_time()
 ;
 
 -- Table: schedule_log_historical
