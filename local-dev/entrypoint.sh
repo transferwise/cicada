@@ -2,6 +2,22 @@
 
 set -e
 
+# Set some bashrc
+cat >~/.bashrc <<EOL
+# enable color support of ls and also add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+    alias ls='ls --color=auto'
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
+fi
+# some more ls aliases
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+EOL
+
 # Install OS dependencies
 apt-get update
 apt-get install -y --no-install-recommends \
@@ -37,15 +53,8 @@ ${CICADA_HOME}/.virtualenv/bin/python3 ${CICADA_HOME}/bin/registerServer.py
 # Create a schedule
 ${CICADA_HOME}/.virtualenv/bin/python3 ${CICADA_HOME}/bin/manageSchedule.py upsert --scheduleId=wait --isEnabled=1 --execCommand="${CICADA_HOME}/.virtualenv/bin/python3 ${CICADA_HOME}/bin/waitSomeSeconds.py" --parameters="3" --intervalMask='* * * * *'
 
-
-
 # Add linux CRON job to check central scheduler every minute
 # echo "* * * * * ${CICADA_HOME}/.virtualenv/bin/python3 ${CICADA_HOME}/bin/findSchedules.py" | crontab
-
-
-
-# Activate cicada_dev virtual environment at every login
-sed -i '/motd/d' ~/.bashrc  # Delete any existing old DO_AT_LOGIN line from bashrc
 
 echo
 echo "=========================================================================="
