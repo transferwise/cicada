@@ -21,7 +21,8 @@ EOL
 # Install OS dependencies
 apt-get update
 apt-get install -y --no-install-recommends \
-  postgresql-client
+  postgresql-client \
+  vim
 
 # rm -rf /var/lib/apt/lists/* 
 
