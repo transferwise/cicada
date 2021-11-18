@@ -4,3 +4,7 @@ db_cicada:
     dbname: db_cicada
     user: cicada
     password: randomstring
+
+slack:
+    token: xyz48945
+    channel: channel_name

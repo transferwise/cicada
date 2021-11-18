@@ -7,6 +7,10 @@ import argparse
 sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../lib"))
 import libPgSQL
 
+from utils import named_exception_handler
+
+
+@named_exception_handler('archiveSchedules')
 def main():
     parser = argparse.ArgumentParser(description='Archive completed entries from the schedule_log TABLE', add_help=True)
     parser.add_argument('--daysToKeep', type=int, required=True, help='Amount of days to keep in schedule_log')
@@ -39,6 +43,7 @@ def main():
     dbCicada.execute(sqlquery)
 
     libPgSQL.close_db(dbCicada)
+
 
 if __name__ == "__main__":
     main()

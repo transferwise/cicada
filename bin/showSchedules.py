@@ -8,7 +8,10 @@ sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../lib"))
 import libPgSQL
 import libScheduler
 
+from utils import named_exception_handler
 
+
+@named_exception_handler('showSchedules')
 def main():
     dbCicada = libPgSQL.init_db()
     serverId = libPgSQL.getServerId(dbCicada)

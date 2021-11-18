@@ -8,11 +8,15 @@ sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + '/../lib'))
 import libPgSQL
 import libScheduler
 
+from utils import named_exception_handler
+
 commands = [
     'show',
     'upsert'
 ]
 
+
+@named_exception_handler('manageSchedules')
 def main():
     parser = argparse.ArgumentParser(description='Manage a Cicada schedule', add_help=True)
     parser.add_argument('command', type=str, help=', '.join(commands))
@@ -43,14 +47,14 @@ def main():
             exit(0)
         else:
             print('ERROR: scheduleId \'' + str(args.scheduleId) + '\' not found')
-            exit(1)  
-
+            exit(1)
 
     # Perform "upsert" command
     newScheduleDetails = dict()
-    if (args.command == 'upsert'):
-        if not currentScheduleDetails:
+    if args.command == 'upsert':
         # not currentScheduleDetails = new Schedule
+        if not currentScheduleDetails:
+
             if args.intervalMask is None:
                 print('ERROR: intervalMask is required for new schedule')
                 exit(1)
@@ -83,7 +87,7 @@ def main():
             libScheduler.insertScheduleDetails(dbCicada, newScheduleDetails)
 
         else:
-        # existing currentScheduleDetails = existing Schedule
+            # existing currentScheduleDetails = existing Schedule
             newScheduleDetails = currentScheduleDetails.copy()
 
             if args.scheduleDescription is not None:
@@ -112,7 +116,7 @@ def main():
                 newScheduleDetails['adhocParameters'] = args.adhocParameters
             if args.scheduleGroupId is not None:
                 newScheduleDetails['scheduleGroupId'] = args.scheduleGroupId
-            
+
             libScheduler.updateScheduleDetails(dbCicada, newScheduleDetails)
 
     print(tabulate(newScheduleDetails.items(), ['Detail', 'Value'], tablefmt="psql"))

@@ -6,10 +6,14 @@ import subprocess
 import optparse
 
 sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../lib"))
+
 import libPgSQL
 import libScheduler
 
+from utils import named_exception_handler
 
+
+@named_exception_handler('execSchedule')
 def main():
     usage = "Script usage: %prog scheduleId"
     parser = optparse.OptionParser(usage=usage)
