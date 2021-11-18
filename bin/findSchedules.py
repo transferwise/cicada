@@ -5,10 +5,15 @@ import sys
 import subprocess
 
 sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../lib"))
+sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../bin"))
+
 import libPgSQL
 import libScheduler
 
+from utils import named_exception_handler
 
+
+@named_exception_handler('findSchedules')
 def main():
     dbCicada = libPgSQL.init_db()
     serverId = libPgSQL.getServerId(dbCicada)
@@ -17,10 +22,11 @@ def main():
     objSchedules = libScheduler.getAllSchedules(dbCicada, serverId, 1)
 
     for scheduleId in objSchedules:
-        fullCommand = []
-        fullCommand.append(sys.executable)
-        fullCommand.append(os.path.abspath(os.path.dirname(sys.argv[0])) + '/execSchedule.py')
-        fullCommand.append(str(scheduleId))
+        fullCommand = [
+            sys.executable,
+            os.path.abspath(os.path.dirname(sys.argv[0])) + '/execSchedule.py',
+            str(scheduleId)
+        ]
 
         with open(os.devnull, 'w') as devnull:
             # subprocess.Popen = asyncronous
@@ -30,10 +36,11 @@ def main():
     objSchedules = libScheduler.getAllSchedules(dbCicada, serverId, 0)
 
     for scheduleId in objSchedules:
-        fullCommand = []
-        fullCommand.append(sys.executable)
-        fullCommand.append(os.path.abspath(os.path.dirname(sys.argv[0])) + '/execSchedule.py')
-        fullCommand.append(str(scheduleId))
+        fullCommand = [
+            sys.executable,
+            os.path.abspath(os.path.dirname(sys.argv[0])) + '/execSchedule.py',
+            str(scheduleId)
+        ]
 
         with open(os.devnull, 'w') as devnull:
             # subprocess.call = syncronous

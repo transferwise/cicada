@@ -5,8 +5,11 @@ import sys
 import argparse
 
 sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../lib"))
+sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../bin"))
 import libPgSQL
 import libScheduler
+
+from utils import named_exception_handler
 
 
 def str_list_to_int_list(comma_separated_string: str) -> [int]:
@@ -17,6 +20,7 @@ def str_list_to_int_list(comma_separated_string: str) -> [int]:
         exit(1)
 
 
+@named_exception_handler('spreadSchedules')
 def main():
     parser = argparse.ArgumentParser(description='Spread Cicada schedules accross all active servers', add_help=True)
     parser.add_argument("--commit", default=False, action="store_true", help="Commits the change to Cicada, otherwise only print output")
@@ -50,7 +54,7 @@ def main():
         newScheduleDetails = currentScheduleDetails.copy()
         newScheduleDetails['serverId'] = objEnabledServers[nextEnabledServer]
 
-        nextEnabledServer = nextEnabledServer + 1
+        nextEnabledServer += 1
         if nextEnabledServer == enabledServerCount:
             nextEnabledServer = 0
 
@@ -61,6 +65,7 @@ def main():
                 "\' will be reassigned : " + str(currentScheduleDetails['serverId']) + " -> " + str(newScheduleDetails['serverId'])))
 
     libPgSQL.close_db(dbCicada)
+
 
 if __name__ == "__main__":
     main()
