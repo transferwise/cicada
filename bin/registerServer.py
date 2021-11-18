@@ -3,7 +3,6 @@ import os
 import sys
 
 sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../lib"))
-sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../bin"))
 
 import libPgSQL
 

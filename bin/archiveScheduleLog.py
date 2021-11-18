@@ -5,7 +5,6 @@ import sys
 import argparse
 
 sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../lib"))
-sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../bin"))
 import libPgSQL
 
 from utils import named_exception_handler

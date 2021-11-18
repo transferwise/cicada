@@ -5,7 +5,6 @@ import sys
 import subprocess
 
 sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../lib"))
-sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../bin"))
 
 import libPgSQL
 import libScheduler
@@ -20,6 +19,8 @@ def main():
 
     # Get all schedules and execute asynchronously
     objSchedules = libScheduler.getAllSchedules(dbCicada, serverId, 1)
+
+    raise Exception('olala!!')
 
     for scheduleId in objSchedules:
         fullCommand = [
