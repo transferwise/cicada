@@ -45,7 +45,7 @@ def named_exception_handler(command_name):
                 send_slack_message(
                     message=':alarmamel: *Cicada is failing!* :alarmamel:',
                     text=f'`{command_name}` failed with `{exc_type.__name__}: {exc_value}`\n\nFull traceback:\n'
-                         f'```{traceback.format_exception(exc_type, exc_value, exc_traceback)}```',
+                         f'```{"".join(traceback.format_exception(exc_type, exc_value, exc_traceback))}```',
                     color='danger')
 
                 raise
