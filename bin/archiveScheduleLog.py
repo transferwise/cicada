@@ -29,17 +29,50 @@ def main():
     START TRANSACTION;
     SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 
-    INSERT INTO public.schedule_log_historical
-    SELECT * FROM public.schedule_log sl
-    WHERE sl.start_time < CURRENT_DATE +1 -{}
-    AND end_time is not NULL;
+    CREATE TEMP TABLE running_log_entry (
+        schedule_id character varying(255) NOT NULL,
+        start_time timestamp(3) without time zone NOT NULL,
+        CONSTRAINT running_log_entry_pkey PRIMARY KEY (schedule_id)
+    );
 
-    DELETE FROM public.schedule_log sl
-    WHERE sl.start_time < CURRENT_DATE +1 -{}
-    AND end_time is not NULL;
+    INSERT INTO running_log_entry
+    SELECT
+        sl.schedule_id,
+        MAX(sl.start_time)
+    FROM schedule_log sl
+        INNER JOIN schedules s USING (schedule_id)
+    WHERE sl.end_time IS null
+        AND s.is_running = 1
+    GROUP BY schedule_id
+    ;
+
+    CREATE TEMP TABLE archivable_log_entries (
+        schedule_log_id character varying(64) NOT NULL,
+        CONSTRAINT archivable_log_entries_pkey PRIMARY KEY (schedule_log_id)
+    );
+
+    INSERT INTO archivable_log_entries
+    SELECT
+        sl.schedule_log_id
+    FROM schedule_log sl
+        LEFT JOIN running_log_entry rle USING (schedule_id, start_time)
+    WHERE end_time IS null
+        AND rle.start_time IS null
+        AND sl.start_time < CURRENT_DATE +1 -{}
+    ;
+
+    INSERT INTO schedule_log_historical
+    SELECT schedule_log.*
+    FROM schedule_log
+    WHERE schedule_log_id IN (SELECT schedule_log_id FROM archivable_log_entries)
+    ;
+
+    DELETE FROM schedule_log sl
+    WHERE schedule_log_id IN (SELECT schedule_log_id FROM archivable_log_entries)
+    ;
 
     COMMIT TRANSACTION;
-    """.format(daysToKeep, daysToKeep)
+    """.format(daysToKeep)
     dbCicada.execute(sqlquery)
 
     libPgSQL.close_db(dbCicada)
