@@ -63,7 +63,6 @@ def main():
                 error_detail = e.output
 
             # Finalize schedule log
-            # Retry connecting to DB until successful
             schedule_finalized = False
             while not schedule_finalized:
                 try:
