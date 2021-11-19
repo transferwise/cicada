@@ -62,7 +62,15 @@ def main():
                 error_detail = e.output
 
             # Finalize schedule log
-            dbCicada = libPgSQL.init_db()
+            # Retry connecting to DB until successful
+            retry_flag = True
+            while retry_flag:
+                try:
+                    dbCicada = libPgSQL.init_db()
+                    retry_flag = False
+                except:
+                    pass
+
             libScheduler.resetIsRunning(dbCicada, scheduleId)
             libScheduler.finalizeScheduleLog(dbCicada, scheduleLogId, returncode, error_detail)
 
