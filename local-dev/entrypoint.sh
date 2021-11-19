@@ -52,7 +52,7 @@ bash install.sh
 ${CICADA_HOME}/.virtualenvs/bin/python3 ${CICADA_HOME}/bin/registerServer.py
 
 # Create a schedule
-${CICADA_HOME}/.virtualenvs/bin/python3 ${CICADA_HOME}/bin/manageSchedule.py upsert --scheduleId=wait --isEnabled=1 --execCommand="${CICADA_HOME}/.virtualenvs/bin/python3 ${CICADA_HOME}/bin/waitSomeSeconds.py" --parameters="3" --intervalMask='* * * * *'
+${CICADA_HOME}/.virtualenvs/bin/python3 ${CICADA_HOME}/bin/manageSchedule.py upsert --scheduleId=wait --isEnabled=1 --execCommand="${CICADA_HOME}/.virtualenvs/bin/python3 ${CICADA_HOME}/bin/waitSomeSeconds.py" --parameters="1" --intervalMask='* * * * *'
 
 # Add linux CRON job to check central scheduler every minute
 # echo "* * * * * ${CICADA_HOME}/.virtualenvs/bin/python3 ${CICADA_HOME}/bin/findSchedules.py" | crontab
