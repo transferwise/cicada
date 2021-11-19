@@ -4,6 +4,7 @@ import os
 import sys
 import subprocess
 import optparse
+import time
 
 sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../lib"))
 
@@ -69,6 +70,7 @@ def main():
                     dbCicada = libPgSQL.init_db()
                     retry_flag = False
                 except:
+                    time.sleep(1)
                     pass
 
             libScheduler.resetIsRunning(dbCicada, scheduleId)
