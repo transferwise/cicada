@@ -76,13 +76,10 @@ echo "Log into cicada_dev node"
 echo "------------------------"
 echo " $ docker exec -it cicada_dev bash"
 echo
-echo "Show node scheduled jobs"
-echo "------------------------"
-echo " $ ${CICADA_HOME}/.virtualenv/bin/python3 ${CICADA_HOME}/bin/showSchedules.py"
-echo
-echo "Run node scheduled jobs"
-echo "-----------------------"
-echo " $ ${CICADA_HOME}/.virtualenv/bin/python3 ${CICADA_HOME}/bin/findSchedules.py"
+echo "From within cicada_dev node"
+echo "---------------------------"
+echo "Show scheduled jobs : $ ${CICADA_HOME}/.virtualenv/bin/python3 ${CICADA_HOME}/bin/showSchedules.py"
+echo "Run scheduled jobs  : $ ${CICADA_HOME}/.virtualenv/bin/python3 ${CICADA_HOME}/bin/findSchedules.py"
 echo
 echo "=========================================================================="
 
