@@ -64,17 +64,16 @@ def main():
 
             # Finalize schedule log
             # Retry connecting to DB until successful
-            retry_flag = True
-            while retry_flag:
+            schedule_finalized = False
+            while not schedule_finalized:
                 try:
                     dbCicada = libPgSQL.init_db()
-                    retry_flag = False
+                    libScheduler.resetIsRunning(dbCicada, scheduleId)
+                    libScheduler.finalizeScheduleLog(dbCicada, scheduleLogId, returncode, error_detail)
+                    schedule_finalized = True
                 except:
                     time.sleep(1)
                     pass
-
-            libScheduler.resetIsRunning(dbCicada, scheduleId)
-            libScheduler.finalizeScheduleLog(dbCicada, scheduleLogId, returncode, error_detail)
 
     libPgSQL.close_db(dbCicada)
 
