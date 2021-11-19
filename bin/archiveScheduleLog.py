@@ -56,8 +56,7 @@ def main():
         sl.schedule_log_id
     FROM schedule_log sl
         LEFT JOIN running_log_entry rle USING (schedule_id, start_time)
-    WHERE end_time IS null
-        AND rle.start_time IS null
+    WHERE rle.start_time IS null
         AND sl.start_time < CURRENT_DATE +1 -{}
     ;
 
