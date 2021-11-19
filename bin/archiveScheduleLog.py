@@ -10,7 +10,7 @@ import libPgSQL
 from utils import named_exception_handler
 
 
-@named_exception_handler('archiveSchedules')
+@named_exception_handler('archiveScheduleLog')
 def main():
     parser = argparse.ArgumentParser(description='Archive completed entries from the schedule_log TABLE', add_help=True)
     parser.add_argument('--daysToKeep', type=int, required=True, help='Amount of days to keep in schedule_log')
