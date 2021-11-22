@@ -17,7 +17,7 @@ def main():
     else:
         text = args.text
 
-    utils.send_slack_message('Test using Cicada testSlack.py', text, 'good')
+    utils.send_slack_message(':test_tube: test from cicada *_testSlack.py_* :test_tube:', text, 'good')
 
 if __name__ == '__main__':
     main()
