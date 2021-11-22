@@ -340,11 +340,13 @@ def getAllSchedules(dbCur, serverId, isAsync):
         scheduleId = str(sRow[0])
         intervalMask = str(sRow[1])
 
-        iter = croniter(intervalMask, nowMinute - datetime.timedelta(minutes=1))
-        nextIter = iter.get_next(datetime.datetime)
+        # Skip entries with a bad intervalMask
+        if croniter.is_valid(intervalMask):
+            iter = croniter(intervalMask, nowMinute - datetime.timedelta(minutes=1))
+            nextIter = iter.get_next(datetime.datetime)
 
-        if nowMinute == nextIter:
-            objSchedules.append(scheduleId)
+            if nowMinute == nextIter:
+                objSchedules.append(scheduleId)
 
     return objSchedules
 
