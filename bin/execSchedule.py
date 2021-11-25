@@ -63,16 +63,18 @@ def main():
                 error_detail = e.output
 
             # Finalize schedule log
-            schedule_finalized = False
-            while not schedule_finalized:
+            # Attempt to connect to DB indefinitely
+            db_connection_made = False
+            while not db_connection_made:
                 try:
                     dbCicada = libPgSQL.init_db()
-                    libScheduler.resetIsRunning(dbCicada, scheduleId)
-                    libScheduler.finalizeScheduleLog(dbCicada, scheduleLogId, returncode, error_detail)
-                    schedule_finalized = True
+                    db_connection_made = True
                 except:
                     time.sleep(1)
                     pass
+
+            libScheduler.resetIsRunning(dbCicada, scheduleId)
+            libScheduler.finalizeScheduleLog(dbCicada, scheduleLogId, returncode, error_detail)
 
     libPgSQL.close_db(dbCicada)
 
