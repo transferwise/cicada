@@ -17,7 +17,7 @@ def main():
     else:
         text = args.text
 
-    utils.send_slack_message(':dart: test from cicada *_pingSlack.py_*', text, 'good')
+    utils.send_slack_message(':dart:  Message from cicada *_pingSlack.py_*', text, 'good')
 
 if __name__ == '__main__':
     main()
