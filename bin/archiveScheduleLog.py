@@ -29,21 +29,38 @@ def main():
     START TRANSACTION;
     SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 
-    CREATE TEMP TABLE running_log_entry (
-        schedule_id character varying(255) NOT NULL,
-        start_time timestamp(3) without time zone NOT NULL,
-        CONSTRAINT running_log_entry_pkey PRIMARY KEY (schedule_id)
+    CREATE TEMP TABLE valuable_log_entries (
+        schedule_log_id character varying(64) NOT NULL,
+        CONSTRAINT valuable_log_entries_pkey PRIMARY KEY (schedule_log_id)
     );
 
-    INSERT INTO running_log_entry
-    SELECT
-        sl.schedule_id,
-        MAX(sl.start_time)
-    FROM schedule_log sl
-        INNER JOIN schedules s USING (schedule_id)
-    WHERE sl.end_time IS null
-        AND s.is_running = 1
-    GROUP BY schedule_id
+    INSERT INTO valuable_log_entries
+    SELECT schedule_log_id
+    FROM (
+        SELECT
+            schedule_log_id,
+            start_time,
+            max(start_time) OVER (PARTITION BY schedule_id) AS max_start_time
+        FROM schedule_log sl
+            INNER JOIN schedules USING (schedule_id)
+        WHERE is_running = 1
+        ORDER BY schedule_id
+    ) running_log_entries
+    WHERE start_time = max_start_time
+
+    UNION
+
+    SELECT schedule_log_id
+    FROM (
+        SELECT
+            schedule_log_id,
+            start_time,
+            max(start_time) OVER (PARTITION BY schedule_id) AS max_start_time
+        FROM schedule_log sl
+        WHERE end_time IS NOT null
+        ORDER BY schedule_id
+    ) completed_log_entries
+    WHERE start_time = max_start_time
     ;
 
     CREATE TEMP TABLE archivable_log_entries (
@@ -55,8 +72,8 @@ def main():
     SELECT
         sl.schedule_log_id
     FROM schedule_log sl
-        LEFT JOIN running_log_entry rle USING (schedule_id, start_time)
-    WHERE rle.start_time IS null
+        LEFT JOIN valuable_log_entries vle USING (schedule_log_id)
+    WHERE vle.schedule_log_id IS null
         AND sl.start_time < CURRENT_DATE +1 -{}
     ;
 
