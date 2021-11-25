@@ -29,12 +29,7 @@ def main():
     START TRANSACTION;
     SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 
-    CREATE TEMP TABLE valuable_log_entries (
-        schedule_log_id character varying(64) NOT NULL,
-        CONSTRAINT valuable_log_entries_pkey PRIMARY KEY (schedule_log_id)
-    );
-
-    INSERT INTO valuable_log_entries
+    CREATE TEMP TABLE valuable_log_entries AS
     SELECT schedule_log_id
     FROM (
         SELECT
@@ -47,9 +42,7 @@ def main():
         ORDER BY schedule_id
     ) running_log_entries
     WHERE start_time = max_start_time
-
     UNION
-
     SELECT schedule_log_id
     FROM (
         SELECT
@@ -63,12 +56,7 @@ def main():
     WHERE start_time = max_start_time
     ;
 
-    CREATE TEMP TABLE archivable_log_entries (
-        schedule_log_id character varying(64) NOT NULL,
-        CONSTRAINT archivable_log_entries_pkey PRIMARY KEY (schedule_log_id)
-    );
-
-    INSERT INTO archivable_log_entries
+    CREATE TEMP TABLE archivable_log_entries AS
     SELECT
         sl.schedule_log_id
     FROM schedule_log sl
