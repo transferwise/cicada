@@ -9,27 +9,37 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from functools import wraps
 
-@backoff.on_exception(backoff.expo, SlackApiError, max_time=1)
+
+def suppress_exception(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception:
+            print('Supressing {} from {}'.format(Exception, func))
+            pass
+
+    return wrapper
+
+
+@suppress_exception
+@backoff.on_exception(backoff.expo, SlackApiError, max_time=3)
 def send_slack_message(message: str, text: str, color: str):
     """
     Sends message to a slack channel
     """
-    try:
-        config = load_config()
-        client = WebClient(token=config['slack']['token'])
-        client.chat_postMessage(channel=config['slack']['channel'],
-                                text=message,
-                                attachments=[
-                                    {
-                                        "fallback": message,
-                                        "color": color,
-                                        "text": text,
-                                    }
-                                ],
-                                mrkdwn=True
-                                )
-    except:
-        print("send_slack_message failed")
+    config = load_config()
+    client = WebClient(token=config['slack']['token'])
+    client.chat_postMessage(channel=config['slack']['channel'],
+                            text=message,
+                            attachments=[
+                                {
+                                    "fallback": message,
+                                    "color": color,
+                                    "text": text,
+                                }
+                            ],
+                            mrkdwn=True
+                            )
 
 
 def named_exception_handler(command_name):
