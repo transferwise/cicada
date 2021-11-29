@@ -4,6 +4,7 @@ import os
 import sys
 import subprocess
 import optparse
+import time
 
 sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../lib"))
 
@@ -62,7 +63,16 @@ def main():
                 error_detail = e.output
 
             # Finalize schedule log
-            dbCicada = libPgSQL.init_db()
+            # Attempt to connect to DB indefinitely
+            db_connection_made = False
+            while not db_connection_made:
+                try:
+                    dbCicada = libPgSQL.init_db()
+                    db_connection_made = True
+                except:
+                    time.sleep(1)
+                    pass
+
             libScheduler.resetIsRunning(dbCicada, scheduleId)
             libScheduler.finalizeScheduleLog(dbCicada, scheduleLogId, returncode, error_detail)
 

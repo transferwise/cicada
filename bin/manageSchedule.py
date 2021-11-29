@@ -3,6 +3,7 @@ import os
 import sys
 import argparse
 from tabulate import tabulate
+from croniter import croniter
 
 sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + '/../lib'))
 import libPgSQL
@@ -57,6 +58,10 @@ def main():
 
             if args.intervalMask is None:
                 print('ERROR: intervalMask is required for new schedule')
+                exit(1)
+
+            if not croniter.is_valid(intervalMask):
+                print('ERROR: intervalMask is invalid')
                 exit(1)
 
             if args.execCommand is None:

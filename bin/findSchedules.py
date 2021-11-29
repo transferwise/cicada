@@ -20,8 +20,6 @@ def main():
     # Get all schedules and execute asynchronously
     objSchedules = libScheduler.getAllSchedules(dbCicada, serverId, 1)
 
-    raise Exception('olala!!')
-
     for scheduleId in objSchedules:
         fullCommand = [
             sys.executable,

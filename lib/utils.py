@@ -10,7 +10,19 @@ from slack_sdk.errors import SlackApiError
 from functools import wraps
 
 
-@backoff.on_exception(backoff.expo, SlackApiError)
+def suppress_exception(func):
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception:
+            print('Supressing {} from {}'.format(Exception, func))
+            pass
+
+    return wrapper
+
+
+@suppress_exception
+@backoff.on_exception(backoff.expo, SlackApiError, max_time=3)
 def send_slack_message(message: str, text: str, color: str):
     """
     Sends message to a slack channel

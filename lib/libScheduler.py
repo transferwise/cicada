@@ -5,6 +5,7 @@
 # | | | | +--------- day of the week (0 - 7) (Sunday to Saturday; 7 is also Sunday)
 # * * * * *
 
+import utils
 import datetime
 from croniter import croniter
 
@@ -340,11 +341,17 @@ def getAllSchedules(dbCur, serverId, isAsync):
         scheduleId = str(sRow[0])
         intervalMask = str(sRow[1])
 
-        iter = croniter(intervalMask, nowMinute - datetime.timedelta(minutes=1))
-        nextIter = iter.get_next(datetime.datetime)
+        # Skip entries with a bad intervalMask
+        if not croniter.is_valid(intervalMask):
+            utils.send_slack_message(':warning:  *WARNING* invalid intervalMask on scheduleId *' + scheduleId + '*',
+                "```scheduleId   : {}\nintervalMask : {}```".format(scheduleId, intervalMask),
+                'warning')
+        else:
+            iter = croniter(intervalMask, nowMinute - datetime.timedelta(minutes=1))
+            nextIter = iter.get_next(datetime.datetime)
 
-        if nowMinute == nextIter:
-            objSchedules.append(scheduleId)
+            if nowMinute == nextIter:
+                objSchedules.append(scheduleId)
 
     return objSchedules
 

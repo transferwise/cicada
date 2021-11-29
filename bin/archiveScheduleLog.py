@@ -10,7 +10,7 @@ import libPgSQL
 from utils import named_exception_handler
 
 
-@named_exception_handler('archiveSchedules')
+@named_exception_handler('archiveScheduleLog')
 def main():
     parser = argparse.ArgumentParser(description='Archive completed entries from the schedule_log TABLE', add_help=True)
     parser.add_argument('--daysToKeep', type=int, required=True, help='Amount of days to keep in schedule_log')
@@ -29,17 +29,54 @@ def main():
     START TRANSACTION;
     SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 
-    INSERT INTO public.schedule_log_historical
-    SELECT * FROM public.schedule_log sl
-    WHERE sl.start_time < CURRENT_DATE +1 -{}
-    AND end_time is not NULL;
+    CREATE TEMP TABLE valuable_log_entries AS
+    SELECT schedule_log_id
+    FROM (
+        SELECT
+            schedule_log_id,
+            start_time,
+            max(start_time) OVER (PARTITION BY schedule_id) AS max_start_time
+        FROM schedule_log sl
+            INNER JOIN schedules USING (schedule_id)
+        WHERE is_running = 1
+        ORDER BY schedule_id
+    ) running_log_entries
+    WHERE start_time = max_start_time
+    UNION
+    SELECT schedule_log_id
+    FROM (
+        SELECT
+            schedule_log_id,
+            start_time,
+            max(start_time) OVER (PARTITION BY schedule_id) AS max_start_time
+        FROM schedule_log sl
+        WHERE end_time IS NOT null
+        ORDER BY schedule_id
+    ) completed_log_entries
+    WHERE start_time = max_start_time
+    ;
 
-    DELETE FROM public.schedule_log sl
-    WHERE sl.start_time < CURRENT_DATE +1 -{}
-    AND end_time is not NULL;
+    CREATE TEMP TABLE archivable_log_entries AS
+    SELECT
+        sl.schedule_log_id
+    FROM schedule_log sl
+        LEFT JOIN valuable_log_entries vle USING (schedule_log_id)
+    WHERE vle.schedule_log_id IS null
+        AND sl.start_time < CURRENT_DATE +1 -{}
+    ;
+
+    INSERT INTO schedule_log_historical
+    SELECT schedule_log.*
+    FROM schedule_log
+    WHERE schedule_log_id IN (SELECT schedule_log_id FROM archivable_log_entries)
+    ;
+
+    DELETE FROM schedule_log sl
+    WHERE schedule_log_id IN (SELECT schedule_log_id FROM archivable_log_entries)
+    ;
 
     COMMIT TRANSACTION;
-    """.format(daysToKeep, daysToKeep)
+    """.format(daysToKeep)
     dbCicada.execute(sqlquery)
 
     libPgSQL.close_db(dbCicada)
