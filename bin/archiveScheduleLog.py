@@ -75,6 +75,9 @@ def main():
     WHERE schedule_log_id IN (SELECT schedule_log_id FROM archivable_log_entries)
     ;
 
+    DROP TABLE IF EXISTS valuable_log_entries;
+    DROP TABLE IF EXISTS archivable_log_entries;
+
     COMMIT TRANSACTION;
     """.format(daysToKeep)
     dbCicada.execute(sqlquery)
