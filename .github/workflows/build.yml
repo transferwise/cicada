@@ -20,7 +20,7 @@ jobs:
           -Dsonar.projectName=cicada \
           -Dsonar.host.url=$SONAR_HOST_URL \
           -Dsonar.login=$SONAR_TOKEN \
-          -Dsonar.sources=transferwise_cicada/
+          -Dsonar.sources=./
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
