@@ -22,7 +22,8 @@ def str_list_to_int_list(comma_separated_string: str) -> [int]:
 @named_exception_handler('spreadSchedules')
 def main():
     parser = argparse.ArgumentParser(description='Spread Cicada schedules accross all active servers', add_help=True)
-    parser.add_argument("--commit", default=False, action="store_true", help="Commits the change to Cicada, otherwise only print output")
+    parser.add_argument("--commit", default=False, action="store_true",
+            help="Commits the change to Cicada, otherwise only print output")
     parser.add_argument('--fromNodes', type=str, help='Optional list of source server ids to collect schedules from')
     parser.add_argument('--toNodes', type=str, help='Optional list of target server id to spread schedules to')
     args = parser.parse_args()
@@ -60,8 +61,8 @@ def main():
         if args.commit:
             libScheduler.updateScheduleDetails(dbCicada, newScheduleDetails)
         else:
-            print(str("\'" + str(currentScheduleDetails['scheduleId']) +
-                "\' will be reassigned : " + str(currentScheduleDetails['serverId']) + " -> " + str(newScheduleDetails['serverId'])))
+            print("\'{}\' will be reassigned : {} -> {}".format(str(currentScheduleDetails['scheduleId'],
+                str(currentScheduleDetails['serverId'], str(newScheduleDetails['serverId'])))))
 
     libPgSQL.close_db(dbCicada)
 

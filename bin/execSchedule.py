@@ -69,7 +69,7 @@ def main():
                 try:
                     dbCicada = libPgSQL.init_db()
                     db_connection_made = True
-                except:
+                except Exception:
                     time.sleep(1)
                     pass
 

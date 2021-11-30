@@ -41,7 +41,7 @@ def init_db():
     user = definitions['db_cicada']['user']
     password = definitions['db_cicada']['password']
 
-    conn_string = "host='{0}' port='{1}' dbname='{2}' user='{3}' password='{4}'".format(host, port, dbname, user, password)
+    conn_string = "host='{}' port='{}' dbname='{}' user='{}' password='{}'".format(host, port, dbname, user, password)
     database = psycopg2.connect(conn_string)
 
     # Set connection to autocommit

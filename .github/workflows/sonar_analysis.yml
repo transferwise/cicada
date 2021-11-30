@@ -1,4 +1,4 @@
-name: Build
+name: Sonar Analysis
 on:
   pull_request:
   push:

@@ -24,11 +24,14 @@ def main():
     parser.add_argument('--scheduleId', type=str, required=True, help='Id of the schedule')
     parser.add_argument('--scheduleDescription', type=str, help='Schedule description and comments')
     parser.add_argument('--serverId', type=int, help='Id of the server where the schedule will run')
-    parser.add_argument('--scheduleOrder', type=int, help='run order for the schedule. lowest is first. isAsync jobs will be executed all at once')
+    parser.add_argument('--scheduleOrder', type=int,
+        help='run order for the schedule. lowest is first. isAsync jobs will be executed all at once')
     parser.add_argument('--isAsync', type=str, help='0=disabled 1=Enabled | isAsync jobs execute in parallel')
     parser.add_argument('--isEnabled', type=str, help='0=Disabled 1=Enabled')
-    parser.add_argument('--adhocExecute', type=str, help='0=Disabled 1=Enabled | The job will execute at next minute, regardless of other schedule time settings')
-    parser.add_argument('--intervalMask', type=str, help='When to execute the command | Modeled on unix crontab (minute hour dom month dow)')
+    parser.add_argument('--adhocExecute', type=str,
+        help='0=Disabled 1=Enabled | The job will execute at next minute, regardless of other schedule time settings')
+    parser.add_argument('--intervalMask', type=str,
+        help='When to execute the command | Modeled on unix crontab (minute hour dom month dow)')
     parser.add_argument('--firstRunDate', type=str, help='The schedule will not execute before this datetime')
     parser.add_argument('--lastRunDate', type=str, help='The schedule will not execute after this datetime')
     parser.add_argument('--execCommand', type=str, help='Command to execute')
