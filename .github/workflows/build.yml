@@ -15,7 +15,7 @@ jobs:
       - name: Run SonarQube Analysis
         shell: bash
         run: >
-          sonar-scanner \
+          sonar-scanner
           -Dsonar.projectKey=transferwise_cicada
           -Dsonar.projectName=transferwise_cicada
           -Dsonar.host.url=$SONAR_HOST_URL
