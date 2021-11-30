@@ -53,4 +53,3 @@ To refresh the containers with new local code changes stop the running instances
 ```sh
 $ docker-compose up --build
 ```
-
