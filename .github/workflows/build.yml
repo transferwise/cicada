@@ -16,10 +16,10 @@ jobs:
         shell: bash
         run: >
           sonar-scanner \
-          -Dsonar.projectKey=transferwise_cicada \
-          -Dsonar.projectName=transferwise_cicada \
-          -Dsonar.host.url=$SONAR_HOST_URL \
-          -Dsonar.login=$SONAR_TOKEN \
+          -Dsonar.projectKey=transferwise_cicada
+          -Dsonar.projectName=transferwise_cicada
+          -Dsonar.host.url=$SONAR_HOST_URL
+          -Dsonar.login=$SONAR_TOKEN
           -Dsonar.sources=./
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
