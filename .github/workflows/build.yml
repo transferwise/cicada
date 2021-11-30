@@ -2,26 +2,43 @@ name: Build
 on:
   push:
     branches:
-      - master # or the name of your main branch
+      - master # name of your main branch
   pull_request:
     types: [opened, synchronize, reopened]
+
+env:
+
 jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-latest
+  static-analysis:
+    name: Run static analysis
+    runs-on: [ self-hosted, production ]
+    container: docker.tw.ee/actions_sonar4
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - uses: sonarsource/sonarqube-scan-action@master
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-      # If you wish to fail your job when the Quality Gate is red, uncomment the
-      # following lines. This would typically be used to fail a deployment.
-      # We do not recommend to use this in a pull request. Prefer using pull request
-      # decoration instead.
-      # - uses: sonarsource/sonarqube-quality-gate-action@master
-      #   timeout-minutes: 5
-      #   env:
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Run SonarQube Analysis
+        shell: bash
+        run: |
+          PR=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH") \
+          BRANCH=${{ steps.branch.outputs.branch-name }}
+          if [ $BRANCH != 'main' ] && [ $PR != null ]; then
+             export SONAR_PR_PARAMS=" \
+              -Dsonar.pullrequest.key=$PR \
+              -Dsonar.pullrequest.branch=$BRANCH \
+              -Dsonar.pullrequest.base=main"; \
+          fi
+            export PATH=$PATH:/opt/sonar/bin ; \
+            sonar-scanner \
+            -Dsonar.projectKey=transferwise_cicada \
+            -Dsonar.projectName=cicada \
+            -Dsonar.host.url=$SONAR_HOST_URL \
+            -Dsonar.login=$SONAR_TOKEN \
+            -Dsonar.exclusions=transferwise_cicada/tests/** \
+            -Dsonar.sources=transferwise_cicada/
