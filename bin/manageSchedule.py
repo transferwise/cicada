@@ -60,7 +60,7 @@ def main():
                 print('ERROR: intervalMask is required for new schedule')
                 exit(1)
 
-            if not croniter.is_valid(intervalMask):
+            if not croniter.is_valid(args.intervalMask):
                 print('ERROR: intervalMask is invalid')
                 exit(1)
 
