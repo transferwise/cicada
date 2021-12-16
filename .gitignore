@@ -1,11 +1,22 @@
-# Byte-compiled / optimized / DLL files
+# IDE
+.vscode
+.idea/*
+*.iml
+*.swp
+
+# Python
 __pycache__/
 *.py[cod]
-*.swp
 *$py.class
-
-# Python virtual environments
-.virtualenvs
+venv
+*.egg-info/
+.pytest_cache
+.coverage
+.coverage.*
+coverage.log
+coverage_html
+build
+dist
 
 # cicada-sceduler definitions file
 config/definitions.yml

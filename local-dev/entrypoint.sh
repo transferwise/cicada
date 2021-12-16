@@ -18,44 +18,56 @@ alias la='ls -A'
 alias l='ls -CF'
 EOL
 
+
 # Install OS dependencies
 apt-get update
 apt-get install -y --no-install-recommends \
   postgresql-client \
   vim
 
-# rm -rf /var/lib/apt/lists/* 
 
 # Change to Cicada folder
-echo ${CICADA_HOME}
 cd ${CICADA_HOME}
 pwd
 
+
 # Build backend database
-export PGPASSWORD=${DB_POSTGRES_PASSWORD}
-psql -U${DB_POSTGRES_USER} -h${DB_POSTGRES_HOST} -p${DB_POSTGRES_PORT} ${DB_POSTGRES_DB} --file=setup/schema.sql --quiet
+export PGPASSWORD=${DB_POSTGRES_PASS}
+psql -v ON_ERROR_STOP=1 -U${DB_POSTGRES_USER} -h${DB_POSTGRES_HOST} -p${DB_POSTGRES_PORT} ${DB_POSTGRES_DB} --file=setup/schema.sql --quiet
 
 # Create definitions file for Cicada to connect to Postgres backend
-cat >config/definitions.yml <<EOL
-db_cicada:
-    host: ${DB_POSTGRES_HOST}
-    port: ${DB_POSTGRES_PORT}
-    dbname: ${DB_POSTGRES_DB}
-    user: ${DB_POSTGRES_USER}
-    password: ${DB_POSTGRES_PASSWORD}
-EOL
+# cat >config/definitions.yml <<EOL
+# db_cicada:
+#     host: ${DB_POSTGRES_HOST}
+#     port: ${DB_POSTGRES_PORT}
+#     dbname: ${DB_POSTGRES_DB}
+#     user: ${DB_POSTGRES_USER}
+#     password: ${DB_POSTGRES_PASS}
+# EOL
 
-# Install Cicada Scheduler
-bash install.sh
 
-# Register new Node in Database
-${CICADA_HOME}/.virtualenvs/bin/python3 ${CICADA_HOME}/bin/registerServer.py
+# Install Cicada dev(and test) environment
+make dev --file=${CICADA_HOME}/Makefile --always-make
 
-# Create a schedule
-${CICADA_HOME}/.virtualenvs/bin/python3 ${CICADA_HOME}/bin/manageSchedule.py upsert --scheduleId=wait --isEnabled=1 --execCommand="${CICADA_HOME}/.virtualenvs/bin/python3 ${CICADA_HOME}/bin/waitSomeSeconds.py" --parameters="3" --intervalMask='* * * * *'
 
-# Add linux CRON job to check central scheduler every minute
-# echo "* * * * * ${CICADA_HOME}/.virtualenvs/bin/python3 ${CICADA_HOME}/bin/findSchedules.py" | crontab
+# Register this server in Database
+${CICADA_HOME}/venv/bin/cicada register_server
+
+
+# Upsert some manual test schedules
+${CICADA_HOME}/venv/bin/cicada upsert_schedule --schedule_id=wait --is_enabled=1 --exec_command="${CICADA_HOME}/venv/bin/cicada wait" --parameters="--seconds=0.5" --interval_mask="* * * * *"
+${CICADA_HOME}/venv/bin/cicada upsert_schedule --schedule_id=long_wait --is_enabled=1 --exec_command="${CICADA_HOME}/venv/bin/cicada wait" --parameters="--seconds=600" --interval_mask="* * * * *"
+${CICADA_HOME}/venv/bin/cicada upsert_schedule --schedule_id=missing_exec --is_enabled=1 --exec_command="death.exe" --interval_mask="* * * * *"
+${CICADA_HOME}/venv/bin/cicada upsert_schedule --schedule_id=missing_operand --is_enabled=1 --exec_command="${CICADA_HOME}/venv/bin/cicada wait" --interval_mask="* * * * *"
+
+
+# # Use linux CRON to find new schedules every minute
+# echo
+# echo "Use linux CRON to find new schedules every minute"
+# apt-get install -y --no-install-recommends cron
+# service cron start
+# echo "* * * * * ${CICADA_HOME}/venv/bin/python3 ${CICADA_HOME}/venv/bin/cicada exec_server_schedules" | crontab
+
 
 echo
 echo "=========================================================================="
@@ -64,7 +76,7 @@ echo
 echo "Running containers"
 echo "------------------"
 echo " * cicada_dev"
-echo " * cicada_db"
+echo " * db_cicada"
 echo
 echo "Postgres backend"
 echo "----------------"
@@ -72,16 +84,26 @@ echo " from local-dev host       - localhost:${DB_POSTGRES_PORT_ON_HOST}"
 echo " from cicada_dev contanier - ${DB_POSTGRES_HOST}:${DB_POSTGRES_PORT}"
 echo " (check .env file for credentials)"
 echo
-echo "Log into cicada_dev node"
-echo "------------------------"
-echo " $ docker exec -it cicada_dev bash"
-echo
-echo "From within cicada_dev node"
-echo "---------------------------"
-echo "Show scheduled jobs : $ ${CICADA_HOME}/.virtualenvs/bin/python3 ${CICADA_HOME}/bin/showSchedules.py"
-echo "Run scheduled jobs  : $ ${CICADA_HOME}/.virtualenvs/bin/python3 ${CICADA_HOME}/bin/findSchedules.py"
 echo
 echo "=========================================================================="
+echo "Log into cicada_dev container"
+echo "-----------------------------"
+echo " $ docker exec -it cicada_dev bash"
+echo
+echo "Run cicada in cicada_dev container"
+echo "----------------------------------"
+echo "(Re)build Cicada env  : make dev --file=${CICADA_HOME}/Makefile --always-make"
+echo "Help                  : ${CICADA_HOME}/venv/bin/cicada -h"
+echo "Register server       : ${CICADA_HOME}/venv/bin/cicada register_server"
+echo "List server schedules : ${CICADA_HOME}/venv/bin/cicada list_server_schedules"
+echo
+echo "Run tests in cicada_dev container"
+echo "---------------------------------"
+echo "Activate virtual env  : source ${CICADA_HOME}/venv/bin/activate"
+echo "Run tests             : make dev pytest --file=${CICADA_HOME}/Makefile"
+echo "Run linter            : make dev pylint --file=${CICADA_HOME}/Makefile"
+echo "=========================================================================="
 
-# Continue running the container
+
+# Stay in container and output logs
 tail -f /dev/null

@@ -2,8 +2,8 @@ version: '3'
 services:
   ### Primary container with Cicada
   cicada_dev:
-    # image: python:3.7.4-buster
-    image: python:3.6.9-buster
+    image: python:3.8-buster
+    # image: python:3.10-buster
     container_name: cicada_dev
     working_dir: ${CICADA_HOME}
     entrypoint: ${CICADA_HOME}/local-dev/entrypoint.sh
@@ -13,7 +13,7 @@ services:
       DB_POSTGRES_PORT: ${DB_POSTGRES_PORT}
       DB_POSTGRES_PORT_ON_HOST: ${DB_POSTGRES_PORT_ON_HOST}
       DB_POSTGRES_USER: ${DB_POSTGRES_USER}
-      DB_POSTGRES_PASSWORD: ${DB_POSTGRES_PASSWORD}
+      DB_POSTGRES_PASS: ${DB_POSTGRES_PASS}
       DB_POSTGRES_DB: ${DB_POSTGRES_DB}
 
     volumes:
@@ -31,7 +31,7 @@ services:
       - ${DB_POSTGRES_PORT_ON_HOST}:${DB_POSTGRES_PORT}
     environment:
       POSTGRES_USER: ${DB_POSTGRES_USER}
-      POSTGRES_PASSWORD: ${DB_POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_POSTGRES_PASS}
       POSTGRES_DB: ${DB_POSTGRES_DB}
     networks:
       - cicada_network

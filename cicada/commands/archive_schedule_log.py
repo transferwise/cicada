@@ -1,31 +1,28 @@
-#!/usr/bin/python
+"""
+Archive entries from schedule_log into schedule_log_historical.
 
-import os
+Entries older than --days_to_keep are moved
+Entries of running jobs are not moved
+"""
+
 import sys
-import argparse
 
-sys.path.append(os.path.abspath(os.path.dirname(sys.argv[0]) + "/../lib"))
-import libPgSQL
-
-from utils import named_exception_handler
+from cicada.lib import postgres
+from cicada.lib import utils
 
 
-@named_exception_handler('archiveScheduleLog')
-def main():
-    parser = argparse.ArgumentParser(description='Archive completed entries from the schedule_log TABLE', add_help=True)
-    parser.add_argument('--daysToKeep', type=int, required=True, help='Amount of days to keep in schedule_log')
-    args = parser.parse_args()
+@utils.named_exception_handler('archive_schedule_log')
+def main(days_to_keep, dbname = None):
+    """Archive entries from schedule_log into schedule_log_historical."""
 
-    # Execute only if --daysToKeep is greater than 0
-    if args.daysToKeep < 1:
-        print('--daysToKeep needs to be greater than 0')
-        exit(0)
+    if not days_to_keep > 0:
+        print('--days_to_keep needs to be greater than 0')
+        sys.exit(1)
 
-    daysToKeep = str(args.daysToKeep)
+    db_conn = postgres.db_cicada(dbname)
+    db_cur = db_conn.cursor()
 
-    dbCicada = libPgSQL.init_db()
-
-    sqlquery = """/* Cicada archiveScheduleLog */
+    sqlquery = f"""
     START TRANSACTION;
     SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 
@@ -62,7 +59,7 @@ def main():
     FROM schedule_log sl
         LEFT JOIN valuable_log_entries vle USING (schedule_log_id)
     WHERE vle.schedule_log_id IS null
-        AND sl.start_time < CURRENT_DATE +1 -{}
+        AND sl.start_time < CURRENT_DATE +1 -{days_to_keep}
     ;
 
     INSERT INTO schedule_log_historical
@@ -79,11 +76,8 @@ def main():
     DROP TABLE IF EXISTS archivable_log_entries;
 
     COMMIT TRANSACTION;
-    """.format(daysToKeep)
-    dbCicada.execute(sqlquery)
+    """
 
-    libPgSQL.close_db(dbCicada)
+    db_cur.execute(sqlquery)
 
-
-if __name__ == "__main__":
-    main()
+    db_conn.close()
