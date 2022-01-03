@@ -1,4 +1,4 @@
-psycopg2-binary==2.9.2
+psycopg2-binary==2.9.3
 pyyaml==6.0
 croniter==1.0.15
 tabulate==0.8.9
