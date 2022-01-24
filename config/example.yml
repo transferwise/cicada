@@ -1,5 +1,5 @@
 db_cicada:
-    host: cicada_db
+    host: db_cicada
     port: 5432
     dbname: db_cicada
     user: cicada

@@ -1,4 +1,4 @@
--- Shows the status of the latest run of each schedule, except test schedules
+-- Shows the status of the latest run of each schedule
 
 SELECT
   schedule_log_id,
@@ -11,6 +11,7 @@ SELECT
   start_time,
   end_time,
   run_duration,
+  returncode,
   schedule_status
 FROM
 
@@ -36,12 +37,16 @@ SELECT
   start_time,
   end_time,
   (COALESCE(end_time, now()::timestamp(3)) - start_time) AS run_duration,
-  schedule_log_status.name AS schedule_status
+  returncode,
+  CASE
+    WHEN end_time IS NOT null and returncode = 0 THEN 'Success'
+    WHEN end_time IS NOT null and returncode <> 0 THEN 'Failure'
+    WHEN end_time IS null AND returncode IS null THEN 'Running'
+    ELSE 'Unknown'
+  END AS schedule_status
 FROM schedules
-  INNER JOIN servers USING (server_id)
-  INNER JOIN schedule_log USING (schedule_id)
-  INNER JOIN schedule_log_status USING (schedule_log_status_id)
-WHERE (schedule_group_id IS NULL OR schedule_group_id NOT IN (2))
+    INNER JOIN servers USING (server_id)
+    INNER JOIN schedule_log USING (schedule_id)
 ORDER BY schedule_id, start_time
 ) AS foo
 
