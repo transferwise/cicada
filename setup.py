@@ -31,7 +31,7 @@ setup(
             'pytest==6.2.5',
             'pytest-cov==3.0.0',
             'pylint==2.12.2',
-            'black==21.12b0',
+            'black==22.1.0',
             'flake8==4.0.1',
         ]
     },
