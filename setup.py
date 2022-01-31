@@ -7,7 +7,7 @@ with open('README.md') as f:
 
 setup(
     name='cicada',
-    version='0.3',
+    version='0.3.1',
     description='Lightweight, agentbased, distributed scheduler',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -31,7 +31,7 @@ setup(
             'pytest==6.2.5',
             'pytest-cov==3.0.0',
             'pylint==2.12.2',
-            'black==21.12b0',
+            'black==22.1.0',
             'flake8==4.0.1',
         ]
     },
