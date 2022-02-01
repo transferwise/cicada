@@ -236,7 +236,7 @@ def main(schedule_id, dbname=None):
 
                 # Terminate any zombie processes
                 for zombie in psutil.Process(cicada_pid).children(recursive=True):
-                    zombie.send_signal(signal.SIGKILL)
+                    zombie.send_signal(signal.SIGTERM)
 
                 # if (returncode != 0) and (error_detail != "Cicada abort_running"):
                 #     send_slack_error(
