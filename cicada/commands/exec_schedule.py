@@ -209,10 +209,12 @@ def main(schedule_id, dbname=None):
                                 unset_abort_running(db_cur, schedule_id)
                             db_cur.close()
                             db_conn.close()
+                        # pylint: disable=unused-variable
                         except Exception as error:
-                            send_slack_error(
-                                schedule_id, schedule_log_id, returncode, error
-                            )
+                            pass
+                            # send_slack_error(
+                            #     schedule_id, schedule_log_id, returncode, error
+                            # )
 
             # Capture error
             except OSError as error:
@@ -236,10 +238,10 @@ def main(schedule_id, dbname=None):
                 for zombie in psutil.Process(cicada_pid).children(recursive=True):
                     zombie.send_signal(signal.SIGKILL)
 
-                if (returncode != 0) and (error_detail != "Cicada abort_running"):
-                    send_slack_error(
-                        schedule_id, schedule_log_id, returncode, error_detail
-                    )
+                # if (returncode != 0) and (error_detail != "Cicada abort_running"):
+                #     send_slack_error(
+                #         schedule_id, schedule_log_id, returncode, error_detail
+                #     )
 
                 # Repeatedly attempt to finalize schedule, even if db is unavailable
                 db_connection_made = False
