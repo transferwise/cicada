@@ -209,6 +209,7 @@ def main(schedule_id, dbname=None):
                                 unset_abort_running(db_cur, schedule_id)
                             db_cur.close()
                             db_conn.close()
+                        # pylint: disable=unused-variable
                         except Exception as error:
                             pass
                             # send_slack_error(
