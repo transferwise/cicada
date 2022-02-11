@@ -92,6 +92,10 @@ def test_test_db_setup(db_setup):
 
 def test_register_server():
     """test_register_server"""
+    query_test_db(
+        "INSERT INTO servers (server_id, hostname, fqdn, ip4_address, is_enabled) VALUES (0, 'localhost', 'localhost', '127.0.0.1', 0)"
+    )
+
     register_server.main(pytest.db_test)
 
     hostname = socket.gethostname()
@@ -101,7 +105,7 @@ def test_register_server():
     ip4_address = socket.gethostbyname(fqdn)
 
     results = query_test_db(
-        "SELECT hostname, fqdn, ip4_address, is_enabled FROM servers"
+        f"SELECT hostname, fqdn, ip4_address, is_enabled FROM servers WHERE hostname='{hostname}'"
     )
 
     assert (
@@ -137,8 +141,7 @@ def test_insert_async_schedule():
 
     query_result = query_test_db(
         f"""
-        SELECT schedule_id, schedule_description,
-        (SELECT MIN(server_id) FROM servers) AS server_id,
+        SELECT schedule_id, schedule_description, server_id,
         schedule_order, is_async, is_enabled, adhoc_execute, interval_mask, first_run_date, last_run_date, exec_command, parameters,
         adhoc_parameters, schedule_group_id, is_running
         FROM schedules WHERE schedule_id = '{schedule_details['schedule_id']}'
@@ -191,8 +194,7 @@ def test_update_schedule():
 
     query_result = query_test_db(
         """
-        SELECT schedule_id, schedule_description,
-        (SELECT MIN(server_id) FROM servers) AS server_id,
+        SELECT schedule_id, schedule_description, server_id,
         schedule_order, is_async, is_enabled, adhoc_execute, interval_mask, first_run_date, last_run_date, exec_command, parameters,
         adhoc_parameters, schedule_group_id, is_running
         FROM schedules WHERE schedule_id = 'pytest'
@@ -256,8 +258,7 @@ def test_insert_adhoc_schedule():
 
     query_result = query_test_db(
         f"""
-        SELECT schedule_id, schedule_description,
-        (SELECT MIN(server_id) FROM servers) AS server_id,
+        SELECT schedule_id, schedule_description, server_id,
         schedule_order, is_async, is_enabled, adhoc_execute, interval_mask, first_run_date, last_run_date, exec_command, parameters,
         adhoc_parameters, schedule_group_id, is_running
         FROM schedules WHERE schedule_id = '{schedule_details['schedule_id']}'
@@ -321,8 +322,7 @@ def test_insert_sync_schedule_1():
 
     query_result = query_test_db(
         """
-        SELECT schedule_id, schedule_description,
-        (SELECT MIN(server_id) FROM servers) AS server_id,
+        SELECT schedule_id, schedule_description, server_id,
         schedule_order, is_async, is_enabled, adhoc_execute, interval_mask, first_run_date, last_run_date, exec_command, parameters,
         adhoc_parameters, schedule_group_id, is_running
         FROM schedules WHERE schedule_id = 'pytest1'
@@ -375,8 +375,7 @@ def test_insert_sync_schedule_2():
 
     query_result = query_test_db(
         """
-        SELECT schedule_id, schedule_description,
-        (SELECT MIN(server_id) FROM servers) AS server_id,
+        SELECT schedule_id, schedule_description, server_id,
         schedule_order, is_async, is_enabled, adhoc_execute, interval_mask, first_run_date, last_run_date, exec_command, parameters,
         adhoc_parameters, schedule_group_id, is_running
         FROM schedules WHERE schedule_id = 'pytest2'
