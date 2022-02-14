@@ -520,7 +520,7 @@ def test_exec_abort_running_2():
 
 
 def test_insert_faulty_schedule_1():
-    """test_insert_faulty_schedule_1"""
+    """Insert schedule with incorrect exec_command"""
 
     schedule_details = {}
     schedule_details["schedule_id"] = "pytest_faulty_1"
@@ -555,7 +555,7 @@ def test_insert_faulty_schedule_1():
 
 
 def test_exec_faulty_schedule_1():
-    """test_exec_faulty_schedule_1"""
+    """Run schedule with incorrect exec_command"""
     exec_schedule.main("pytest_faulty_1", pytest.db_test)
 
     query_result = query_test_db(
@@ -568,7 +568,7 @@ def test_exec_faulty_schedule_1():
 
 
 def test_insert_faulty_schedule_2():
-    """test_insert_faulty_schedule_2"""
+    """Insert schedule with missing parameter"""
 
     schedule_details = {}
     schedule_details["schedule_id"] = "pytest_faulty_2"
@@ -603,7 +603,7 @@ def test_insert_faulty_schedule_2():
 
 
 def test_exec_faulty_schedule_2():
-    """test_exec_faulty_schedule_2"""
+    """Run schedule with missing parameter"""
     exec_schedule.main("pytest_faulty_2", pytest.db_test)
 
     query_result = query_test_db(
