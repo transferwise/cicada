@@ -1,15 +1,17 @@
 mkfile_path := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
+python ?= python3
+
 default:
 	cd $(mkfile_path) ;\
-	python3.8 -m venv venv ;\
+	$(python) -m venv venv ;\
 	venv/bin/python3 -m pip install --upgrade pip ;\
 	venv/bin/python3 -m pip install -e .
 
 
 dev:
 	cd $(mkfile_path) ;\
-	python3.8 -m venv venv ;\
+	$(python) -m venv venv ;\
 	venv/bin/python3 -m pip install --upgrade pip ;\
 	venv/bin/python3 -m pip install -e .[dev]
 
