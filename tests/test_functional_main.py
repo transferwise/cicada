@@ -1,5 +1,11 @@
-"""test_main_functionality.py"""
-
+"""
+    test_functional_main.py
+    Test basic functions like
+    * registering servers
+    * registering various types of schedules
+    * execute schedules
+    * terminate schedules
+"""
 
 import pytest
 import time
@@ -28,7 +34,7 @@ def get_env_vars():
     pytest.db_user = os.environ.get("DB_POSTGRES_USER")
     pytest.db_pass = os.environ.get("DB_POSTGRES_PASS")
 
-    pytest.db_test = f"pytest_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    pytest.db_test = f"pytest_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
 
 
 @pytest.fixture()
