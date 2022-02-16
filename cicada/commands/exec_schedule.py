@@ -6,6 +6,7 @@ import psutil
 import os
 import signal
 import time
+import uuid
 
 from cicada.lib import postgres
 from cicada.lib import scheduler
@@ -86,13 +87,8 @@ def unset_abort_running(db_cur, schedule_id):
 
 def init_schedule_log(db_cur, server_id, schedule_id, full_command):
     """Initialise a schedule log"""
-    # Get UUID
-    sqlquery = """
-    SELECT uuid_generate_v1()
-    """
-    db_cur.execute(sqlquery)
-    row = db_cur.fetchone()
-    schedule_log_id = str(row[0])
+    # Get local machine uuid
+    schedule_log_id = uuid.uuid1()
 
     sqlquery = f"""
     INSERT INTO schedule_log
