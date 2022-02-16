@@ -73,19 +73,24 @@ def db_setup(get_env_vars):
 def query_test_db(query):
     """Run and SQL query in a postgres database"""
     rows = []
-    with psycopg2.connect(
+    conn = psycopg2.connect(
         host=pytest.db_host,
         port=pytest.db_port,
         user=pytest.db_user,
         password=pytest.db_pass,
         database=pytest.db_test,
-    ) as conn:
-        conn.set_session(readonly=False, autocommit=True)
-        # conn.set_session(autocommit = True)
-        with conn.cursor() as cur:
-            cur.execute(query)
-            if cur.rowcount > 0 and cur.description:
-                rows = cur.fetchall()
+    )
+    conn.set_session(readonly=False, autocommit=True)
+
+    cur = conn.cursor()
+
+    cur.execute(query)
+
+    if cur.rowcount > 0 and cur.description:
+        rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
     return rows
 
 
