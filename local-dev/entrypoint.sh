@@ -50,7 +50,7 @@ slack:
 EOL
 
 # Install Cicada dev(and test) environment
-make dev --file=${CICADA_HOME}/Makefile --always-make
+make dev --file=${CICADA_HOME}/Makefile --always-make python=python3.8
 
 
 # Register this server in Database

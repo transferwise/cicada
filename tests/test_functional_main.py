@@ -1,5 +1,11 @@
-"""test_main_functionality.py"""
-
+"""
+    test_functional_main.py
+    Test basic functions like
+    * registering servers
+    * registering various types of schedules
+    * execute schedules
+    * terminate schedules
+"""
 
 import pytest
 import time
@@ -28,7 +34,7 @@ def get_env_vars():
     pytest.db_user = os.environ.get("DB_POSTGRES_USER")
     pytest.db_pass = os.environ.get("DB_POSTGRES_PASS")
 
-    pytest.db_test = f"pytest_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    pytest.db_test = f"pytest_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
 
 
 @pytest.fixture()
@@ -67,19 +73,24 @@ def db_setup(get_env_vars):
 def query_test_db(query):
     """Run and SQL query in a postgres database"""
     rows = []
-    with psycopg2.connect(
+    conn = psycopg2.connect(
         host=pytest.db_host,
         port=pytest.db_port,
         user=pytest.db_user,
         password=pytest.db_pass,
         database=pytest.db_test,
-    ) as conn:
-        conn.set_session(readonly=False, autocommit=True)
-        # conn.set_session(autocommit = True)
-        with conn.cursor() as cur:
-            cur.execute(query)
-            if cur.rowcount > 0 and cur.description:
-                rows = cur.fetchall()
+    )
+    conn.set_session(readonly=False, autocommit=True)
+
+    cur = conn.cursor()
+
+    cur.execute(query)
+
+    if cur.rowcount > 0 and cur.description:
+        rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
     return rows
 
 
@@ -520,7 +531,7 @@ def test_exec_abort_running_2():
 
 
 def test_insert_faulty_schedule_1():
-    """test_insert_faulty_schedule_1"""
+    """Insert schedule with incorrect exec_command"""
 
     schedule_details = {}
     schedule_details["schedule_id"] = "pytest_faulty_1"
@@ -555,7 +566,7 @@ def test_insert_faulty_schedule_1():
 
 
 def test_exec_faulty_schedule_1():
-    """test_exec_faulty_schedule_1"""
+    """Run schedule with incorrect exec_command"""
     exec_schedule.main("pytest_faulty_1", pytest.db_test)
 
     query_result = query_test_db(
@@ -568,7 +579,7 @@ def test_exec_faulty_schedule_1():
 
 
 def test_insert_faulty_schedule_2():
-    """test_insert_faulty_schedule_2"""
+    """Insert schedule with missing parameter"""
 
     schedule_details = {}
     schedule_details["schedule_id"] = "pytest_faulty_2"
@@ -603,7 +614,7 @@ def test_insert_faulty_schedule_2():
 
 
 def test_exec_faulty_schedule_2():
-    """test_exec_faulty_schedule_2"""
+    """Run schedule with missing parameter"""
     exec_schedule.main("pytest_faulty_2", pytest.db_test)
 
     query_result = query_test_db(

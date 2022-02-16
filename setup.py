@@ -33,6 +33,7 @@ setup(
             'pylint==2.12.2',
             'black==22.1.0',
             'flake8==4.0.1',
+            'twine==3.8.0',
         ]
     },
     entry_points={'console_scripts': ['cicada=cicada.cli:main']},

@@ -61,7 +61,7 @@ DIR=$(pwd)
 
 cd $DIR
 git clone git@github.com:transferwise/cicada.git .
-make
+make python=python3.8
 
 # Update the db_cicada section of the environmental config file
 cp $DIR/config/example.yml $DIR/config/definitions.yml
