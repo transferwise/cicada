@@ -20,9 +20,9 @@ setup(
     install_requires=[
         'psycopg2-binary==2.9.3',
         'pyyaml==6.0',
-        'croniter==1.2.0',
+        'croniter==1.3.4',
         'tabulate==0.8.9',
-        'slack-sdk==3.14.1',
+        'slack-sdk==3.15.1',
         'backoff==1.11.1',
         'psutil==5.9.0',
     ],
