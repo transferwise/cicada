@@ -164,10 +164,10 @@ def test_archive_schedules():
     archive_schedule_log.main(1, pytest.db_test)
 
     result = query_test_db(
-        f"SELECT (SELECT count(*) FROM schedule_log) || 'and' || (SELECT count(*) from schedule_log_historical)"
+        f"SELECT (SELECT count(*) FROM schedule_log) || ',' || (SELECT count(*) from schedule_log_historical)"
     )[0][0]
 
-    assert result == '2and13'
+    assert result == "2,13"
 
 
 def test_archive_schedule_keep_correct_schedules():
@@ -179,12 +179,12 @@ def test_archive_schedule_keep_correct_schedules():
 
     assert result == [
         (
-            '1-1',
+            "1-1",
             datetime.datetime(2022, 1, 1, 9, 0),
             datetime.datetime(2022, 1, 1, 10, 0),
             0,
         ),
-        ('1-3', datetime.datetime(2022, 1, 1, 9, 0), None, None),
+        ("1-3", datetime.datetime(2022, 1, 1, 9, 0), None, None),
     ]
 
 

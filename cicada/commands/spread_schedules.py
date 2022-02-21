@@ -1,5 +1,6 @@
 """Spread schedules accross servers."""
 
+import datetime
 import sys
 
 from cicada.lib import postgres
@@ -16,35 +17,37 @@ def csv_to_list(comma_separated_string: str) -> [int]:
         sys.exit(1)
 
 
-def get_schedules_load_yesterday(db_cur, server_ids: [int] = None):
+def get_last_week_load(db_cur, server_ids: [int] = None):
     """Extract details of executable of a schedule"""
     if server_ids:
         sql_server_ids = ",".join(str(server_id) for server_id in server_ids)
 
+    now = datetime.datetime.now()
+
     sqlquery = f"""
-    select
+    SELECT
         schedule_id,
         sum(end_time - start_time) as total_run_duration
-    from schedule_log
-    where start_time > to_char(now() - interval '1 DAY', 'YYYY-MM-DD 00:00:00')::timestamp
-        and start_time < to_char(now(), 'YYYY-MM-DD 00:00:00')::timestamp
-        and server_id in ({sql_server_ids})
-    group by schedule_id
-    order by 2 desc
+    FROM schedule_log
+    WHERE start_time > to_char('{now}'::timestamp - interval '7 DAY', 'YYYY-MM-DD 00:00:00')::timestamp
+        AND start_time < to_char('{now}'::timestamp, 'YYYY-MM-DD 00:00:00')::timestamp
+        AND server_id in ({sql_server_ids})
+    GROUP BY schedule_id
+    ORDER BY 2 DESC, 1 ASC
     """
 
     db_cur.execute(sqlquery)
     cur_schedules_load_yesterday = db_cur
 
-    obj_schedules_load_yesterday = []
+    last_week_load = []
     for row in cur_schedules_load_yesterday.fetchall():
-        obj_schedules_load_yesterday.append(str(row[0]))
+        last_week_load.append(str(row[0]))
 
-    return obj_schedules_load_yesterday
+    return last_week_load
 
 
-def get_servers(db_cur, enabled_only: bool = True, server_ids: [int] = None):
-    """Get active servers"""
+def get_valid_servers(db_cur, enabled_only: bool = True, server_ids: [int] = None):
+    """Get valid servers"""
     sql_enabled_filter = " and is_enabled = 1" if enabled_only else ""
     sql_server_id_filter = ""
     if server_ids:
@@ -52,65 +55,78 @@ def get_servers(db_cur, enabled_only: bool = True, server_ids: [int] = None):
         sql_server_id_filter = f" and server_id in ({sql_server_ids})"
 
     sqlquery = f"""
-    select server_id from servers
-    where 1 = 1
+    SELECT server_id FROM servers
+    WHERE 1 = 1
     {sql_enabled_filter}
     {sql_server_id_filter}
-    order by server_id
+    ORDER BY server_id
     """
 
     db_cur.execute(sqlquery)
-    cur_enabled_servers = db_cur
 
-    obj_enabled_servers = []
-    for row in cur_enabled_servers.fetchall():
-        obj_enabled_servers.append(str(row[0]))
+    valid_servers = []
+    for row in db_cur.fetchall():
+        valid_servers.append(str(row[0]))
 
-    return obj_enabled_servers
+    return valid_servers
 
 
 @utils.named_exception_handler("spread_schedules")
-def main(args, dbname=None):
+def main(spread_details, dbname=None):
     """Spread schedules accross servers."""
     db_conn = postgres.db_cicada(dbname)
     db_cur = db_conn.cursor()
-    from_server_ids = (
-        csv_to_list(args.from_server_ids) if args.from_server_ids else None
-    )
-    to_server_ids = csv_to_list(args.to_server_ids) if args.to_server_ids else None
 
-    obj_enabled_servers = get_servers(db_cur, server_ids=to_server_ids)
-    enabled_server_count = len(obj_enabled_servers)
+    from_server_ids = csv_to_list(spread_details["from_server_ids"])
+    to_server_ids = csv_to_list(spread_details["to_server_ids"])
 
-    if enabled_server_count == 0:
-        print("ERROR: No enabled target server(s)")
+    valid_servers = get_valid_servers(db_cur, server_ids=to_server_ids)
+    valid_server_count = len(valid_servers)
+
+    if valid_server_count == 0:
+        print("ERROR: No enabled to_server_ids")
         sys.exit(1)
 
     next_enabled_server = 0
 
-    obj_schedules_load_yesterday = get_schedules_load_yesterday(db_cur, from_server_ids)
+    last_week_load = get_last_week_load(db_cur, from_server_ids)
 
-    for schedule_id in obj_schedules_load_yesterday:
+    for schedule_id in last_week_load:
 
         current_schedule_details = scheduler.get_schedule_details(db_cur, schedule_id)
         new_schedule_details = current_schedule_details.copy()
-        new_schedule_details["server_id"] = obj_enabled_servers[next_enabled_server]
+        new_schedule_details["server_id"] = valid_servers[next_enabled_server]
 
         next_enabled_server += 1
-        if next_enabled_server == enabled_server_count:
+        if next_enabled_server == valid_server_count:
             next_enabled_server = 0
 
-        if args.commit:
-            scheduler.update_schedule_details(db_cur, new_schedule_details)
-            print(
+        if spread_details["commit"] is True:
+            output_message = (
                 f"'{str(current_schedule_details['schedule_id'])}' has been reassigned : "
                 f"{str(current_schedule_details['server_id'])} -> {str(new_schedule_details['server_id'])}"
             )
+
+            if (
+                (spread_details["force"] is True)
+                and (current_schedule_details["is_running"] == 1)
+                and (
+                    current_schedule_details["server_id"]
+                    != new_schedule_details["server_id"]
+                )
+            ):
+                new_schedule_details["abort_running"] = 1
+                new_schedule_details["adhoc_execute"] = 1
+                output_message += " | Forced abort_running and adhoc_execute"
+
+            scheduler.update_schedule_details(db_cur, new_schedule_details)
         else:
-            print(
+            output_message = (
                 f"'{str(current_schedule_details['schedule_id'])}' will be reassigned : "
                 f"{str(current_schedule_details['server_id'])} -> {str(new_schedule_details['server_id'])}"
             )
+
+        print(output_message)
 
     db_cur.close()
     db_conn.close()

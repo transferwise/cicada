@@ -151,7 +151,7 @@ class Cicada:
         )
         # now that we're inside a subcommand, ignore the first TWO args
         args = parser.parse_args(sys.argv[2:])
-        upsert_schedule.main(args.__dict__)
+        upsert_schedule.main(vars(args))
 
     @staticmethod
     def exec_schedule():
@@ -184,12 +184,6 @@ class Cicada:
             description="Spread schedules accross servers",
         )
         parser.add_argument(
-            "--commit",
-            default=False,
-            action="store_true",
-            help="Commits changes to backend DB, otherwise only print output",
-        )
-        parser.add_argument(
             "--from_server_ids",
             type=str,
             required=True,
@@ -201,9 +195,22 @@ class Cicada:
             required=True,
             help="List of target server_ids to spread schedules to",
         )
+        parser.add_argument(
+            "--commit",
+            default=False,
+            action="store_true",
+            help="Commits changes to backend DB, otherwise only print output",
+        )
+        parser.add_argument(
+            "--force",
+            default=False,
+            action="store_true",
+            help="If schedule is moving servers and also currently running, perform abort_running and adhoc_execute "
+            "| Only available when --commit is specified",
+        )
         # now that we're inside a subcommand, ignore the first TWO args
         args = parser.parse_args(sys.argv[2:])
-        spread_schedules.main(args)
+        spread_schedules.main(vars(args))
 
     @staticmethod
     def archive_schedule_log():
