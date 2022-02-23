@@ -207,10 +207,11 @@ def test_spread_schedules():
         ["cicada", "spread_schedules"], check=False, stderr=subprocess.PIPE
     ).stderr.decode("utf-8")
 
-    expected = """usage: spread_schedules [-h] [--commit] --from_server_ids FROM_SERVER_IDS
-                        --to_server_ids TO_SERVER_IDS
+    expected = """usage: spread_schedules [-h] --from_server_ids FROM_SERVER_IDS --to_server_ids
+                        TO_SERVER_IDS [--commit] [--force]
 spread_schedules: error: the following arguments are required: --from_server_ids, --to_server_ids
 """
+
     assert actual == expected
 
 
@@ -220,20 +221,24 @@ def test_spread_schedules_help():
         ["cicada", "spread_schedules", "-h"], check=True, stdout=subprocess.PIPE
     ).stdout.decode("utf-8")
 
-    expected = """usage: spread_schedules [-h] [--commit] --from_server_ids FROM_SERVER_IDS
-                        --to_server_ids TO_SERVER_IDS
+    expected = """usage: spread_schedules [-h] --from_server_ids FROM_SERVER_IDS --to_server_ids
+                        TO_SERVER_IDS [--commit] [--force]
 
 Spread schedules accross servers
 
 optional arguments:
   -h, --help            show this help message and exit
-  --commit              Commits changes to backend DB, otherwise only print
-                        output
   --from_server_ids FROM_SERVER_IDS
                         List of source server_ids to collect schedules from
   --to_server_ids TO_SERVER_IDS
                         List of target server_ids to spread schedules to
+  --commit              Commits changes to backend DB, otherwise only print
+                        output
+  --force               If schedule is moving servers and also currently
+                        running, perform abort_running and adhoc_execute |
+                        Only available when --commit is specified
 """
+
     assert actual == expected
 
 
