@@ -34,7 +34,7 @@ setup(
             'black==22.1.0',
             'flake8==4.0.1',
             'twine==3.8.0',
-            'freezegun==1.1.0',
+            'freezegun==1.2.0',
         ]
     },
     entry_points={'console_scripts': ['cicada=cicada.cli:main']},
