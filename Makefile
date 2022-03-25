@@ -31,7 +31,7 @@ pylint:
 flake8:
 	cd $(mkfile_path) ;\
 	. venv/bin/activate ;\
-	flake8 cicada/ --count --select=E9,F63,F7,F82 --max-line-length=120 --statistics  --show-source
+	flake8 cicada/ --count --select=E9,F63,F7,F82 --max-line-length=120 --statistics --show-source
 
 
 black:
