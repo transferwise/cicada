@@ -17,7 +17,7 @@ def csv_to_list(comma_separated_string: str) -> [int]:
         sys.exit(1)
 
 
-def get_last_week_load(db_cur, server_ids: [int] = None):
+def get_last_week_schedules_by_load(db_cur, server_ids: [int] = None):
     """Extract details of executable of a schedule"""
     if server_ids:
         sql_server_ids = ",".join(str(server_id) for server_id in server_ids)
@@ -26,27 +26,28 @@ def get_last_week_load(db_cur, server_ids: [int] = None):
 
     sqlquery = f"""
     SELECT
-        schedule_id,
-        sum(end_time - start_time) as total_run_duration
-    FROM schedule_log
-    WHERE start_time > to_char('{now}'::timestamp - interval '7 DAY', 'YYYY-MM-DD 00:00:00')::timestamp
-        AND start_time < to_char('{now}'::timestamp, 'YYYY-MM-DD 00:00:00')::timestamp
-        AND server_id in ({sql_server_ids})
-    GROUP BY schedule_id
-    ORDER BY 2 DESC, 1 ASC
+        sl.schedule_id as schedule_id,
+        sum(sl.end_time - sl.start_time) as total_run_duration
+    FROM schedule_log sl
+        INNER JOIN schedules s USING (schedule_id)
+    WHERE sl.start_time > to_char('{now}'::timestamp - interval '7 DAY', 'YYYY-MM-DD 00:00:00')::timestamp
+        AND sl.start_time < to_char('{now}'::timestamp, 'YYYY-MM-DD 00:00:00')::timestamp
+        AND s.server_id in ({sql_server_ids})
+    GROUP BY sl.schedule_id
+    ORDER BY total_run_duration DESC, sl.schedule_id ASC
     """
 
     db_cur.execute(sqlquery)
     cur_schedules_load_yesterday = db_cur
 
-    last_week_load = []
+    last_week_schedules_by_load = []
     for row in cur_schedules_load_yesterday.fetchall():
-        last_week_load.append(str(row[0]))
+        last_week_schedules_by_load.append(str(row[0]))
 
-    return last_week_load
+    return last_week_schedules_by_load
 
 
-def get_valid_servers(db_cur, enabled_only: bool = True, server_ids: [int] = None):
+def get_enabled_servers(db_cur, enabled_only: bool = True, server_ids: [int] = None):
     """Get valid servers"""
     sql_enabled_filter = " and is_enabled = 1" if enabled_only else ""
     sql_server_id_filter = ""
@@ -64,11 +65,11 @@ def get_valid_servers(db_cur, enabled_only: bool = True, server_ids: [int] = Non
 
     db_cur.execute(sqlquery)
 
-    valid_servers = []
+    enabled_servers = []
     for row in db_cur.fetchall():
-        valid_servers.append(str(row[0]))
+        enabled_servers.append(str(row[0]))
 
-    return valid_servers
+    return enabled_servers
 
 
 @utils.named_exception_handler("spread_schedules")
@@ -80,8 +81,8 @@ def main(spread_details, dbname=None):
     from_server_ids = csv_to_list(spread_details["from_server_ids"])
     to_server_ids = csv_to_list(spread_details["to_server_ids"])
 
-    valid_servers = get_valid_servers(db_cur, server_ids=to_server_ids)
-    valid_server_count = len(valid_servers)
+    valid_target_servers = get_enabled_servers(db_cur, server_ids=to_server_ids)
+    valid_server_count = len(valid_target_servers)
 
     if valid_server_count == 0:
         print("ERROR: No enabled to_server_ids")
@@ -89,13 +90,15 @@ def main(spread_details, dbname=None):
 
     next_enabled_server = 0
 
-    last_week_load = get_last_week_load(db_cur, from_server_ids)
+    last_week_schedules_by_load = get_last_week_schedules_by_load(
+        db_cur, from_server_ids
+    )
 
-    for schedule_id in last_week_load:
+    for schedule_id in last_week_schedules_by_load:
 
         current_schedule_details = scheduler.get_schedule_details(db_cur, schedule_id)
         new_schedule_details = current_schedule_details.copy()
-        new_schedule_details["server_id"] = valid_servers[next_enabled_server]
+        new_schedule_details["server_id"] = valid_target_servers[next_enabled_server]
 
         next_enabled_server += 1
         if next_enabled_server == valid_server_count:

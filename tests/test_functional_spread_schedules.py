@@ -151,13 +151,18 @@ def test_create_dummy_schedule_logs():
             ,(3, '3-2', '3-2', '2022-01-01 04:01:00', '2022-01-01 07:00:00' , 0)
             ,(3, '3-3', '3-3', '2022-01-01 07:01:00', '2022-01-01 10:00:00' , 0)
             ,(3, '3-4', '3-4', '2022-01-01 10:01:00', '2022-01-01 13:00:00' , 0)
+
+            /* Logs for schedules that longer exist in schedules table */
+            ,(1, '1-5', '1-5', '2022-01-01 01:01:00', '2022-01-01 02:00:00' , 0)
+            ,(2, '1-6', '1-6', '2022-01-01 01:01:00', '2022-01-01 03:00:00' , 0)
+            ,(3, '1-7', '1-7', '2022-01-01 01:01:00', '2022-01-01 04:00:00' , 0)
         ;
         """
     )
 
     results = query_test_db(f"SELECT count(*) FROM schedule_log")[0][0]
 
-    assert results == 12
+    assert results == 15
 
 
 @freeze_time("2022-01-02 02:00:00")
@@ -229,7 +234,7 @@ def test_spread_schedules_force():
     """test_spread_schedules_force"""
     spread_details = {}
 
-    spread_details["from_server_ids"] = "1,2,3"
+    spread_details["from_server_ids"] = "1,2,3,4"
     spread_details["to_server_ids"] = "1,2,3,4"
     spread_details["commit"] = True
     spread_details["force"] = True
