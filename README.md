@@ -28,7 +28,7 @@
 - Running schedules can easily be terminated
 ### Execution flow diagram
 
-![process_flow](docs/execution_flow.png)
+![process_flow](https://github.com/transferwise/cicada/blob/master/docs/execution_flow.png?raw=True)
 
 ## Setup Central Database
 
@@ -40,7 +40,7 @@ Verified on **PostgreSQL** versions *9.6* to *12.9*
 
 ### Database ERD
 
-![erd](docs/erd.png)
+![erd](https://github.com/transferwise/cicada/blob/master/docs/erd.png?raw=True)
 
 ## Setup Node
 

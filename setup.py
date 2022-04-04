@@ -7,14 +7,14 @@ with open("README.md") as f:
 
 setup(
     name="cicada",
-    version="0.3.1",
+    version="0.3.2",
     description="Lightweight, agent-based, distributed scheduler",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Wise",
     url="https://github.com/transferwise/cicada",
     classifiers=[
-        "License :: OSI Approved :: GNU Affero General Public License v3",
+        "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 3 :: Only",
     ],
     install_requires=[
