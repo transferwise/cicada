@@ -178,13 +178,14 @@ def main(schedule_id, dbname=None):
 
             cicada_pid = os.getpid()
 
+            error_detail = None
+            returncode = None
+
             try:
                 # pylint: disable=consider-using-with
                 child_process = subprocess.Popen(
                     full_command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
                 )
-                error_detail = None
-                returncode = None
 
                 # Check if child process has terminated
                 while returncode is None:
@@ -207,10 +208,13 @@ def main(schedule_id, dbname=None):
                             db_conn.close()
                         # pylint: disable=unused-variable
                         except Exception as error:
-                            pass
-                            # send_slack_error(
-                            #     schedule_id, schedule_log_id, returncode, error
-                            # )
+                            send_slack_error(
+                                schedule_id,
+                                schedule_log_id,
+                                returncode,
+                                "Cicada database not reachable",
+                            )
+                            time.sleep(1)
 
             # Capture error
             except OSError as error:
@@ -234,11 +238,6 @@ def main(schedule_id, dbname=None):
                 for zombie in psutil.Process(cicada_pid).children(recursive=True):
                     zombie.send_signal(signal.SIGTERM)
 
-                # if (returncode != 0) and (error_detail != "Cicada abort_running"):
-                #     send_slack_error(
-                #         schedule_id, schedule_log_id, returncode, error_detail
-                #     )
-
                 # Repeatedly attempt to finalize schedule, even if db is unavailable
                 db_connection_made = False
                 while not db_connection_made:
@@ -248,7 +247,10 @@ def main(schedule_id, dbname=None):
                         db_connection_made = True
                     except Exception:
                         send_slack_error(
-                            schedule_id, schedule_log_id, returncode, error_detail
+                            schedule_id,
+                            schedule_log_id,
+                            returncode,
+                            "Cicada database not reachable",
                         )
                         time.sleep(1)
 
