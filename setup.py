@@ -23,7 +23,7 @@ setup(
         "croniter==1.3.4",
         "tabulate==0.8.9",
         "slack-sdk==3.15.2",
-        "backoff==1.11.1",
+        "backoff==2.1.2",
         "psutil==5.9.0",
     ],
     extras_require={
