@@ -7,7 +7,7 @@ with open("README.md") as f:
 
 setup(
     name="cicada",
-    version="0.3.2",
+    version="0.3.3",
     description="Lightweight, agent-based, distributed scheduler",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -20,17 +20,17 @@ setup(
     install_requires=[
         "psycopg2-binary==2.9.3",
         "pyyaml==6.0",
-        "croniter==1.3.4",
+        "croniter==1.3.5",
         "tabulate==0.8.9",
-        "slack-sdk==3.15.2",
-        "backoff==1.11.1",
+        "slack-sdk==3.17.2",
+        "backoff==2.1.2",
         "psutil==5.9.0",
     ],
     extras_require={
         "dev": [
-            "pytest==7.1.1",
+            "pytest==7.1.2",
             "pytest-cov==3.0.0",
-            "pylint==2.13.4",
+            "pylint==2.14.4",
             "black==22.3.0",
             "flake8==4.0.1",
             "freezegun==1.2.1",
