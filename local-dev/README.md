@@ -42,7 +42,7 @@ $ docker exec -it cicada_dev make pytest
 ###  Running linters
 
 ``` sh
-$ make dev pylint flake8 black
+$ docker exec -it cicada_dev make dev pylint flake8 black
 ```
 
 ### To refresh the containers
