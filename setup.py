@@ -31,7 +31,7 @@ setup(
             "pytest==7.1.2",
             "pytest-cov==3.0.0",
             "pylint==2.14.4",
-            "black==22.3.0",
+            "black==22.6.0",
             "flake8==4.0.1",
             "freezegun==1.2.1",
         ]
