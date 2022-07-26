@@ -21,17 +21,17 @@ setup(
         "psycopg2-binary==2.9.3",
         "pyyaml==6.0",
         "croniter==1.3.5",
-        "tabulate==0.8.9",
-        "slack-sdk==3.17.2",
+        "tabulate==0.8.10",
+        "slack-sdk==3.18.0",
         "backoff==2.1.2",
-        "psutil==5.9.0",
+        "psutil==5.9.1",
     ],
     extras_require={
         "dev": [
             "pytest==7.1.2",
             "pytest-cov==3.0.0",
-            "pylint==2.14.4",
-            "black==22.3.0",
+            "pylint==2.14.5",
+            "black==22.6.0",
             "flake8==4.0.1",
             "freezegun==1.2.1",
         ]
