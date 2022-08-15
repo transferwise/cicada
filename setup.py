@@ -33,7 +33,7 @@ setup(
             "pylint==2.14.5",
             "black==22.6.0",
             "flake8==4.0.1",
-            "freezegun==1.2.1",
+            "freezegun==1.2.2",
         ]
     },
     entry_points={"console_scripts": ["cicada=cicada.cli:main"]},
