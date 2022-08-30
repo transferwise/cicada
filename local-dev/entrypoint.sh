@@ -102,8 +102,8 @@ echo "List server schedules : cicada list_server_schedules"
 echo
 echo "Run tests in cicada_dev container"
 echo "---------------------------------"
-echo "Run tests             : make dev pytest --file=${CICADA_HOME}/Makefile"
-echo "Run linter            : make dev pylint --file=${CICADA_HOME}/Makefile"
+echo "Run tests             : docker exec -it cicada_dev make pytest"
+echo "Run linters           : docker exec -it cicada_dev make dev pylint flake8 black"
 echo "=========================================================================="
 
 

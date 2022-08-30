@@ -30,10 +30,10 @@ setup(
         "dev": [
             "pytest==7.1.2",
             "pytest-cov==3.0.0",
-            "pylint==2.14.5",
+            "pylint==2.15.0",
             "black==22.6.0",
-            "flake8==4.0.1",
-            "freezegun==1.2.1",
+            "flake8==5.0.4",
+            "freezegun==1.2.2",
         ]
     },
     entry_points={"console_scripts": ["cicada=cicada.cli:main"]},
