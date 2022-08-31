@@ -116,15 +116,18 @@ def finalize_schedule_log(db_cur, schedule_log_id, returncode, error_detail):
     db_cur.execute(sqlquery)
 
 
-def send_slack_error(schedule_id, schedule_log_id, returncode, error_detail):
+def send_slack_error(schedule_id, schedule_log_id, returncode, description, error):
     """send_slack_error"""
     utils.send_slack_message(
         f":exclamation: *ERROR* schedule_id `{schedule_id}` execution failure",
         f"```"
-        f"server time     : {datetime.datetime.now()}\n"
+        f"server utc time : {datetime.datetime.utcnow()}\n"
         f"schedule_log_id : {schedule_log_id}\n"
         f"returncode      : {returncode}\n"
-        f"error_detail    : {error_detail}```",
+        f"description     : {description}\n"
+        f"\n"
+        f"error           : {error}"
+        f"```",
         "danger",
     )
 
@@ -184,6 +187,11 @@ def main(schedule_id, dbname=None):
         error_detail = None
         returncode = None
 
+        db_conn_alert_delay = 15
+        db_conn_alert_next = datetime.datetime.utcnow() + datetime.timedelta(
+            minutes=db_conn_alert_delay
+        )
+
         try:
             # pylint: disable=consider-using-with
             child_process = subprocess.Popen(
@@ -191,6 +199,7 @@ def main(schedule_id, dbname=None):
             )
 
             # Check if child process has terminated
+
             while returncode is None:
                 time.sleep(1)
                 returncode = child_process.poll()
@@ -211,13 +220,24 @@ def main(schedule_id, dbname=None):
                         db_conn.close()
                     # pylint: disable=unused-variable
                     except Exception as error:
-                        send_slack_error(
-                            schedule_id,
-                            schedule_log_id,
-                            returncode,
-                            "Cicada database not reachable to check abort_running",
+                        if datetime.datetime.utcnow() >= db_conn_alert_next:
+                            send_slack_error(
+                                schedule_id,
+                                schedule_log_id,
+                                returncode,
+                                f"Cicada db unavailable - check abort_running - {db_conn_alert_delay} minutes",
+                                error,
+                            )
+                            db_conn_alert_next = (
+                                datetime.datetime.utcnow()
+                                + datetime.timedelta(minutes=db_conn_alert_delay)
+                            )
+                        time.sleep(5)
+                    else:
+                        db_conn_alert_next = (
+                            datetime.datetime.utcnow()
+                            + datetime.timedelta(minutes=db_conn_alert_delay)
                         )
-                        time.sleep(1)
 
         # Capture error
         except OSError as error:
@@ -242,20 +262,25 @@ def main(schedule_id, dbname=None):
                 zombie.send_signal(signal.SIGTERM)
 
             # Repeatedly attempt to finalize schedule, even if db is unavailable
-            db_connection_made = False
-            while not db_connection_made:
+            while True:
                 try:
                     db_conn = postgres.db_cicada(dbname)
                     db_cur = db_conn.cursor()
-                    db_connection_made = True
-                except Exception:
-                    send_slack_error(
-                        schedule_id,
-                        schedule_log_id,
-                        returncode,
-                        "Cicada database not reachable to finalize schedule",
-                    )
-                    time.sleep(1)
+                    break
+                except Exception as error:
+                    if datetime.datetime.utcnow() >= db_conn_alert_next:
+                        send_slack_error(
+                            schedule_id,
+                            schedule_log_id,
+                            returncode,
+                            f"Cicada db unavailable - finalize schedule - {db_conn_alert_delay} minutes",
+                            error,
+                        )
+                        db_conn_alert_next = (
+                            datetime.datetime.utcnow()
+                            + datetime.timedelta(minutes=db_conn_alert_delay)
+                        )
+                    time.sleep(5)
 
             unset_is_running(db_cur, schedule_id)
             finalize_schedule_log(db_cur, schedule_log_id, returncode, error_detail)
