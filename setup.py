@@ -24,7 +24,7 @@ setup(
         "tabulate==0.8.10",
         "slack-sdk==3.18.1",
         "backoff==2.1.2",
-        "psutil==5.9.1",
+        "psutil==5.9.2",
     ],
     extras_require={
         "dev": [
