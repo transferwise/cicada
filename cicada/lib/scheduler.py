@@ -13,6 +13,8 @@ import datetime
 import socket
 from croniter import croniter
 
+from cicada.lib import postgres
+
 from . import utils
 
 
@@ -177,11 +179,26 @@ def insert_schedule_details(db_cur, schedule_details):
     if schedule_details["last_run_date"] is not None:
         sqlquery = sqlquery + " ,'" + str(schedule_details["last_run_date"]) + "'"
     if schedule_details["exec_command"] is not None:
-        sqlquery = sqlquery + " ,'" + str(schedule_details["exec_command"]) + "'"
+        sqlquery = (
+            sqlquery
+            + " ,'"
+            + postgres.escape_upsert_string(str(schedule_details["exec_command"]))
+            + "'"
+        )
     if schedule_details["parameters"] is not None:
-        sqlquery = sqlquery + " ,'" + str(schedule_details["parameters"]) + "'"
+        sqlquery = (
+            sqlquery
+            + " ,'"
+            + postgres.escape_upsert_string(str(schedule_details["parameters"]))
+            + "'"
+        )
     if schedule_details["adhoc_parameters"] is not None:
-        sqlquery = sqlquery + " ,'" + str(schedule_details["adhoc_parameters"]) + "'"
+        sqlquery = (
+            sqlquery
+            + " ,'"
+            + postgres.escape_upsert_string(str(schedule_details["adhoc_parameters"]))
+            + "'"
+        )
     if schedule_details["schedule_group_id"] is not None:
         sqlquery = sqlquery + " ," + str(schedule_details["schedule_group_id"])
 
@@ -248,18 +265,21 @@ def update_schedule_details(db_cur, schedule_details):
         sqlquery = (
             sqlquery
             + " ,exec_command = '"
-            + str(schedule_details["exec_command"])
+            + postgres.escape_upsert_string(str(schedule_details["exec_command"]))
             + "'"
         )
     if schedule_details["parameters"] is not None:
         sqlquery = (
-            sqlquery + " ,parameters = '" + str(schedule_details["parameters"]) + "'"
+            sqlquery
+            + " ,parameters = '"
+            + postgres.escape_upsert_string(str(schedule_details["parameters"]))
+            + "'"
         )
     if schedule_details["adhoc_parameters"] is not None:
         sqlquery = (
             sqlquery
             + " ,adhoc_parameters = '"
-            + str(schedule_details["adhoc_parameters"])
+            + postgres.escape_upsert_string(str(schedule_details["adhoc_parameters"]))
             + "'"
         )
     if schedule_details["schedule_group_id"] is not None:
