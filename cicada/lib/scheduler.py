@@ -117,8 +117,6 @@ def get_schedule_details(db_cur, schedule_id):
     return schedule_details
 
 
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-statements
 def insert_schedule_details(db_cur, schedule_details):
     """Insert a new schedule"""
     sqlquery = "INSERT INTO schedules (schedule_id"
@@ -207,7 +205,6 @@ def insert_schedule_details(db_cur, schedule_details):
     db_cur.execute(sqlquery)
 
 
-# pylint: disable=too-many-branches
 def update_schedule_details(db_cur, schedule_details):
     """Update and existing schedule"""
     sqlquery = "UPDATE schedules SET"

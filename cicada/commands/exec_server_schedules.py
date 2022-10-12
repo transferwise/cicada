@@ -25,7 +25,6 @@ def main(dbname=None):
         )
 
         # Note : subprocess.Popen = asynchronous
-        # pylint: disable=consider-using-with
         subprocess.Popen(
             full_command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )

@@ -145,9 +145,6 @@ def catch_sigquit(signum, frame):
 
 
 @utils.named_exception_handler("exec_schedule")
-# pylint: disable=too-many-locals
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-statements
 def main(schedule_id, dbname=None):
     """Execute a using schedule_id."""
     db_conn = postgres.db_cicada(dbname)
@@ -157,7 +154,6 @@ def main(schedule_id, dbname=None):
     # Get schedule details and execute
     obj_schedule_details = scheduler.get_schedule_executable(db_cur, schedule_id)
 
-    # pylint: disable=too-many-nested-blocks
     row = obj_schedule_details.fetchone()
     command = str(row[0])
     parameters = str(row[1])
@@ -195,7 +191,6 @@ def main(schedule_id, dbname=None):
         )
 
         try:
-            # pylint: disable=consider-using-with
             child_process = subprocess.Popen(
                 full_command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
@@ -220,7 +215,6 @@ def main(schedule_id, dbname=None):
                             unset_abort_running(db_cur, schedule_id)
                         db_cur.close()
                         db_conn.close()
-                    # pylint: disable=unused-variable
                     except Exception as error:
                         if datetime.datetime.utcnow() >= db_conn_alert_next:
                             send_slack_error(

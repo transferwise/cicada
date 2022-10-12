@@ -15,7 +15,6 @@ from functools import wraps
 def suppress_exception(func):
     """Decorator to suppress an Exception created by attempting to send an Exception to Slack"""
 
-    # pylint: disable=inconsistent-return-statements
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)

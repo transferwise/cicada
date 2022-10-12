@@ -11,8 +11,6 @@ from cicada.lib import utils
 
 
 @utils.named_exception_handler("upsert_schedules")
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-statements
 def main(schedule_details, dbname=None):
     """Upsert a schedule using schedule_id."""
 

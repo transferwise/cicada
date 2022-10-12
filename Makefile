@@ -22,12 +22,6 @@ pytest:
 	pytest tests/ --verbose --cov=cicada --cov-fail-under=80 --cov-report term-missing
 
 
-pylint:
-	cd $(mkfile_path) ;\
-	. venv/bin/activate ;\
-	pylint --rcfile .pylintrc cicada/
-
-
 flake8:
 	cd $(mkfile_path) ;\
 	. venv/bin/activate ;\
