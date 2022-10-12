@@ -308,6 +308,70 @@ def test_exec_adhoc_schedule():
     assert query_result >= 1
 
 
+def test_insert_escaped_schedule():
+    """test_insert_escaped_schedule"""
+
+    schedule_details = {}
+    schedule_details["schedule_id"] = "pytest_adhoc"
+    schedule_details["schedule_description"] = None
+    schedule_details["server_id"] = None
+    schedule_details["schedule_order"] = None
+    schedule_details["is_async"] = None
+    schedule_details["is_enabled"] = None
+    schedule_details["adhoc_execute"] = 1
+    schedule_details["is_running"] = None
+    schedule_details["abort_running"] = None
+    schedule_details["interval_mask"] = "* * * * *"
+    schedule_details["first_run_date"] = None
+    schedule_details["last_run_date"] = None
+    schedule_details["exec_command"] = "echo"
+    schedule_details["parameters"] = "'me'"
+    schedule_details["adhoc_parameters"] = None
+    schedule_details["schedule_group_id"] = None
+
+    upsert_schedule.main(schedule_details, pytest.db_test)
+
+    query_result = query_test_db(
+        f"""
+        SELECT schedule_id, schedule_description, server_id,
+        schedule_order, is_async, is_enabled, adhoc_execute, interval_mask, first_run_date, last_run_date, exec_command, parameters,
+        adhoc_parameters, schedule_group_id, is_running
+        FROM schedules WHERE schedule_id = '{schedule_details['schedule_id']}'
+        """
+    )
+
+    assert query_result == [
+        (
+            "pytest_adhoc",
+            None,
+            1,
+            1,
+            1,
+            0,
+            1,
+            "* * * * *",
+            datetime.datetime(1000, 1, 1, 0, 0),
+            datetime.datetime(9999, 12, 31, 23, 59, 59, 999000),
+            "echo",
+            "'me'",
+            None,
+            None,
+            0,
+        ),
+    ]
+
+
+def test_exec_escaped_schedule():
+    """test_exec_escaped_schedule"""
+    exec_schedule.main("pytest_adhoc", pytest.db_test)
+
+    query_result = query_test_db(
+        """SELECT count(*) FROM schedule_log WHERE returncode = 0 AND schedule_id = 'pytest_adhoc'"""
+    )[0][0]
+
+    assert query_result >= 1
+
+
 def test_insert_sync_schedule_1():
     """test_insert_sync_schedule"""
 

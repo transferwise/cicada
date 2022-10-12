@@ -90,6 +90,8 @@ def init_schedule_log(db_cur, server_id, schedule_id, full_command):
     # Get local machine uuid
     schedule_log_id = uuid.uuid1()
 
+    full_command = postgres.escape_upsert_string(full_command)
+
     sqlquery = f"""
     INSERT INTO schedule_log
         (schedule_log_id, server_id, schedule_id, full_command, start_time)

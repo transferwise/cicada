@@ -24,3 +24,8 @@ def db_cicada(dbname=None):
     conn.autocommit = True
 
     return conn
+
+
+def escape_upsert_string(regular_string):
+    """Makes string INSERT safe"""
+    return regular_string.replace("'", "''")

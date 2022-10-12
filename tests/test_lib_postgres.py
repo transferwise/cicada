@@ -28,3 +28,12 @@ def test_return_data():
     db_conn.close()
 
     assert str(row[0]) == str(1)
+
+
+def test_escape_upsert_string():
+    """test_escape_upsert_string"""
+
+    some_text = "'some_text'"
+    some_text = postgres.escape_upsert_string(some_text)
+
+    assert some_text == str("''some_text''")
