@@ -21,11 +21,7 @@ def main(schedule_id, dbname=None):
     db_conn.close()
 
     if current_schedule_details:
-        print(
-            tabulate(
-                current_schedule_details.items(), ["Detail", "Value"], tablefmt="psql"
-            )
-        )
+        print(tabulate(current_schedule_details.items(), ["Detail", "Value"], tablefmt="psql"))
     else:
         print("ERROR: schedule_id '" + str(schedule_id) + "' not found")
         sys.exit(1)

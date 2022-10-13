@@ -90,9 +90,7 @@ def main(spread_details, dbname=None):
 
     next_enabled_server = 0
 
-    last_week_schedules_by_load = get_last_week_schedules_by_load(
-        db_cur, from_server_ids
-    )
+    last_week_schedules_by_load = get_last_week_schedules_by_load(db_cur, from_server_ids)
 
     for schedule_id in last_week_schedules_by_load:
 
@@ -113,10 +111,7 @@ def main(spread_details, dbname=None):
             if (
                 (spread_details["force"] is True)
                 and (current_schedule_details["is_running"] == 1)
-                and (
-                    current_schedule_details["server_id"]
-                    != new_schedule_details["server_id"]
-                )
+                and (current_schedule_details["server_id"] != new_schedule_details["server_id"])
             ):
                 new_schedule_details["abort_running"] = 1
                 new_schedule_details["adhoc_execute"] = 1

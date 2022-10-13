@@ -15,7 +15,6 @@ from functools import wraps
 def suppress_exception(func):
     """Decorator to suppress an Exception created by attempting to send an Exception to Slack"""
 
-    # pylint: disable=inconsistent-return-statements
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -74,7 +73,5 @@ def named_exception_handler(command_name):
 
 def load_config() -> Dict:
     """Loads the config file in cicada/config/"""
-    config_file = os.path.join(
-        os.path.abspath(os.path.dirname(__file__)), "../../config/definitions.yml"
-    )
+    config_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../config/definitions.yml")
     return yaml.safe_load(open(config_file, "r", encoding="UTF-8").read())

@@ -21,9 +21,7 @@ def main(dbname=None):
     print("server_id : " + server_id)
     print("now : " + str(datetime.datetime.now()))
     print("now_minute : " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:00"))
-    print(
-        "-------------------------------------------------------------------------------------------"
-    )
+    print("-------------------------------------------------------------------------------------------")
     print("Asynchronous Schedules :")
     print("schedule_id\tFull Command")
 
@@ -38,9 +36,7 @@ def main(dbname=None):
     obj_schedules = scheduler.get_all_schedules(db_cur, server_id, 0)
 
     print("")
-    print(
-        "-------------------------------------------------------------------------------------------"
-    )
+    print("-------------------------------------------------------------------------------------------")
     print("Synchronous Schedules :")
     print("schedule_id\tFull Command")
 

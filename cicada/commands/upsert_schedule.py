@@ -11,8 +11,6 @@ from cicada.lib import utils
 
 
 @utils.named_exception_handler("upsert_schedules")
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-statements
 def main(schedule_details, dbname=None):
     """Upsert a schedule using schedule_id."""
 
@@ -27,9 +25,7 @@ def main(schedule_details, dbname=None):
     # Get schedule details
     db_conn = postgres.db_cicada(dbname)
     db_cur = db_conn.cursor()
-    current_schedule_details = scheduler.get_schedule_details(
-        db_cur, schedule_details["schedule_id"]
-    )
+    current_schedule_details = scheduler.get_schedule_details(db_cur, schedule_details["schedule_id"])
 
     if not current_schedule_details:
 
@@ -57,9 +53,7 @@ def main(schedule_details, dbname=None):
         new_schedule_details = current_schedule_details.copy()
 
         if schedule_details["schedule_description"] is not None:
-            new_schedule_details["schedule_description"] = schedule_details[
-                "schedule_description"
-            ]
+            new_schedule_details["schedule_description"] = schedule_details["schedule_description"]
         if schedule_details["server_id"] is not None:
             new_schedule_details["server_id"] = schedule_details["server_id"]
         if schedule_details["schedule_order"] is not None:
@@ -81,13 +75,9 @@ def main(schedule_details, dbname=None):
         if schedule_details["parameters"] is not None:
             new_schedule_details["parameters"] = schedule_details["parameters"]
         if schedule_details["adhoc_parameters"] is not None:
-            new_schedule_details["adhoc_parameters"] = schedule_details[
-                "adhoc_parameters"
-            ]
+            new_schedule_details["adhoc_parameters"] = schedule_details["adhoc_parameters"]
         if schedule_details["schedule_group_id"] is not None:
-            new_schedule_details["schedule_group_id"] = schedule_details[
-                "schedule_group_id"
-            ]
+            new_schedule_details["schedule_group_id"] = schedule_details["schedule_group_id"]
 
         scheduler.update_schedule_details(db_cur, new_schedule_details)
 

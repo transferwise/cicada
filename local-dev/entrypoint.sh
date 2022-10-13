@@ -103,7 +103,7 @@ echo
 echo "Run tests in cicada_dev container"
 echo "---------------------------------"
 echo "Run tests             : docker exec -it cicada_dev make pytest"
-echo "Run linters           : docker exec -it cicada_dev make dev pylint flake8 black"
+echo "Run linters           : docker exec -it cicada_dev make dev flake8 black"
 echo "=========================================================================="
 
 

@@ -63,9 +63,7 @@ def db_setup(get_env_vars):
     )
     test_conn.autocommit = True
     test_cur = test_conn.cursor()
-    test_cur.execute(
-        open(f"{pytest.cicada_home}/setup/schema.sql", "r", encoding="utf-8").read()
-    )
+    test_cur.execute(open(f"{pytest.cicada_home}/setup/schema.sql", "r", encoding="utf-8").read())
     test_cur.close()
     test_conn.close()
 
@@ -115,16 +113,9 @@ def test_register_server():
     fqdn = socket.getfqdn()
     ip4_address = socket.gethostbyname(fqdn)
 
-    results = query_test_db(
-        f"SELECT hostname, fqdn, ip4_address, is_enabled FROM servers WHERE hostname='{hostname}'"
-    )
+    results = query_test_db(f"SELECT hostname, fqdn, ip4_address, is_enabled FROM servers WHERE hostname='{hostname}'")
 
-    assert (
-        results[0][0] == hostname
-        and results[0][1] == fqdn
-        and results[0][2] == ip4_address
-        and results[0][3] == 1
-    )
+    assert results[0][0] == hostname and results[0][1] == fqdn and results[0][2] == ip4_address and results[0][3] == 1
 
 
 def test_insert_async_schedule():
@@ -578,14 +569,10 @@ def test_insert_abort_running_2():
 def test_exec_abort_running_2():
     """test_exec_abort_running_2"""
     # exec_schedule.main('pytest_abort_running_2', pytest.db_test)
-    full_command = scheduler.generate_exec_schedule_command(
-        "pytest_abort_running_2", pytest.db_test
-    )
+    full_command = scheduler.generate_exec_schedule_command("pytest_abort_running_2", pytest.db_test)
     subprocess.Popen(full_command)
     time.sleep(1)
-    query_test_db(
-        "UPDATE schedules SET abort_running=1 WHERE schedule_id='pytest_abort_running_2'"
-    )
+    query_test_db("UPDATE schedules SET abort_running=1 WHERE schedule_id='pytest_abort_running_2'")
     time.sleep(1)
     query_result = query_test_db(
         """SELECT schedule_id, returncode, error_detail FROM schedule_log WHERE schedule_id = 'pytest_abort_running_2'"""

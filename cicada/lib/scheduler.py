@@ -117,8 +117,6 @@ def get_schedule_details(db_cur, schedule_id):
     return schedule_details
 
 
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-statements
 def insert_schedule_details(db_cur, schedule_details):
     """Insert a new schedule"""
     sqlquery = "INSERT INTO schedules (schedule_id"
@@ -153,13 +151,9 @@ def insert_schedule_details(db_cur, schedule_details):
     sqlquery = sqlquery + ") VALUES ('" + str(schedule_details["schedule_id"]) + "'"
 
     if schedule_details["schedule_description"] is not None:
-        sqlquery = (
-            sqlquery + " ,'" + str(schedule_details["schedule_description"]) + "'"
-        )
+        sqlquery = sqlquery + " ,'" + str(schedule_details["schedule_description"]) + "'"
     if schedule_details["server_id"] is None:
-        sqlquery = (
-            sqlquery + " ,(SELECT MIN(server_id) FROM servers WHERE is_enabled=1)"
-        )
+        sqlquery = sqlquery + " ,(SELECT MIN(server_id) FROM servers WHERE is_enabled=1)"
     else:
         sqlquery = sqlquery + " ," + str(schedule_details["server_id"])
     if schedule_details["schedule_order"] is not None:
@@ -179,26 +173,11 @@ def insert_schedule_details(db_cur, schedule_details):
     if schedule_details["last_run_date"] is not None:
         sqlquery = sqlquery + " ,'" + str(schedule_details["last_run_date"]) + "'"
     if schedule_details["exec_command"] is not None:
-        sqlquery = (
-            sqlquery
-            + " ,'"
-            + postgres.escape_upsert_string(str(schedule_details["exec_command"]))
-            + "'"
-        )
+        sqlquery = sqlquery + " ,'" + postgres.escape_upsert_string(str(schedule_details["exec_command"])) + "'"
     if schedule_details["parameters"] is not None:
-        sqlquery = (
-            sqlquery
-            + " ,'"
-            + postgres.escape_upsert_string(str(schedule_details["parameters"]))
-            + "'"
-        )
+        sqlquery = sqlquery + " ,'" + postgres.escape_upsert_string(str(schedule_details["parameters"])) + "'"
     if schedule_details["adhoc_parameters"] is not None:
-        sqlquery = (
-            sqlquery
-            + " ,'"
-            + postgres.escape_upsert_string(str(schedule_details["adhoc_parameters"]))
-            + "'"
-        )
+        sqlquery = sqlquery + " ,'" + postgres.escape_upsert_string(str(schedule_details["adhoc_parameters"])) + "'"
     if schedule_details["schedule_group_id"] is not None:
         sqlquery = sqlquery + " ," + str(schedule_details["schedule_group_id"])
 
@@ -207,73 +186,38 @@ def insert_schedule_details(db_cur, schedule_details):
     db_cur.execute(sqlquery)
 
 
-# pylint: disable=too-many-branches
 def update_schedule_details(db_cur, schedule_details):
     """Update and existing schedule"""
     sqlquery = "UPDATE schedules SET"
-    sqlquery = (
-        sqlquery + " schedule_id = '" + str(schedule_details["schedule_id"]) + "'"
-    )
+    sqlquery = sqlquery + " schedule_id = '" + str(schedule_details["schedule_id"]) + "'"
 
     if schedule_details["schedule_description"] is not None:
-        sqlquery = (
-            sqlquery
-            + " ,schedule_description = '"
-            + str(schedule_details["schedule_description"])
-            + "'"
-        )
+        sqlquery = sqlquery + " ,schedule_description = '" + str(schedule_details["schedule_description"]) + "'"
     if schedule_details["server_id"] is not None:
         sqlquery = sqlquery + " ,server_id = " + str(schedule_details["server_id"])
     if schedule_details["schedule_order"] is not None:
-        sqlquery = (
-            sqlquery + " ,schedule_order = " + str(schedule_details["schedule_order"])
-        )
+        sqlquery = sqlquery + " ,schedule_order = " + str(schedule_details["schedule_order"])
     if schedule_details["is_async"] is not None:
         sqlquery = sqlquery + " ,is_async = " + str(schedule_details["is_async"])
     if schedule_details["is_enabled"] is not None:
         sqlquery = sqlquery + " ,is_enabled = " + str(schedule_details["is_enabled"])
     if schedule_details["adhoc_execute"] is not None:
-        sqlquery = (
-            sqlquery + " ,adhoc_execute = " + str(schedule_details["adhoc_execute"])
-        )
+        sqlquery = sqlquery + " ,adhoc_execute = " + str(schedule_details["adhoc_execute"])
     if schedule_details["abort_running"] is not None:
-        sqlquery = (
-            sqlquery + " ,abort_running = " + str(schedule_details["abort_running"])
-        )
+        sqlquery = sqlquery + " ,abort_running = " + str(schedule_details["abort_running"])
     if schedule_details["interval_mask"] is not None:
-        sqlquery = (
-            sqlquery
-            + " ,interval_mask = '"
-            + str(schedule_details["interval_mask"])
-            + "'"
-        )
+        sqlquery = sqlquery + " ,interval_mask = '" + str(schedule_details["interval_mask"]) + "'"
     if schedule_details["first_run_date"] is not None:
-        sqlquery = (
-            sqlquery
-            + " ,first_run_date = '"
-            + str(schedule_details["first_run_date"])
-            + "'"
-        )
+        sqlquery = sqlquery + " ,first_run_date = '" + str(schedule_details["first_run_date"]) + "'"
     if schedule_details["last_run_date"] is not None:
-        sqlquery = (
-            sqlquery
-            + " ,last_run_date = '"
-            + str(schedule_details["last_run_date"])
-            + "'"
-        )
+        sqlquery = sqlquery + " ,last_run_date = '" + str(schedule_details["last_run_date"]) + "'"
     if schedule_details["exec_command"] is not None:
         sqlquery = (
-            sqlquery
-            + " ,exec_command = '"
-            + postgres.escape_upsert_string(str(schedule_details["exec_command"]))
-            + "'"
+            sqlquery + " ,exec_command = '" + postgres.escape_upsert_string(str(schedule_details["exec_command"])) + "'"
         )
     if schedule_details["parameters"] is not None:
         sqlquery = (
-            sqlquery
-            + " ,parameters = '"
-            + postgres.escape_upsert_string(str(schedule_details["parameters"]))
-            + "'"
+            sqlquery + " ,parameters = '" + postgres.escape_upsert_string(str(schedule_details["parameters"])) + "'"
         )
     if schedule_details["adhoc_parameters"] is not None:
         sqlquery = (
@@ -283,14 +227,8 @@ def update_schedule_details(db_cur, schedule_details):
             + "'"
         )
     if schedule_details["schedule_group_id"] is not None:
-        sqlquery = (
-            sqlquery
-            + " ,schedule_groupId = "
-            + str(schedule_details["schedule_group_id"])
-        )
-    sqlquery = (
-        sqlquery + " WHERE schedule_id = '" + str(schedule_details["schedule_id"]) + "'"
-    )
+        sqlquery = sqlquery + " ,schedule_groupId = " + str(schedule_details["schedule_group_id"])
+    sqlquery = sqlquery + " WHERE schedule_id = '" + str(schedule_details["schedule_id"]) + "'"
 
     db_cur.execute(sqlquery)
 
@@ -389,9 +327,7 @@ def get_all_schedules(db_cur, server_id, is_async):
 
     obj_schedules = []
 
-    now_minute = datetime.datetime.strptime(
-        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:00"), "%Y-%m-%d %H:%M:%S"
-    )
+    now_minute = datetime.datetime.strptime(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:00"), "%Y-%m-%d %H:%M:%S")
 
     for row in cur_schedules.fetchall():
         schedule_id = str(row[0])
@@ -405,9 +341,7 @@ def get_all_schedules(db_cur, server_id, is_async):
                 "warning",
             )
         else:
-            iteration = croniter(
-                interval_mask, now_minute - datetime.timedelta(minutes=1)
-            )
+            iteration = croniter(interval_mask, now_minute - datetime.timedelta(minutes=1))
             next_iter = iteration.get_next(datetime.datetime)
 
             if now_minute == next_iter:

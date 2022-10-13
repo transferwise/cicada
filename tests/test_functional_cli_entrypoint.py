@@ -5,9 +5,7 @@ import subprocess
 
 def test_cicada():
     """test_cicada"""
-    actual = subprocess.run(
-        ["cicada"], check=False, stderr=subprocess.PIPE
-    ).stderr.decode("utf-8")
+    actual = subprocess.run(["cicada"], check=False, stderr=subprocess.PIPE).stderr.decode("utf-8")
 
     expected = """usage: cicada [-h] command
 cicada: error: the following arguments are required: command
@@ -17,9 +15,7 @@ cicada: error: the following arguments are required: command
 
 def test_cicada_help():
     """test_cicada_help"""
-    actual = subprocess.run(
-        ["cicada", "-h"], check=True, stdout=subprocess.PIPE
-    ).stdout.decode("utf-8")
+    actual = subprocess.run(["cicada", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode("utf-8")
 
     expected = """usage: cicada [-h] command
 
@@ -36,9 +32,7 @@ optional arguments:
 
 def test_bad_command():
     """test_bad_command"""
-    actual = subprocess.run(
-        ["cicada", "blah"], check=False, stdout=subprocess.PIPE
-    ).stdout.decode("utf-8")
+    actual = subprocess.run(["cicada", "blah"], check=False, stdout=subprocess.PIPE).stdout.decode("utf-8")
 
     expected = """blah is not a recognized command
 
@@ -57,9 +51,7 @@ optional arguments:
 
 def test_show_schedule():
     """test_show_schedule"""
-    actual = subprocess.run(
-        ["cicada", "show_schedule"], check=False, stderr=subprocess.PIPE
-    ).stderr.decode("utf-8")
+    actual = subprocess.run(["cicada", "show_schedule"], check=False, stderr=subprocess.PIPE).stderr.decode("utf-8")
 
     expected = """usage: show_schedule [-h] --schedule_id SCHEDULE_ID
 show_schedule: error: the following arguments are required: --schedule_id
@@ -69,9 +61,9 @@ show_schedule: error: the following arguments are required: --schedule_id
 
 def test_show_schedule_help():
     """test_show_schedule_help"""
-    actual = subprocess.run(
-        ["cicada", "show_schedule", "-h"], check=True, stdout=subprocess.PIPE
-    ).stdout.decode("utf-8")
+    actual = subprocess.run(["cicada", "show_schedule", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode(
+        "utf-8"
+    )
 
     expected = """usage: show_schedule [-h] --schedule_id SCHEDULE_ID
 
@@ -87,9 +79,7 @@ optional arguments:
 
 def test_upsert_schedule():
     """test_upsert_schedule"""
-    actual = subprocess.run(
-        ["cicada", "upsert_schedule"], check=False, stderr=subprocess.PIPE
-    ).stderr.decode("utf-8")
+    actual = subprocess.run(["cicada", "upsert_schedule"], check=False, stderr=subprocess.PIPE).stderr.decode("utf-8")
 
     expected = """usage: upsert_schedule [-h] --schedule_id SCHEDULE_ID
                        [--schedule_description SCHEDULE_DESCRIPTION]
@@ -111,9 +101,9 @@ upsert_schedule: error: the following arguments are required: --schedule_id
 
 def test_upsert_schedule_help():
     """test_upsert_schedule_help"""
-    actual = subprocess.run(
-        ["cicada", "upsert_schedule", "-h"], check=True, stdout=subprocess.PIPE
-    ).stdout.decode("utf-8")
+    actual = subprocess.run(["cicada", "upsert_schedule", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode(
+        "utf-8"
+    )
 
     expected = """usage: upsert_schedule [-h] --schedule_id SCHEDULE_ID
                        [--schedule_description SCHEDULE_DESCRIPTION]
@@ -173,9 +163,7 @@ optional arguments:
 
 def test_exec_schedule():
     """test_exec_schedule"""
-    actual = subprocess.run(
-        ["cicada", "exec_schedule"], check=False, stderr=subprocess.PIPE
-    ).stderr.decode("utf-8")
+    actual = subprocess.run(["cicada", "exec_schedule"], check=False, stderr=subprocess.PIPE).stderr.decode("utf-8")
 
     expected = """usage: exec_schedule [-h] --schedule_id SCHEDULE_ID
 exec_schedule: error: the following arguments are required: --schedule_id
@@ -185,9 +173,9 @@ exec_schedule: error: the following arguments are required: --schedule_id
 
 def test_exec_schedule_help():
     """test_exec_schedule_help"""
-    actual = subprocess.run(
-        ["cicada", "exec_schedule", "-h"], check=True, stdout=subprocess.PIPE
-    ).stdout.decode("utf-8")
+    actual = subprocess.run(["cicada", "exec_schedule", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode(
+        "utf-8"
+    )
 
     expected = """usage: exec_schedule [-h] --schedule_id SCHEDULE_ID
 
@@ -203,9 +191,7 @@ optional arguments:
 
 def test_spread_schedules():
     """test_spread_schedules"""
-    actual = subprocess.run(
-        ["cicada", "spread_schedules"], check=False, stderr=subprocess.PIPE
-    ).stderr.decode("utf-8")
+    actual = subprocess.run(["cicada", "spread_schedules"], check=False, stderr=subprocess.PIPE).stderr.decode("utf-8")
 
     expected = """usage: spread_schedules [-h] --from_server_ids FROM_SERVER_IDS --to_server_ids
                         TO_SERVER_IDS [--commit] [--force]
@@ -217,9 +203,9 @@ spread_schedules: error: the following arguments are required: --from_server_ids
 
 def test_spread_schedules_help():
     """test_spread_schedules_help"""
-    actual = subprocess.run(
-        ["cicada", "spread_schedules", "-h"], check=True, stdout=subprocess.PIPE
-    ).stdout.decode("utf-8")
+    actual = subprocess.run(["cicada", "spread_schedules", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode(
+        "utf-8"
+    )
 
     expected = """usage: spread_schedules [-h] --from_server_ids FROM_SERVER_IDS --to_server_ids
                         TO_SERVER_IDS [--commit] [--force]
@@ -244,9 +230,9 @@ optional arguments:
 
 def test_archive_schedule_log():
     """test_archive_schedule_log"""
-    actual = subprocess.run(
-        ["cicada", "archive_schedule_log"], check=False, stderr=subprocess.PIPE
-    ).stderr.decode("utf-8")
+    actual = subprocess.run(["cicada", "archive_schedule_log"], check=False, stderr=subprocess.PIPE).stderr.decode(
+        "utf-8"
+    )
 
     expected = """usage: archive_schedule_log [-h] --days_to_keep DAYS_TO_KEEP
 archive_schedule_log: error: the following arguments are required: --days_to_keep
@@ -256,9 +242,9 @@ archive_schedule_log: error: the following arguments are required: --days_to_kee
 
 def test_archive_schedule_log_help():
     """test_archive_schedule_log_help"""
-    actual = subprocess.run(
-        ["cicada", "archive_schedule_log", "-h"], check=True, stdout=subprocess.PIPE
-    ).stdout.decode("utf-8")
+    actual = subprocess.run(["cicada", "archive_schedule_log", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode(
+        "utf-8"
+    )
 
     expected = """usage: archive_schedule_log [-h] --days_to_keep DAYS_TO_KEEP
 
@@ -274,9 +260,7 @@ optional arguments:
 
 def test_ping_slack():
     """test_ping_slack"""
-    actual = subprocess.run(
-        ["cicada", "ping_slack"], check=False, stderr=subprocess.PIPE
-    ).stderr.decode("utf-8")
+    actual = subprocess.run(["cicada", "ping_slack"], check=False, stderr=subprocess.PIPE).stderr.decode("utf-8")
 
     expected = """usage: ping_slack [-h] --text TEXT
 ping_slack: error: the following arguments are required: --text
@@ -286,9 +270,7 @@ ping_slack: error: the following arguments are required: --text
 
 def test_ping_slack_help():
     """test_ping_slack_help"""
-    actual = subprocess.run(
-        ["cicada", "ping_slack", "-h"], check=True, stdout=subprocess.PIPE
-    ).stdout.decode("utf-8")
+    actual = subprocess.run(["cicada", "ping_slack", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode("utf-8")
 
     expected = """usage: ping_slack [-h] --text TEXT
 

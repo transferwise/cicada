@@ -106,9 +106,7 @@ def init_schedule_log(db_cur, server_id, schedule_id, full_command):
 def finalize_schedule_log(db_cur, schedule_log_id, returncode, error_detail):
     """Finalize a schedule log"""
 
-    sqlquery = (
-        f"UPDATE schedule_log SET end_time = now() ,returncode = {str(returncode)}"
-    )
+    sqlquery = f"UPDATE schedule_log SET end_time = now() ,returncode = {str(returncode)}"
 
     if error_detail:
         sqlquery += f",error_detail = '{str(error_detail)}'"
@@ -145,9 +143,6 @@ def catch_sigquit(signum, frame):
 
 
 @utils.named_exception_handler("exec_schedule")
-# pylint: disable=too-many-locals
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-statements
 def main(schedule_id, dbname=None):
     """Execute a using schedule_id."""
     db_conn = postgres.db_cicada(dbname)
@@ -157,7 +152,6 @@ def main(schedule_id, dbname=None):
     # Get schedule details and execute
     obj_schedule_details = scheduler.get_schedule_executable(db_cur, schedule_id)
 
-    # pylint: disable=too-many-nested-blocks
     row = obj_schedule_details.fetchone()
     command = str(row[0])
     parameters = str(row[1])
@@ -171,9 +165,7 @@ def main(schedule_id, dbname=None):
     # Check to see that schedule is not already running
     if get_is_running(db_cur, schedule_id) == 0:
         # Initiate schedule log
-        schedule_log_id = init_schedule_log(
-            db_cur, server_id, schedule_id, human_full_command
-        )
+        schedule_log_id = init_schedule_log(db_cur, server_id, schedule_id, human_full_command)
         reset_adhoc_details(db_cur, schedule_id)
 
         set_is_running(db_cur, schedule_id)
@@ -190,15 +182,10 @@ def main(schedule_id, dbname=None):
         returncode = None
 
         db_conn_alert_delay = 15
-        db_conn_alert_next = datetime.datetime.utcnow() + datetime.timedelta(
-            minutes=db_conn_alert_delay
-        )
+        db_conn_alert_next = datetime.datetime.utcnow() + datetime.timedelta(minutes=db_conn_alert_delay)
 
         try:
-            # pylint: disable=consider-using-with
-            child_process = subprocess.Popen(
-                full_command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-            )
+            child_process = subprocess.Popen(full_command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
             # Check if child process has terminated
 
@@ -220,7 +207,6 @@ def main(schedule_id, dbname=None):
                             unset_abort_running(db_cur, schedule_id)
                         db_cur.close()
                         db_conn.close()
-                    # pylint: disable=unused-variable
                     except Exception as error:
                         if datetime.datetime.utcnow() >= db_conn_alert_next:
                             send_slack_error(
@@ -230,15 +216,13 @@ def main(schedule_id, dbname=None):
                                 f"Cicada db unavailable - check abort_running - {db_conn_alert_delay} minutes",
                                 error,
                             )
-                            db_conn_alert_next = (
-                                datetime.datetime.utcnow()
-                                + datetime.timedelta(minutes=db_conn_alert_delay)
+                            db_conn_alert_next = datetime.datetime.utcnow() + datetime.timedelta(
+                                minutes=db_conn_alert_delay
                             )
                         time.sleep(5)
                     else:
-                        db_conn_alert_next = (
-                            datetime.datetime.utcnow()
-                            + datetime.timedelta(minutes=db_conn_alert_delay)
+                        db_conn_alert_next = datetime.datetime.utcnow() + datetime.timedelta(
+                            minutes=db_conn_alert_delay
                         )
 
         # Capture error
@@ -278,9 +262,8 @@ def main(schedule_id, dbname=None):
                             f"Cicada db unavailable - finalize schedule - {db_conn_alert_delay} minutes",
                             error,
                         )
-                        db_conn_alert_next = (
-                            datetime.datetime.utcnow()
-                            + datetime.timedelta(minutes=db_conn_alert_delay)
+                        db_conn_alert_next = datetime.datetime.utcnow() + datetime.timedelta(
+                            minutes=db_conn_alert_delay
                         )
                     time.sleep(5)
 
