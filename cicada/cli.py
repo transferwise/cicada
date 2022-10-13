@@ -74,9 +74,7 @@ class Cicada:
             prog=inspect.stack()[0][3],
             description="List a schedule using schedule_id",
         )
-        parser.add_argument(
-            "--schedule_id", type=str, required=True, help="Id of the schedule"
-        )
+        parser.add_argument("--schedule_id", type=str, required=True, help="Id of the schedule")
         # now that we're inside a subcommand, ignore the first TWO args
         args = parser.parse_args(sys.argv[2:])
         show_schedule.main(args.schedule_id)
@@ -90,15 +88,9 @@ class Cicada:
             prog=inspect.stack()[0][3],
             description="Upsert a schedule using schedule_id",
         )
-        parser.add_argument(
-            "--schedule_id", type=str, required=True, help="Id of the schedule"
-        )
-        parser.add_argument(
-            "--schedule_description", type=str, help="Schedule description and comments"
-        )
-        parser.add_argument(
-            "--server_id", type=int, help="Id of the server where the schedule will run"
-        )
+        parser.add_argument("--schedule_id", type=str, required=True, help="Id of the schedule")
+        parser.add_argument("--schedule_description", type=str, help="Schedule description and comments")
+        parser.add_argument("--server_id", type=int, help="Id of the server where the schedule will run")
         parser.add_argument(
             "--schedule_order",
             type=int,
@@ -136,9 +128,7 @@ class Cicada:
             help="The schedule will not execute after this datetime",
         )
         parser.add_argument("--exec_command", type=str, help="Command to execute")
-        parser.add_argument(
-            "--parameters", type=str, help="Parameters for exec_command"
-        )
+        parser.add_argument("--parameters", type=str, help="Parameters for exec_command")
         parser.add_argument(
             "--adhoc_parameters",
             type=str,
@@ -162,9 +152,7 @@ class Cicada:
             prog=inspect.stack()[0][3],
             description="Execute a using schedule_id",
         )
-        parser.add_argument(
-            "--schedule_id", type=str, required=True, help="Id of the schedule"
-        )
+        parser.add_argument("--schedule_id", type=str, required=True, help="Id of the schedule")
         # now that we're inside a subcommand, ignore the first TWO args
         # Also only accept ONE unknown arg
         args, uargs = parser.parse_known_args(sys.argv[2:4])
@@ -240,9 +228,7 @@ class Cicada:
             prog=inspect.stack()[0][3],
             description="Send a test message to Slack",
         )
-        parser.add_argument(
-            "--text", type=str, required=True, help="Text to send to Slack"
-        )
+        parser.add_argument("--text", type=str, required=True, help="Text to send to Slack")
         # now that we're inside a subcommand, ignore the first TWO args
         args = parser.parse_args(sys.argv[2:])
         ping_slack.main(args.text)

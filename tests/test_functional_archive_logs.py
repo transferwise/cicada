@@ -53,9 +53,7 @@ def db_setup(get_env_vars):
     )
     test_conn.autocommit = True
     test_cur = test_conn.cursor()
-    test_cur.execute(
-        open(f"{pytest.cicada_home}/setup/schema.sql", "r", encoding="utf-8").read()
-    )
+    test_cur.execute(open(f"{pytest.cicada_home}/setup/schema.sql", "r", encoding="utf-8").read())
     test_cur.close()
     test_conn.close()
 
@@ -173,9 +171,7 @@ def test_archive_schedules():
 def test_archive_schedule_keep_correct_schedules():
     """test_archive_schedule_keep_correct_schedules"""
 
-    result = query_test_db(
-        f"SELECT schedule_id, start_time, end_time, returncode FROM schedule_log"
-    )
+    result = query_test_db(f"SELECT schedule_id, start_time, end_time, returncode FROM schedule_log")
 
     assert result == [
         (

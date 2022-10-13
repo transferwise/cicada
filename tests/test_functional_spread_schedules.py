@@ -50,9 +50,7 @@ def db_setup(get_env_vars):
     )
     test_conn.autocommit = True
     test_cur = test_conn.cursor()
-    test_cur.execute(
-        open(f"{pytest.cicada_home}/setup/schema.sql", "r", encoding="utf-8").read()
-    )
+    test_cur.execute(open(f"{pytest.cicada_home}/setup/schema.sql", "r", encoding="utf-8").read())
     test_cur.close()
     test_conn.close()
 

@@ -31,4 +31,4 @@ flake8:
 black:
 	cd $(mkfile_path) ;\
 	. venv/bin/activate ;\
-	black --check --verbose cicada/ tests/
+	black --check --verbose cicada/ tests/ --line-length 120

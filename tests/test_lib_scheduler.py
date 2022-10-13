@@ -48,9 +48,7 @@ def test_generate_exec_schedule_command_no_dbname():
 
 def test_generate_exec_schedule_command_with_dbname():
     """test_generate_exec_schedule_command_with_dbname"""
-    full_command = scheduler.generate_exec_schedule_command(
-        "test_schedule_id", "test_db"
-    )
+    full_command = scheduler.generate_exec_schedule_command("test_schedule_id", "test_db")
 
     assert full_command == [
         "/opt/cicada/venv/bin/cicada",

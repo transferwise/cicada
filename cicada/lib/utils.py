@@ -73,7 +73,5 @@ def named_exception_handler(command_name):
 
 def load_config() -> Dict:
     """Loads the config file in cicada/config/"""
-    config_file = os.path.join(
-        os.path.abspath(os.path.dirname(__file__)), "../../config/definitions.yml"
-    )
+    config_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../config/definitions.yml")
     return yaml.safe_load(open(config_file, "r", encoding="UTF-8").read())
