@@ -29,7 +29,7 @@ setup(
     extras_require={
         "dev": [
             "pytest==7.1.3",
-            "pytest-cov==3.0.0",
+            "pytest-cov==4.0.0",
             "black==22.10.0",
             "flake8==5.0.4",
             "freezegun==1.2.2",
