@@ -18,7 +18,7 @@ setup(
         "Programming Language :: Python :: 3 :: Only",
     ],
     install_requires=[
-        "psycopg2-binary==2.9.3",
+        "psycopg2-binary==2.9.5",
         "pyyaml==6.0",
         "croniter==1.3.7",
         "tabulate==0.8.10",
