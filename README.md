@@ -27,8 +27,7 @@
 - Non-running schedules can easily be moved from one node to another
 - Running schedules can easily be terminated
 ### Execution flow diagram
-
-![process_flow](https://github.com/transferwise/cicada/blob/master/docs/execution_flow.png?raw=True)
+![Execution flow diagram](https://github.com/transferwise/cicada/blob/main/docs/execution_flow.png)
 
 ## Setup Central Database
 
@@ -39,8 +38,7 @@ Verified on **PostgreSQL** versions *9.6* to *12.9*
 3. Execute as **cicada** user [setup/schema.sql](setup/schema.sql)
 
 ### Database ERD
-
-![erd](https://github.com/transferwise/cicada/blob/master/docs/erd.png?raw=True)
+![Database ERD](https://github.com/transferwise/cicada/blob/main/docs/erd.png)
 
 ## Setup Node
 

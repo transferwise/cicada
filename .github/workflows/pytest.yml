@@ -18,13 +18,13 @@ jobs:
       uses: actions/checkout@v1
 
     - name: Start containers
-      run: docker-compose -f "local-dev/docker-compose.yml" up -d --build
+      run: docker compose -f "local-dev/docker-compose.yml" up -d --build
 
     - name: Build dev environment
       run: docker exec cicada_dev make dev
 
-    # - name: Run tests
-    #   run: docker exec cicada_dev make pytest
+    - name: Run tests
+      run: docker exec cicada_dev make pytest
 
     - name: Build coverage file
       run: docker exec cicada_dev /bin/bash -c "source /opt/cicada/venv/bin/activate; pytest --cache-clear --cov=cicada --cov-fail-under=70" > pytest-coverage.txt
@@ -34,4 +34,4 @@ jobs:
 
     - name: Stop containers
       if: always()
-      run: docker-compose -f "local-dev/docker-compose.yml" down
+      run: docker compose -f "local-dev/docker-compose.yml" down
