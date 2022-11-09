@@ -2,7 +2,6 @@
 
 import datetime
 import subprocess
-import psutil
 import os
 import signal
 import time
@@ -176,8 +175,6 @@ def main(schedule_id, dbname=None):
         signal.signal(signal.SIGTERM, catch_sigterm)
         signal.signal(signal.SIGQUIT, catch_sigquit)
 
-        cicada_pid = os.getpid()
-
         error_detail = None
         returncode = None
 
@@ -205,6 +202,8 @@ def main(schedule_id, dbname=None):
                             returncode = -15
                             error_detail = "Cicada abort_running"
                             unset_abort_running(db_cur, schedule_id)
+                            child_process.terminate()
+
                         db_cur.close()
                         db_conn.close()
                     except Exception as error:
@@ -242,11 +241,6 @@ def main(schedule_id, dbname=None):
             returncode = 999
             error_detail = "Crazy Unknown Error"
         finally:
-
-            # Terminate any zombie processes
-            for zombie in psutil.Process(cicada_pid).children(recursive=True):
-                zombie.send_signal(signal.SIGTERM)
-
             # Repeatedly attempt to finalize schedule, even if db is unavailable
             while True:
                 try:
