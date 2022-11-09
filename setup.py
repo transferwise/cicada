@@ -18,18 +18,17 @@ setup(
         "Programming Language :: Python :: 3 :: Only",
     ],
     install_requires=[
-        "psycopg2-binary==2.9.3",
+        "psycopg2-binary==2.9.2",
         "pyyaml==6.0",
         "croniter==1.3.7",
-        "tabulate==0.8.10",
+        "tabulate==0.9.0",
         "slack-sdk==3.19.1",
-        "backoff==2.1.2",
-        "psutil==5.9.2",
+        "backoff==2.2.1",
     ],
     extras_require={
         "dev": [
             "pytest==7.1.3",
-            "pytest-cov==3.0.0",
+            "pytest-cov==4.0.0",
             "black==22.10.0",
             "flake8==5.0.4",
             "freezegun==1.2.2",
