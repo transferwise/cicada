@@ -12,7 +12,7 @@ Go to the main folder of the repository (the parent of this one) and To create l
 
 ```sh
 $ cd local-dev/
-$ docker-compose up --build
+$ docker compose up --build
 ```
 
 Wait until `Cicada Dev environment is ready in Docker container(s).` message. At the first run this can
@@ -51,5 +51,5 @@ To refresh the containers with new local code changes stop the running instances
 
 ```sh
 $ ./refresh-local-dev.sh
-$ docker-compose up
+$ docker compose up
 ```
