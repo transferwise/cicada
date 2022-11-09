@@ -16,6 +16,9 @@ fi
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
+
+source /opt/cicada/venv/bin/activate
+
 EOL
 
 
