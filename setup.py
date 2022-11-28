@@ -30,7 +30,7 @@ setup(
             "pytest==7.1.3",
             "pytest-cov==4.0.0",
             "black==22.10.0",
-            "flake8==5.0.4",
+            "flake8==6.0.0",
             "freezegun==1.2.2",
         ]
     },
