@@ -36,7 +36,7 @@ check the [local-dev/.env](../local-dev/.env) file for the credentials.
 ###  Running tests
 
 ``` sh
-$ docker exec -it cicada_dev make pytest
+$ docker exec -it cicada_dev make dev pytest
 ```
 
 ###  Running linters

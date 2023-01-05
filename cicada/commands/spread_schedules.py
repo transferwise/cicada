@@ -47,13 +47,13 @@ def get_last_week_schedules_by_load(db_cur, server_ids: [int] = None):
     return last_week_schedules_by_load
 
 
-def get_enabled_servers(db_cur, enabled_only: bool = True, server_ids: [int] = None):
+def get_target_servers(db_cur, exclude_disabled, server_ids: [int] = None):
     """Get valid servers"""
-    sql_enabled_filter = " and is_enabled = 1" if enabled_only else ""
+    sql_enabled_filter = " AND is_enabled = 1" if exclude_disabled else ""
     sql_server_id_filter = ""
     if server_ids:
         sql_server_ids = ",".join(str(server_id) for server_id in server_ids)
-        sql_server_id_filter = f" and server_id in ({sql_server_ids})"
+        sql_server_id_filter = f" AND server_id in ({sql_server_ids})"
 
     sqlquery = f"""
     SELECT server_id FROM servers
@@ -81,7 +81,7 @@ def main(spread_details, dbname=None):
     from_server_ids = csv_to_list(spread_details["from_server_ids"])
     to_server_ids = csv_to_list(spread_details["to_server_ids"])
 
-    valid_target_servers = get_enabled_servers(db_cur, server_ids=to_server_ids)
+    valid_target_servers = get_target_servers(db_cur, spread_details["exclude_disabled_servers"], to_server_ids)
     valid_server_count = len(valid_target_servers)
 
     if valid_server_count == 0:

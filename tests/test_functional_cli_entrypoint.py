@@ -194,7 +194,8 @@ def test_spread_schedules():
     actual = subprocess.run(["cicada", "spread_schedules"], check=False, stderr=subprocess.PIPE).stderr.decode("utf-8")
 
     expected = """usage: spread_schedules [-h] --from_server_ids FROM_SERVER_IDS --to_server_ids
-                        TO_SERVER_IDS [--commit] [--force]
+                        TO_SERVER_IDS [--exclude_disabled_servers] [--commit]
+                        [--force]
 spread_schedules: error: the following arguments are required: --from_server_ids, --to_server_ids
 """
 
@@ -208,7 +209,8 @@ def test_spread_schedules_help():
     )
 
     expected = """usage: spread_schedules [-h] --from_server_ids FROM_SERVER_IDS --to_server_ids
-                        TO_SERVER_IDS [--commit] [--force]
+                        TO_SERVER_IDS [--exclude_disabled_servers] [--commit]
+                        [--force]
 
 Spread schedules accross servers
 
@@ -218,6 +220,8 @@ optional arguments:
                         List of source server_ids to collect schedules from
   --to_server_ids TO_SERVER_IDS
                         List of target server_ids to spread schedules to
+  --exclude_disabled_servers
+                        Exclude disabled servers from target server_ids
   --commit              Commits changes to backend DB, otherwise only print
                         output
   --force               If schedule is moving servers and also currently
