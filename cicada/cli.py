@@ -184,6 +184,12 @@ class Cicada:
             help="List of target server_ids to spread schedules to",
         )
         parser.add_argument(
+            "--exclude_disabled_servers",
+            default=False,
+            action="store_true",
+            help="Exclude disabled servers from target server_ids",
+        )
+        parser.add_argument(
             "--commit",
             default=False,
             action="store_true",

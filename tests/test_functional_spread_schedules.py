@@ -89,13 +89,13 @@ def test_create_dummy_servers():
         VALUES
             (1, '1', '1', '192.168.0.1', 1),
             (2, '2', '2', '192.168.0.2', 1),
-            (3, '3', '3', '192.168.0.3', 1),
+            (3, '3', '3', '192.168.0.3', 0),
             (4, '4', '4', '192.168.0.4', 1)
         ;
         """
     )
 
-    results = query_test_db(f"SELECT count(*) FROM servers WHERE is_enabled=1")[0][0]
+    results = query_test_db(f"SELECT count(*) FROM servers")[0][0]
 
     assert results == 4
 
@@ -172,6 +172,7 @@ def test_spread_schedules():
     spread_details["to_server_ids"] = "1,2,3,4"
     spread_details["commit"] = False
     spread_details["force"] = False
+    spread_details["exclude_disabled_servers"] = False
 
     spread_schedules.main(spread_details, pytest.db_test)
 
@@ -204,6 +205,7 @@ def test_spread_schedules_commit():
     spread_details["to_server_ids"] = "1,2,3,4"
     spread_details["commit"] = True
     spread_details["force"] = False
+    spread_details["exclude_disabled_servers"] = False
 
     spread_schedules.main(spread_details, pytest.db_test)
 
@@ -236,6 +238,7 @@ def test_spread_schedules_force():
     spread_details["to_server_ids"] = "1,2,3,4"
     spread_details["commit"] = True
     spread_details["force"] = True
+    spread_details["exclude_disabled_servers"] = False
 
     spread_schedules.main(spread_details, pytest.db_test)
 
@@ -256,6 +259,41 @@ def test_spread_schedules_force():
         (2, "3-2", 1, 0, 0),
         (3, "3-3", 1, 0, 0),
         (4, "3-4", 1, 0, 0),
+    ]
+
+
+@freeze_time("2022-01-02 02:00:00")
+def test_spread_schedules_exclude_disabled_servers():
+    """test_spread_schedules_force"""
+    spread_details = {}
+
+    spread_details["from_server_ids"] = "1,2,3,4"
+    spread_details["to_server_ids"] = "1,2,3,4"
+    spread_details["commit"] = True
+    spread_details["force"] = True
+    spread_details["exclude_disabled_servers"] = True
+
+    spread_schedules.main(spread_details, pytest.db_test)
+
+    result = query_test_db(
+        f"SELECT server_id, schedule_id, is_enabled, abort_running, adhoc_execute FROM schedules ORDER BY schedule_id"
+    )
+
+    print(result)
+
+    assert result == [
+        (4, "1-1", 1, 0, 0),
+        (1, "1-2", 1, 1, 1),
+        (2, "1-3", 1, 0, 0),
+        (4, "1-4", 1, 0, 0),
+        (2, "2-1", 1, 0, 0),
+        (4, "2-2", 1, 0, 0),
+        (1, "2-3", 1, 0, 0),
+        (2, "2-4", 1, 0, 0),
+        (1, "3-1", 1, 0, 0),
+        (2, "3-2", 1, 0, 0),
+        (4, "3-3", 1, 0, 0),
+        (1, "3-4", 1, 0, 0),
     ]
 
 
