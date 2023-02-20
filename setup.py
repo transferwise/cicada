@@ -22,7 +22,7 @@ setup(
         "pyyaml==6.0",
         "croniter==1.3.8",
         "tabulate==0.9.0",
-        "slack-sdk==3.19.5",
+        "slack-sdk==3.20.0",
         "backoff==2.2.1",
     ],
     extras_require={
