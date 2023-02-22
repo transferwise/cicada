@@ -224,6 +224,19 @@ def main(schedule_id, dbname=None):
                             minutes=db_conn_alert_delay
                         )
 
+            if returncode != 0:
+                config = utils.load_config()
+                returncodes_alert = config["slack"].get("returncodes_alert", "*")
+
+                if returncodes_alert == "*" or returncode in returncodes_alert:
+                    send_slack_error(
+                        schedule_id,
+                        schedule_log_id,
+                        returncode,
+                        None,
+                        None,
+                    )
+
         # Capture error
         except OSError as error:
             returncode = error.errno
