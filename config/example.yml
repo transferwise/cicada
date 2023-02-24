@@ -8,3 +8,5 @@ db_cicada:
 slack:
     token: xyz48945
     channel: channel_name
+    returncodes_alert: *   # Its default value is *, it can also be a list of error codes i.e [1, 13, -1]
+

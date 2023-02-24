@@ -29,6 +29,7 @@ setup(
         "dev": [
             "pytest==7.2.0",
             "pytest-cov==4.0.0",
+            "pytest-mock==3.10.0"
             "black==22.12.0",
             "flake8==6.0.0",
             "freezegun==1.2.2",

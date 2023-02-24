@@ -7,20 +7,26 @@
     * terminate schedules
 """
 
-import pytest
 import time
 import os
 import datetime
-import psycopg2
 import socket
 import subprocess
 
-from cicada.lib import scheduler
+from random import choice
+from tempfile import TemporaryDirectory
 
+import pytest
+from pytest_mock import mocker  # noqa needed for patching
+import psycopg2
+
+from cicada.lib import scheduler
 from cicada.commands import register_server
 from cicada.commands import upsert_schedule
 from cicada.commands import exec_schedule
 from cicada.commands import exec_server_schedules
+
+from tests.utils.mocks_for_alert import mocks_for_alert_test
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -233,6 +239,74 @@ def test_exec_schedule():
     )[0][0]
 
     assert query_result >= 1
+
+
+def test_exec_schedule_send_alert_if_returncode_not_0_and_config_has_setting_for_all(mocker):  # noqa
+    """test sending alert if returncode is not 0, and config setting is *"""
+
+    return_code = choice(list(range(-100, 0)) + list(range(1, 100)))
+
+    mocked_slack = mocks_for_alert_test(return_code, mocker=mocker)
+    definitions_contents = (
+        """
+        slack:
+             channel: foo_channel
+        """,
+        """
+        slack:
+             channel: foo_channel
+             returncodes_alert: *
+        """
+    )
+    with TemporaryDirectory() as temp_dir:
+        for file_content in definitions_contents:
+            with open(f"{temp_dir}/definitions.yml", "w", encoding="utf-8") as definitions_file:
+                definitions_file.write(file_content)
+
+            mocker.patch("os.path.join", return_value=f"{temp_dir}/definitions.yml")
+            exec_schedule.main("FOO_SCHEDULE_ID", "FOO_DB")
+            mocked_slack.assert_called_once_with("FOO_SCHEDULE_ID", "FOO_LOG_ID", return_code, None, None)
+
+
+def test_exec_schedule_send_alert_if_returncode_not_0_and_exists_in_config(mocker):  # noqa
+    """test sending alert if returncode is not 0, and it is included in the config setting"""
+    return_code = choice([1, 13, -15])
+
+    mocked_slack = mocks_for_alert_test(return_code, mocker=mocker)
+    with TemporaryDirectory() as temp_dir:
+        with open(f"{temp_dir}/definitions.yml", "w", encoding="utf-8") as definitions_file:
+            definitions_file.write("""
+            slack:
+                 channel: foo_channel
+                 returncodes_alert: [1, 13, -15]""")
+
+        mocker.patch("os.path.join", return_value=f"{temp_dir}/definitions.yml")
+        exec_schedule.main("FOO_SCHEDULE_ID", "FOO_DB")
+        mocked_slack.assert_called_once_with("FOO_SCHEDULE_ID", "FOO_LOG_ID", return_code, None, None)
+
+
+def test_exec_schedule_not_send_alert_if_returncode_0_but_not_in_config(mocker):  # noqa
+    """test sending no alert if returncode is not 0, but it is not included in the config setting"""
+    return_code = choice(list(range(-100, -15)) + list(range(-14, 0)) + list(range(1, 13)) + list(range(14, 100)))
+
+    mocked_slack = mocks_for_alert_test(return_code=return_code, mocker=mocker)
+    with TemporaryDirectory() as temp_dir:
+        with open(f"{temp_dir}/definitions.yml", "w", encoding="utf-8") as definitions_file:
+            definitions_file.write("""
+                slack:
+                     channel: foo_channel
+                     returncodes_alert: [13, -15]""")
+
+        mocker.patch("os.path.join", return_value=f"{temp_dir}/definitions.yml")
+        exec_schedule.main("FOO_SCHEDULE_ID", "FOO_DB")
+        assert mocked_slack.call_count == 0
+
+
+def test_exec_schedule_not_send_alert_if_returncode_0(mocker):  # noqa
+    """test sending no alert if returncode is 0"""
+    mocked_slack = mocks_for_alert_test(return_code=0, mocker=mocker)
+    exec_schedule.main("FOO_SCHEDULE_ID", "FOO_DB")
+    assert mocked_slack.call_count == 0
 
 
 def test_insert_adhoc_schedule():
