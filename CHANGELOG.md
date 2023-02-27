@@ -1,3 +1,8 @@
+0.5.1
+-----
+- Bug fix setup
+
+
 0.5.0
 -----
 - Sending slack alerts for not 0 return codes
