@@ -153,7 +153,7 @@ def insert_schedule_details(db_cur, schedule_details):
     if schedule_details["schedule_description"] is not None:
         sqlquery = sqlquery + " ,'" + str(schedule_details["schedule_description"]) + "'"
     if schedule_details["server_id"] is None:
-        sqlquery = sqlquery + " ,(SELECT MIN(server_id) FROM servers WHERE is_enabled=1)"
+        sqlquery = sqlquery + " ,(SELECT MAX(server_id) FROM servers WHERE is_enabled=1)"
     else:
         sqlquery = sqlquery + " ," + str(schedule_details["server_id"])
     if schedule_details["schedule_order"] is not None:
