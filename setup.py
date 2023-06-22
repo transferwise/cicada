@@ -7,7 +7,7 @@ with open("README.md") as f:
 
 setup(
     name="cicada",
-    version="0.5.1",
+    version="0.6.0",
     description="Lightweight, agent-based, distributed scheduler",
     long_description=long_description,
     long_description_content_type="text/markdown",
