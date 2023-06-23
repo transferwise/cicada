@@ -241,7 +241,9 @@ def test_exec_schedule():
     assert query_result >= 1
 
 
-def test_exec_schedule_send_alert_if_returncode_not_0_and_config_has_setting_for_all(mocker):  # noqa
+def test_exec_schedule_send_alert_if_returncode_not_0_and_config_has_setting_for_all(
+    mocker,
+):  # noqa
     """test sending alert if returncode is not 0, and config setting is *"""
 
     return_code = choice(list(range(-100, 0)) + list(range(1, 100)))
@@ -256,7 +258,7 @@ def test_exec_schedule_send_alert_if_returncode_not_0_and_config_has_setting_for
         slack:
              channel: foo_channel
              returncodes_alert: *
-        """
+        """,
     )
     with TemporaryDirectory() as temp_dir:
         for file_content in definitions_contents:
@@ -268,17 +270,21 @@ def test_exec_schedule_send_alert_if_returncode_not_0_and_config_has_setting_for
             mocked_slack.assert_called_once_with("FOO_SCHEDULE_ID", "FOO_LOG_ID", return_code, None, None)
 
 
-def test_exec_schedule_send_alert_if_returncode_not_0_and_exists_in_config(mocker):  # noqa
+def test_exec_schedule_send_alert_if_returncode_not_0_and_exists_in_config(
+    mocker,
+):  # noqa
     """test sending alert if returncode is not 0, and it is included in the config setting"""
     return_code = choice([1, 13, -15])
 
     mocked_slack = mocks_for_alert_test(return_code, mocker=mocker)
     with TemporaryDirectory() as temp_dir:
         with open(f"{temp_dir}/definitions.yml", "w", encoding="utf-8") as definitions_file:
-            definitions_file.write("""
+            definitions_file.write(
+                """
             slack:
                  channel: foo_channel
-                 returncodes_alert: [1, 13, -15]""")
+                 returncodes_alert: [1, 13, -15]"""
+            )
 
         mocker.patch("os.path.join", return_value=f"{temp_dir}/definitions.yml")
         exec_schedule.main("FOO_SCHEDULE_ID", "FOO_DB")
@@ -292,10 +298,12 @@ def test_exec_schedule_not_send_alert_if_returncode_0_but_not_in_config(mocker):
     mocked_slack = mocks_for_alert_test(return_code=return_code, mocker=mocker)
     with TemporaryDirectory() as temp_dir:
         with open(f"{temp_dir}/definitions.yml", "w", encoding="utf-8") as definitions_file:
-            definitions_file.write("""
+            definitions_file.write(
+                """
                 slack:
                      channel: foo_channel
-                     returncodes_alert: [13, -15]""")
+                     returncodes_alert: [13, -15]"""
+            )
 
         mocker.patch("os.path.join", return_value=f"{temp_dir}/definitions.yml")
         exec_schedule.main("FOO_SCHEDULE_ID", "FOO_DB")
