@@ -285,3 +285,31 @@ optional arguments:
   --text TEXT  Text to send to Slack
 """
     assert actual == expected
+
+
+def test_delete_schedule():
+    """test_delete_schedule"""
+    actual = subprocess.run(["cicada", "delete_schedule"], check=False, stderr=subprocess.PIPE).stderr.decode("utf-8")
+
+    expected = """usage: delete_schedule [-h] --schedule_id SCHEDULE_ID
+delete_schedule: error: the following arguments are required: --schedule_id
+"""
+    assert actual == expected
+
+
+def test_delete_schedule_help():
+    """test_delete_schedule_help"""
+    actual = subprocess.run(["cicada", "delete_schedule", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode(
+        "utf-8"
+    )
+
+    expected = """usage: delete_schedule [-h] --schedule_id SCHEDULE_ID
+
+Delete a schedule using schedule_id
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --schedule_id SCHEDULE_ID
+                        Id of the schedule
+"""
+    assert actual == expected

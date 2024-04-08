@@ -15,6 +15,8 @@ from cicada.commands import exec_schedule
 from cicada.commands import spread_schedules
 from cicada.commands import archive_schedule_log
 from cicada.commands import ping_slack
+from cicada.commands import list_schedules
+from cicada.commands import delete_schedule
 
 
 @utils.named_exception_handler("Cicada")
@@ -32,6 +34,8 @@ class Cicada:
             "spread_schedules",
             "archive_schedule_log",
             "ping_slack",
+            "list_schedule_ids",
+            "delete_schedule"
         ]
 
         parser = argparse.ArgumentParser(
@@ -238,6 +242,25 @@ class Cicada:
         # now that we're inside a subcommand, ignore the first TWO args
         args = parser.parse_args(sys.argv[2:])
         ping_slack.main(args.text)
+
+    @staticmethod
+    def list_schedule_ids():
+        """List schedule id of all schedules"""
+        list_schedules.main()
+
+    @staticmethod
+    def delete_schedule():
+        """Delete a schedule using schedule_id"""
+        parser = argparse.ArgumentParser(
+            allow_abbrev=False,
+            add_help=True,
+            prog=inspect.stack()[0][3],
+            description="Delete a schedule using schedule_id",
+        )
+        parser.add_argument("--schedule_id", type=str, required=True, help="Id of the schedule")
+        # now that we're inside a subcommand, ignore the first TWO args
+        args = parser.parse_args(sys.argv[2:])
+        delete_schedule.main(args.schedule_id)
 
 
 def main():
