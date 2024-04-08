@@ -1,3 +1,9 @@
+0.7.0
+-----
+- Add delete_schedule command
+- Add list_schedule_ids command
+
+
 0.5.1
 -----
 - Bug fix setup
