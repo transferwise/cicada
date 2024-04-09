@@ -25,7 +25,6 @@ def get_host_details():
         hostname = hostname[: hostname.find(".")]
 
     fqdn = socket.getfqdn()
-
     ip4_address = socket.gethostbyname(fqdn)
 
     host_details = {"hostname": hostname, "fqdn": fqdn, "ip4_address": ip4_address}
@@ -348,3 +347,17 @@ def get_all_schedules(db_cur, server_id, is_async):
                 obj_schedules.append(schedule_id)
 
     return obj_schedules
+
+
+def get_all_schedule_ids(db_cur):
+    sqlquery = "SELECT server_id, schedule_id, schedule_description from schedules"
+    db_cur.execute(sqlquery)
+    cur_schedules = db_cur
+
+    schedule_ids = cur_schedules.fetchall()
+    return schedule_ids
+
+
+def delete_schedule(db_cur, schedule_id):
+    sqlquery = f"DELETE from schedules WHERE schedule_id = '{schedule_id}'"
+    db_cur.execute(sqlquery)
