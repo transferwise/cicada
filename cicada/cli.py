@@ -3,6 +3,7 @@
 import argparse
 import sys
 import inspect
+from pkg_resources import get_distribution
 
 from cicada.lib import utils
 
@@ -35,7 +36,8 @@ class Cicada:
             "archive_schedule_log",
             "ping_slack",
             "list_schedule_ids",
-            "delete_schedule"
+            "delete_schedule",
+            "version"
         ]
 
         parser = argparse.ArgumentParser(
@@ -261,6 +263,11 @@ class Cicada:
         # now that we're inside a subcommand, ignore the first TWO args
         args = parser.parse_args(sys.argv[2:])
         delete_schedule.main(args.schedule_id)
+
+    @staticmethod
+    def version():
+        """Return version of cicada package"""
+        print(get_distribution("cicada").version)
 
 
 def main():
