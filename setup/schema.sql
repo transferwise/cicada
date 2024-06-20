@@ -62,9 +62,9 @@ CREATE TABLE IF NOT EXISTS public.schedules
   interval_mask character varying(32) NOT NULL,
   first_run_date timestamp(3) without time zone NOT NULL DEFAULT '1000-01-01 00:00:00.000'::timestamp without time zone,
   last_run_date timestamp(3) without time zone NOT NULL DEFAULT '9999-12-31 23:59:59.999'::timestamp without time zone,
-  exec_command character varying() NOT NULL,
-  parameters character varying(),
-  adhoc_parameters character varying(),
+  exec_command character varying NOT NULL,
+  parameters character varying,
+  adhoc_parameters character varying,
   schedule_group_id integer,
   CONSTRAINT schedules_pkey PRIMARY KEY (schedule_id),
   CONSTRAINT schedules_server_id_fkey FOREIGN KEY (server_id)

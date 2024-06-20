@@ -16,4 +16,4 @@ def main(dbname=None):
     db_cur.close()
     db_conn.close()
     print("")
-    print(tabulate(obj_schedules, headers=['Server ID', 'Schedule ID', 'Description']))
+    print(tabulate(obj_schedules, headers=["Server ID", "Schedule ID", "Description"]))

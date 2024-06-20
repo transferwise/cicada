@@ -1,4 +1,5 @@
 """Backend PostgreSQL database library"""
+
 # 2015-07-01 Louis Pieterse
 
 import psycopg2
@@ -18,7 +19,7 @@ def db_cicada(dbname=None):
     user = definitions["db_cicada"]["user"]
     password = definitions["db_cicada"]["password"]
 
-    conn = psycopg2.connect(host=host, port=port, dbname=dbname, user=user, password=password)
+    conn = psycopg2.connect(host=host, port=port, dbname=dbname, user=user, password=password, sslmode="prefer")
     conn.autocommit = True
 
     return conn

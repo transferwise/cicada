@@ -28,7 +28,6 @@ def main(schedule_details, dbname=None):
     current_schedule_details = scheduler.get_schedule_details(db_cur, schedule_details["schedule_id"])
 
     if not current_schedule_details:
-
         if schedule_details["interval_mask"] is None:
             print("ERROR: interval_mask is required for new schedule")
             sys.exit(1)

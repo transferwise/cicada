@@ -197,7 +197,6 @@ def main(schedule_id, dbname=None):
                         db_conn = postgres.db_cicada(dbname)
                         db_cur = db_conn.cursor()
                         if get_abort_running(db_cur, schedule_id):
-
                             # Terminate main process
                             returncode = -15
                             error_detail = "Cicada abort_running"
