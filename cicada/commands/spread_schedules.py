@@ -93,7 +93,6 @@ def main(spread_details, dbname=None):
     last_week_schedules_by_load = get_last_week_schedules_by_load(db_cur, from_server_ids)
 
     for schedule_id in last_week_schedules_by_load:
-
         current_schedule_details = scheduler.get_schedule_details(db_cur, schedule_id)
         new_schedule_details = current_schedule_details.copy()
         new_schedule_details["server_id"] = valid_target_servers[next_enabled_server]

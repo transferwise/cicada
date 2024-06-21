@@ -37,7 +37,7 @@ class Cicada:
             "ping_slack",
             "list_schedule_ids",
             "delete_schedule",
-            "version"
+            "version",
         ]
 
         parser = argparse.ArgumentParser(
@@ -247,7 +247,16 @@ class Cicada:
 
     @staticmethod
     def list_schedule_ids():
-        """List schedule id of all schedules"""
+        """List schedule ids of all schedules"""
+        parser = argparse.ArgumentParser(
+            allow_abbrev=False,
+            add_help=True,
+            prog=inspect.stack()[0][3],
+            description="List schedule ids of all schedules",
+        )
+        if len(sys.argv) >= 3:
+            parser.print_help(sys.stdout)
+            sys.exit(0)
         list_schedules.main()
 
     @staticmethod

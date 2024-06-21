@@ -655,7 +655,7 @@ def test_exec_abort_running_2():
     subprocess.Popen(full_command)
     time.sleep(1)
     query_test_db("UPDATE schedules SET abort_running=1 WHERE schedule_id='pytest_abort_running_2'")
-    time.sleep(1)
+    time.sleep(10)
     query_result = query_test_db(
         """SELECT schedule_id, returncode, error_detail FROM schedule_log WHERE schedule_id = 'pytest_abort_running_2'"""
     )

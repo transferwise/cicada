@@ -22,7 +22,8 @@ def test_cicada_help():
 positional arguments:
   command     register_server , list_server_schedules , exec_server_schedules
               , show_schedule , upsert_schedule , exec_schedule ,
-              spread_schedules , archive_schedule_log , ping_slack
+              spread_schedules , archive_schedule_log , ping_slack ,
+              list_schedule_ids , delete_schedule , version
 
 optional arguments:
   -h, --help  show this help message and exit
@@ -41,7 +42,8 @@ usage: cicada [-h] command
 positional arguments:
   command     register_server , list_server_schedules , exec_server_schedules
               , show_schedule , upsert_schedule , exec_schedule ,
-              spread_schedules , archive_schedule_log , ping_slack
+              spread_schedules , archive_schedule_log , ping_slack ,
+              list_schedule_ids , delete_schedule , version
 
 optional arguments:
   -h, --help  show this help message and exit
@@ -311,5 +313,21 @@ optional arguments:
   -h, --help            show this help message and exit
   --schedule_id SCHEDULE_ID
                         Id of the schedule
+"""
+    assert actual == expected
+
+
+def test_list_schedule_ids():
+    """test_list_schedule_ids"""
+    actual = subprocess.run(["cicada", "list_schedule_ids", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode(
+        "utf-8"
+    )
+
+    expected = """usage: list_schedule_ids [-h]
+
+List schedule ids of all schedules
+
+optional arguments:
+  -h, --help  show this help message and exit
 """
     assert actual == expected
