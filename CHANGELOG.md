@@ -1,3 +1,7 @@
+0.8.1
+-----
+- Switch to using `sslmode=prefer` for connections to backend DB
+
 0.7.0
 -----
 - Add delete_schedule command
