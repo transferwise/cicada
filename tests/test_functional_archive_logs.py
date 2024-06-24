@@ -3,7 +3,6 @@
     Test archiving schedule_log entries into schedule_log_historical
 """
 
-
 from unittest import result
 import pytest
 import os
