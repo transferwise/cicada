@@ -1,6 +1,5 @@
 """test_main_functionality.py"""
 
-
 import pytest
 import os
 import datetime
