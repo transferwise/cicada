@@ -7,7 +7,7 @@ with open("README.md") as f:
 
 setup(
     name="cicada",
-    version="0.8.2",
+    version="0.8.3",
     description="Lightweight, agent-based, distributed scheduler",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -22,7 +22,7 @@ setup(
         "pyyaml==6.0.*",
         "croniter==2.0.*",
         "tabulate==0.9.*",
-        "slack-sdk==3.30.*",
+        "slack-sdk==3.31.*",
         "backoff==2.2.*",
     ],
     extras_require={
