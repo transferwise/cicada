@@ -19,7 +19,9 @@ def db_cicada(dbname=None):
     user = definitions["db_cicada"]["user"]
     password = definitions["db_cicada"]["password"]
 
-    conn = psycopg2.connect(host=host, port=port, dbname=dbname, user=user, password=password, sslmode="prefer")
+    conn = psycopg2.connect(
+        host=host, port=port, dbname=dbname, user=user, password=password, sslmode="require", application_name="cicada"
+    )
     conn.autocommit = True
 
     return conn

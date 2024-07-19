@@ -1,3 +1,11 @@
+0.8.3
+-----
+- Switch to using `sslmode=require` for connections to backend DB
+
+0.8.2
+-----
+- Switch to new PyPi publish method
+
 0.8.1
 -----
 - Switch to using `sslmode=prefer` for connections to backend DB
