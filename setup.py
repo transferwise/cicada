@@ -30,7 +30,7 @@ setup(
             "pytest==8.2.*",
             "pytest-cov==5.0.*",
             "pytest-mock==3.14.*",
-            "black==24.4.*",
+            "black>=24.4,<24.9",
             "flake8==7.1.*",
             "freezegun==1.5.*",
         ]
