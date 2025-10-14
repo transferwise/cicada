@@ -1,12 +1,12 @@
 services:
   ### Primary container with Cicada
   cicada_dev:
-    image: python:3.8-buster
-    # image: python:3.10-buster
+    platform: linux/amd64
+    image: ubuntu:22.04
     container_name: cicada_dev
     working_dir: ${CICADA_HOME}
     entrypoint: ${CICADA_HOME}/local-dev/entrypoint.sh
-    # entrypoint: ${CICADA_HOME}/local-dev/entrypoint-lite.sh
+    # command: ["tail", "-f", "/dev/null"]
     environment:
       CICADA_HOME: ${CICADA_HOME}
       DB_POSTGRES_HOST: cicada_db

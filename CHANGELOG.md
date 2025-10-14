@@ -1,3 +1,9 @@
+0.9.0
+-----
+- Verify compatibility with Ubuntu 22.04
+- Verify compatibility with PostgreSQL 15
+- Update dependencies
+
 0.8.3
 -----
 - Switch to using `sslmode=require` for connections to backend DB

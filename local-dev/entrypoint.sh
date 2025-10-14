@@ -4,14 +4,6 @@ set -e
 
 # Set some bashrc
 cat >~/.bashrc <<EOL
-# enable color support of ls and also add handy aliases
-if [ -x /usr/bin/dircolors ]; then
-    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
-fi
 # some more ls aliases
 alias ll='ls -alF'
 alias la='ls -A'
@@ -23,11 +15,27 @@ EOL
 
 
 # Install OS dependencies
-apt-get update
-apt-get install -y --no-install-recommends \
+# set noninteractive installation
+export DEBIAN_FRONTEND=noninteractive
+apt-get -y update
+apt-get -y install \
+  make \
   postgresql-client \
-  vim
-
+  vim-tiny \
+  software-properties-common \
+  tzdata
+# set your timezone
+ln -fs /usr/share/zoneinfo/Europe/London /etc/localtime
+dpkg-reconfigure --frontend noninteractive tzdata
+# set interactive installation
+unset DEBIAN_FRONTEND
+add-apt-repository -y ppa:deadsnakes/ppa
+apt-get -y update
+apt-get -y install \
+  python3.8 \
+  python3.8-venv \
+  python3-pip
+  apt-get -y upgrade
 
 # Change to Cicada folder
 cd ${CICADA_HOME}

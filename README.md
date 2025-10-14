@@ -34,7 +34,7 @@
 
 ## Setup Central Database
 
-Verified on **PostgreSQL** versions *9.6* to *12.9*
+Verified on **PostgreSQL** versions *12.9* to *15.14*
 
 1. Execute as **postgres** user [setup/db_and_user.sql](setup/db_and_user.sql)
 2. Change **cicada** user password
@@ -45,7 +45,7 @@ Verified on **PostgreSQL** versions *9.6* to *12.9*
 
 ## Setup Node
 
-Verified on *Ubuntu 18.04 and 20.04 LTS*
+Verified on *Ubuntu 18.04, 20.04 LTS and 22.04 LTS*
 
 Prerequisites
 
