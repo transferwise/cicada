@@ -155,11 +155,9 @@ def main(schedule_id, dbname=None):
     command = str(row[0])
     parameters = str(row[1])
 
-    full_command = []
-    full_command.extend(command.split())
-    full_command.extend(parameters.split())
+    full_command = scheduler.get_full_command(command, parameters)
 
-    human_full_command = str(" ".join(full_command))
+    human_full_command = str(command + " " + parameters)
 
     # Check to see that schedule is not already running
     if get_is_running(db_cur, schedule_id) == 0:
