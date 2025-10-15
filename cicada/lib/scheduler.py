@@ -11,6 +11,7 @@ import sys
 import os
 import datetime
 import socket
+import shlex
 from croniter import croniter
 
 from cicada.lib import postgres
@@ -250,6 +251,14 @@ def get_schedule_executable(db_cur, schedule_id):
     db_cur.execute(sqlquery)
     obj_schedule_executable = db_cur
     return obj_schedule_executable
+
+
+def get_full_command(command, parameters):
+    """Generate Full Command"""
+    full_command = []
+    full_command.extend(shlex.split(command))
+    full_command.extend(shlex.split(parameters))
+    return full_command
 
 
 def get_all_schedules(db_cur, server_id, is_async):

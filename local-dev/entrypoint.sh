@@ -35,7 +35,7 @@ apt-get -y install \
   python3.8 \
   python3.8-venv \
   python3-pip
-  apt-get -y upgrade
+apt-get -y upgrade
 
 # Change to Cicada folder
 cd ${CICADA_HOME}
