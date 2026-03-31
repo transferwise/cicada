@@ -370,3 +370,39 @@ def get_all_schedule_ids(db_cur):
 def delete_schedule(db_cur, schedule_id):
     sqlquery = f"DELETE from schedules WHERE schedule_id = '{schedule_id}'"
     db_cur.execute(sqlquery)
+
+
+def get_all_server_ids(db_cur):
+    """Get all possible server_ids from the servers table"""
+    sqlquery = "SELECT DISTINCT server_id FROM schedules ORDER BY server_id"
+    db_cur.execute(sqlquery)
+    server_ids = db_cur.fetchall()
+
+    return server_ids
+
+def get_all_schedule_ids_per_server(db_cur, server_id):
+    """Get all possible schedule_ids for each server from the schedules table"""
+    sqlquery = f"SELECT DISTINCT schedule_id FROM schedules WHERE server_id = '{server_id}' ORDER BY schedule_id"
+    db_cur.execute(sqlquery)
+    schedule_ids = db_cur.fetchall()
+
+    return schedule_ids
+
+
+def get_median_run_time(db_cur, schedule_id):
+    sqlquery = f"""
+        SELECT percentile_cont(0.5)
+        WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (end_time - start_time)) / 60)
+            AS median_minutes_taken
+        FROM schedule_log
+        WHERE schedule_id = '{schedule_id}'
+    """
+    db_cur.execute(sqlquery)
+    row = db_cur.fetchone()
+
+    try:
+        average_runtime_minutes = float(row[0])
+        return average_runtime_minutes
+    except Exception:
+        print(f"ERROR : No runs associated with the schedule_id {schedule_id}")
+        sys.exit(1)

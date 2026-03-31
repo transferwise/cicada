@@ -18,6 +18,7 @@ from cicada.commands import archive_schedule_log
 from cicada.commands import ping_slack
 from cicada.commands import list_schedules
 from cicada.commands import delete_schedule
+from cicada.commands import smart_schedule
 
 
 @utils.named_exception_handler("Cicada")
@@ -272,6 +273,19 @@ class Cicada:
         # now that we're inside a subcommand, ignore the first TWO args
         args = parser.parse_args(sys.argv[2:])
         delete_schedule.main(args.schedule_id)
+
+    @staticmethod
+    def smart_schedule():
+        """Generate smart schedules for a server using genetic algorithm"""
+        parser = argparse.ArgumentParser(
+            allow_abbrev=False,
+            add_help=True,
+            prog=inspect.stack()[0][3],
+            description="Generate smart schedules for a server using genetic algorithm",
+        )
+        parser.add_argument("--server_id", type=str, required=False, help="ID of the server")
+        args = parser.parse_args(sys.argv[2:])
+        smart_schedule.main(args.server_id)
 
     @staticmethod
     def version():
