@@ -14,7 +14,6 @@ def get_schedules_per_server(server_id, dbname=None):
     """Get all schedules for a given server_id."""
     db_conn = postgres.db_cicada(dbname)
     db_cur = db_conn.cursor()
-        # Don't get the schedules that aren't taps -> schedule_description LIKE '%==%' ?          !?
     schedule_ids = [row[0] for row in scheduler.get_all_schedule_ids_per_server(db_cur, server_id)]
     db_cur.close()
     db_conn.close()

@@ -382,7 +382,7 @@ def get_all_server_ids(db_cur):
 
 def get_all_schedule_ids_per_server(db_cur, server_id):
     """Get all possible schedule_ids for each server from the schedules table"""
-    sqlquery = f"SELECT DISTINCT schedule_id FROM schedules WHERE server_id = '{server_id}' ORDER BY schedule_id"
+    sqlquery = f"SELECT DISTINCT schedule_id FROM schedules WHERE server_id = '{server_id}' and schedule_description not like '%==%' ORDER BY schedule_id"
     db_cur.execute(sqlquery)
     schedule_ids = db_cur.fetchall()
 

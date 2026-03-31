@@ -26,8 +26,8 @@ services:
   # PostgreSQL database container used as backend
   cicada_db:
     build:
-      context: ./cicada_db
-      dockerfile: Dockerfile
+      context: ../
+      dockerfile: local-dev/cicada_db/Dockerfile
     container_name: cicada_db
     volumes:
       - ./cicada_db/pg_hba.conf:/var/lib/postgresql/pg_hba.conf
