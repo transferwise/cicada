@@ -1,0 +1,73 @@
+from __future__ import annotations
+from dataclasses import dataclass
+from typing import Optional, List
+import numpy as np
+from croniter import croniter
+import datetime
+from ..scheduler import get_median_run_time
+
+
+@dataclass(frozen=False)
+class Tap:
+    schedule_id: int
+    server_id: int
+    original_interval_mask: str 
+    interval_mask: str 
+    frequency_minutes: int
+    # cpu_max: float
+    median_runtime_minutes: int 
+    shift: Optional[int] = 0
+    # start_time: Optional[int] = None
+
+    def __init__(self, schedule_id, server_id, interval_mask, db_cur):
+        self.schedule_id = schedule_id
+        self.server_id = server_id
+        self.interval_mask = interval_mask
+        self.original_interval_mask = interval_mask
+        self.determine_attributes(db_cur)
+
+    def determine_attributes(self, db_cur):
+        """Determine frequency and average runtime from interval_mask and scheduler module"""
+        self._determine_frequency()
+        self._get_average_runtime(db_cur)
+
+    def _determine_frequency(self):
+        """Determine frequency in minutes from interval_mask using crontier"""
+        schedule = croniter(self.interval_mask)
+        first_iter = schedule.get_next(datetime.datetime)
+        second_iter = schedule.get_next(datetime.datetime)
+        frequency = (second_iter - first_iter).total_seconds() / 60 
+
+        self.frequency_minutes = int(frequency)
+        
+    
+    def _get_average_runtime(self, db_cur):
+        """Get average runtime from scheduler module"""
+        # for local testing set everything to 5 mins
+        self.median_runtime_minutes = 5
+        # self.median_runtime_minutes = get_median_run_time(db_cur, self.schedule_id)
+
+    def is_regular_schedule(self):
+        """Check if the cron expression is a regular schedule that can be optimized by the GA """
+        try:
+            schedule = croniter(self.interval_mask)
+            iter1 = schedule.get_next(datetime.datetime)
+            iter2 = schedule.get_next(datetime.datetime)
+            iter3 = schedule.get_next(datetime.datetime)
+            iter4 = schedule.get_next(datetime.datetime)
+            iter5 = schedule.get_next(datetime.datetime)
+            freq1 = (iter2 - iter1)
+            freq2 = (iter3 - iter2)
+            freq3 = (iter4 - iter3)
+            freq4 = (iter5 - iter4)
+            return freq1 == freq2 == freq3 == freq4
+        except (ValueError, KeyError):
+            return False
+
+
+@dataclass
+class Schedule:
+    start_blocks: List[int]
+    usage: np.ndarray
+    peak_cpu: float
+    taps: List[Tap]
