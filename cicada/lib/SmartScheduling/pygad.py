@@ -99,4 +99,9 @@ class GAPyGADScheduler:
         start_blocks = [int(v) for v in best_solution]
         peak_cpu = -float(best_fitness)
         usage, _ = evaluate_cpu_usage_and_peak(start_blocks, taps, self.cfg.minutes_per_block)
+
+        # Update tap objects shift attribute based on GA solution
+        for i, tap in enumerate(taps):
+            tap.shift = start_blocks[i] * self.cfg.minutes_per_block
+            
         return taps, start_blocks, peak_cpu, usage

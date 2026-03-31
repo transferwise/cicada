@@ -18,12 +18,13 @@ class Tap:
     median_runtime_minutes: int = 5
     shift: Optional[int] = 0
     start_time_blocks: Optional[int] = None
+    
 
-    def __init__(self, schedule_id, server_id, interval_mask, db_cur):
-        self.schedule_id = schedule_id
-        self.server_id = server_id
-        self.interval_mask = interval_mask
-        self.original_interval_mask = interval_mask
+    def __init__(self, details, db_cur):
+        self.schedule_id = details['schedule_id']
+        self.server_id = details['server_id']
+        self.interval_mask = details['interval_mask']
+        self.original_interval_mask = details['interval_mask']
         self.determine_attributes(db_cur)
 
     def determine_attributes(self, db_cur):

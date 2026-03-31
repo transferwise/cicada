@@ -1,9 +1,10 @@
 """Shifts the schedules on a node to distribute the load"""
 
+from __future__ import annotations
 import datetime
 import sys
-# from typing import Optional
-# from croniter import croniter
+from croniter import croniter
+from typing import Optional
 from cicada.lib import postgres, utils
 from cicada.lib import scheduler
 from cicada.lib.SmartScheduling import pygad
@@ -45,12 +46,7 @@ def create_tap_objects(schedule_ids, dbname=None):
     for schedule_id in schedule_ids:
         details = scheduler.get_schedule_details(db_cur, schedule_id)
         try:
-            tap = Tap(
-                schedule_id=details.get("schedule_id"),
-                server_id=details.get("server_id"),
-                interval_mask=details.get("interval_mask"),
-                db_cur=db_cur
-            )
+            tap = Tap(details, db_cur=db_cur)
 
             # Ignore the few taps that have irregular cron expressions for now. There are few enough that this shouldn't impact the optimisation and is not worth the effort to try and support these irregular schedules in the GA
             if not tap.is_regular_schedule():
@@ -66,67 +62,106 @@ def create_tap_objects(schedule_ids, dbname=None):
     db_conn.close()
     return taps
 
-# def update_schedule_cron(tap : Tap) -> str:
-#     """
-#         Uses the start_blocks to shift the cron expression accordingly. Gene space is already limited from 0 to the frequency of the tap
+def update_schedule_cron(tap : Tap) -> str:
+    """
+        Uses the start_blocks to shift the cron expression accordingly. Gene space is already limited from 0 to the frequency of the tap
 
-#         Ex. form of cron expression: "8-59/15 * * * *" (every 15 minutes starting at minute 8 of each hour)
-#     """
-#     frequency = tap.frequency_minutes
-#     shift = tap.shift 
+        Ex. form of cron expression: "8-59/15 * * * *" (every 15 minutes starting at minute 8 of each hour)
+    """
+    frequency = tap.frequency_minutes
+    shift = tap.shift 
 
-#     if not shift or frequency >= 60:
-#         return tap  # No shift needed
+    if not shift or shift == 0:
+        return tap  # No shift needed
     
-#     if shift == 0:
-#         return tap  # No shift needed
-#     if shift < 60:
-#         if frequency >= 60:
-#             minute = shift % 60
-#             hour = shift // 60 + croniter(tap.interval_mask).get_next(datetime).hour  # Get the hour of the first scheduled run and add the shift in hours
-#             tap.interval_mask = f"{minute} {hour} * * *"
-#              # Check that the new cron expression is valid
-#             if not croniter.is_valid(tap.interval_mask):
-#                 raise ValueError(f"Invalid cron expression generated: {tap.interval_mask}")
-#             return tap
-#         else:
-#             tap.interval_mask = f"{shift}-59/{frequency} * * * *"
-#             # Check that the new cron expression is valid
-#             if not croniter.is_valid(tap.interval_mask):
-#                 raise ValueError(f"Invalid cron expression generated: {tap.interval_mask}")
-#             return tap
-#     # Do we only want to support shifts of less than an hour? --> most schedules are on a 30 minute basis and it would simplify this function           !
-#     if shift >= 60:
-#         raise NotImplementedError("Design decision needed on how to implement schedule shifting for different frequencies and shift amounts.")
+    if frequency >= 60:
+        minute = shift % 60
+        hour = shift // 60 + croniter(tap.original_interval_mask).get_next(datetime.datetime).hour  # Get the hour of the first scheduled run and add the shift in hours
+        tap.interval_mask = f"{minute} {hour} * * *"
+        # Check that the new cron expression is valid
+        if not croniter.is_valid(tap.interval_mask):
+            raise ValueError(f"Invalid cron expression generated: {tap.interval_mask}")
+        return tap
+    else:
+        tap.interval_mask = f"{shift}-59/{frequency} * * * *"
+        # Check that the new cron expression is valid
+        if not croniter.is_valid(tap.interval_mask):
+            raise ValueError(f"Invalid cron expression generated: {tap.interval_mask}")
+        return tap
     
     
 
-# def assign_new_schedules(optimised_taps: list[pygad.Tap], dbname=None):
-#     """Assign new schedules based on the optimal schedule found."""
-#     db_conn = postgres.db_cicada(dbname)
-#     db_cur = db_conn.cursor()
+def assign_new_schedules(optimised_taps: list[pygad.Tap], dbname=None):
+    """Assign new schedules based on the optimal schedule found."""
+    db_conn = postgres.db_cicada(dbname)
+    db_cur = db_conn.cursor()
 
-#     # For each tap, update the schedule in the DB with the new interval_mask based on the shift calculated by the GA optimizer
-#     for tap in optimised_taps:
-#         tap = update_schedule_cron(tap)
-#         schedule_details = {
-#             "schedule_id": tap.schedule_id,
-#             "interval_mask": tap.interval_mask
-#         }  
-#         scheduler.update_schedule_details(db_cur=db_cur, schedule_details=schedule_details)
-#     db_conn.commit()
-#     db_cur.close()
-#     db_conn.close()
+    # For each tap, update the schedule in the DB with the new interval_mask based on the shift calculated by the GA optimizer
+    for tap in optimised_taps:
+        tap = update_schedule_cron(tap)
 
-# # def rollback(tap : Optional[Tap], dbname=None):
-#     """
-#     Rollback to original schedules in case of any issues during assignment.
-#     Args:        tap: Optional[Tap] : the tap to rollback, if None rollback all taps to their original schedules
+        schedule_details = {
+            "adhoc_parameters": None,
+            "adhoc_execute": None,
+            "schedule_group_id": None,
+            "parameters": None,
+            "server_id": None,
+            "last_run_date": None,
+            "is_enabled": None,
+            "interval_mask": tap.interval_mask,
+            "schedule_description": None,
+            "auto_update_time": None,
+            "schedule_order": None,
+            "schedule_id": tap.schedule_id,
+            "is_async": None,
+            "abort_running": None,
+            "exec_command": None,
+            "first_run_date": None,
+            "is_running": None
+        }  
+        scheduler.update_schedule_details(db_cur=db_cur, schedule_details=schedule_details)
+    db_conn.commit()
+    db_cur.close()
+    db_conn.close()
 
-#     """
-#     # This would require storing the original schedules before making changes, which is not currently implemented. 
-#     # We could potentially store the original interval_masks in a separate table or in memory before updating, and then use that for rollback if needed.
-#     raise NotImplementedError("Rollback functionality not yet implemented")
+def rollback(server_id : Optional[int], db_cur, dbname=None):
+    """
+    Rollback to original schedules in case of any issues during assignment.
+    Args:        server_id: Optional[int] : the server_id to rollback, if None rollback all servers
+    """
+    
+    if not server_id:
+        # Recursively call rollback for each server_id if no specific server_id is provided 
+        server_ids = find_all_server_ids(dbname)
+        for id in server_ids:
+            rollback(server_id=id[0], db_cur=db_cur, dbname=dbname)
+        return
+
+    taps = get_schedules_per_server(server_id=server_id, dbname=dbname)
+
+    for tap in taps:
+        schedule_details = {
+            "adhoc_parameters": None,
+            "adhoc_execute": None,
+            "schedule_group_id": None,
+            "parameters": None,
+            "server_id": None,
+            "last_run_date": None,
+            "is_enabled": None,
+            "interval_mask": tap.original_interval_mask,
+            "schedule_description": None,
+            "auto_update_time": None,
+            "schedule_order": None,
+            "schedule_id": tap.schedule_id,
+            "is_async": None,
+            "abort_running": None,
+            "exec_command": None,
+            "first_run_date": None,
+            "is_running": None
+        }  
+        scheduler.update_schedule_details(db_cur=db_cur, schedule_details=schedule_details)
+
+    raise NotImplementedError("Rollback functionality not yet implemented")
 
 
 @utils.named_exception_handler("smart_schedule")
@@ -154,8 +189,8 @@ def main(server_id=None, dbname=None):
         ga = pygad.GAPyGADScheduler()
         optimised_taps, start_blocks, peak_cpu, usage = ga.solve(taps)
         print(f"Optimized schedule for server_id {server_id}: {[tap.schedule_id for tap in optimised_taps]} with start blocks {start_blocks}, peak CPU {peak_cpu}, and usage {usage}")
-    #                     # Add logic to actually assign the new schedules    !
-    #     assign_new_schedules(optimised_taps, dbname=dbname)
+
+        assign_new_schedules(optimised_taps, dbname=dbname)
 
     except Exception as e:
         print(f"Error during optimization for server_id {server_id}: {e}")

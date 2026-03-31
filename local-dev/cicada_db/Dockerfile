@@ -10,6 +10,3 @@ RUN apk add --no-cache --virtual .debezium-build-deps gcc clang15 llvm15 git mak
     && cd / \
     && rm -rf wal2json \
     && apk del .debezium-build-deps
-
-COPY --chown=postgres:postgres setup/schema.sql /docker-entrypoint-initdb.d/01_schema.sql
-COPY --chown=postgres:postgres setup/create_test_tap_setup.sql /docker-entrypoint-initdb.d/02_create_test_tap_setup.sql
