@@ -6,7 +6,7 @@ import sys
 # from croniter import croniter
 from cicada.lib import postgres, utils
 from cicada.lib import scheduler
-# from cicada.lib.SmartScheduling import pygad
+from cicada.lib.SmartScheduling import pygad
 from cicada.lib.SmartScheduling.domain import Tap
 
 
@@ -150,15 +150,15 @@ def main(server_id=None, dbname=None):
         print("No valid schedules found to optimize.")
         sys.exit(1)
 
-    # # Run GA optimizer ---> add in way to change GAConfig parameters    !
-    # try:
-    #     ga = pygad.GAPyGADScheduler()
-    #     optimised_taps = ga.solve(taps)
-
+    # Run GA optimizer ---> add in way to change GAConfig parameters    !
+    try:
+        ga = pygad.GAPyGADScheduler()
+        optimised_taps, start_blocks, peak_cpu, usage = ga.solve(taps)
+        print(f"Optimized schedule for server_id {server_id}: {[tap.schedule_id for tap in optimised_taps]} with start blocks {start_blocks}, peak CPU {peak_cpu}, and usage {usage}")
     #                     # Add logic to actually assign the new schedules    !
     #     assign_new_schedules(optimised_taps, dbname=dbname)
 
-    # except Exception as e:
-    #     print(f"Error during optimization for server_id {server_id}: {e}")
-    #     sys.exit(1)
+    except Exception as e:
+        print(f"Error during optimization for server_id {server_id}: {e}")
+        sys.exit(1)
 

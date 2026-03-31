@@ -1,5 +1,6 @@
-from dataclasses import dataclass 
-from typing import Optional
+from __future__ import annotations  
+from dataclasses import dataclass, field
+from typing import Optional, List
 
 @dataclass
 class GAConfig:
@@ -13,4 +14,4 @@ class GAConfig:
     mutation_type: str = "random"
     keep_elitism: int = 1
     random_seed: Optional[int] = None
-    blacklist_schedule_ids: Optional[list[str]] = None
+    blacklist_schedule_ids: Optional[List[str]] = field(default_factory=list)

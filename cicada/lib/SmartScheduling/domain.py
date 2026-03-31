@@ -14,10 +14,10 @@ class Tap:
     original_interval_mask: str 
     interval_mask: str 
     frequency_minutes: int
-    # cpu_max: float
-    median_runtime_minutes: int 
+    cpu_max: float = 1
+    median_runtime_minutes: int = 5
     shift: Optional[int] = 0
-    # start_time: Optional[int] = None
+    start_time_blocks: Optional[int] = None
 
     def __init__(self, schedule_id, server_id, interval_mask, db_cur):
         self.schedule_id = schedule_id
@@ -65,9 +65,9 @@ class Tap:
             return False
 
 
-@dataclass
-class Schedule:
-    start_blocks: List[int]
-    usage: np.ndarray
-    peak_cpu: float
-    taps: List[Tap]
+# @dataclass
+# class Schedule:
+#     start_blocks: List[int] = None
+#     usage: np.ndarray
+#     peak_cpu: float
+#     taps: List[Tap]

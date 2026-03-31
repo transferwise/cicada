@@ -24,6 +24,8 @@ setup(
         "tabulate==0.9.*",
         "slack-sdk==3.37.*",
         "backoff==2.2.*",
+        "numpy==1.24.*",
+        "pygad==3.5.*"
     ],
     extras_require={
         "dev": [
