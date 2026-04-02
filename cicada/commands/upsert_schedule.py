@@ -79,6 +79,9 @@ def main(schedule_details, dbname=None):
             new_schedule_details["schedule_group_id"] = schedule_details["schedule_group_id"]
 
         scheduler.update_schedule_details(db_cur, new_schedule_details)
+        
+    scheduler.reset_schedule_backup_mask(db_cur, new_schedule_details)
+    print("Updated schedule details in the schedule_backups table for potential rollback.")
 
     print(tabulate(new_schedule_details.items(), ["Detail", "Value"], tablefmt="psql"))
     db_cur.close()

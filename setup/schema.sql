@@ -19,6 +19,19 @@ BEGIN
 END;
 $BODY$;
 
+-- FUNCTION: set_snapshot_at()
+CREATE OR REPLACE FUNCTION public.set_snapshot_at()
+    RETURNS trigger
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE NOT LEAKPROOF
+AS $BODY$
+BEGIN
+  NEW.snapshot_at = now()::timestamp without time zone;
+  RETURN NEW;
+END;
+$BODY$;
+
 -- Table: servers
 CREATE TABLE IF NOT EXISTS public.servers
 (
@@ -187,5 +200,41 @@ WITH (
     OIDS = FALSE
 )
 ;
+
+
+-- Table to record previous scheduleing for rollback functionality with smart scheduling
+CREATE TABLE IF NOT EXISTS public.schedule_backups 
+(
+  schedule_id character varying(255) NOT NULL,
+  server_id integer,
+  original_interval_mask character varying(32) NOT NULL,
+  previous_interval_mask character varying(32) NOT NULL,
+  interval_mask character varying(32) NOT NULL,
+  start_time_shift_mins INT NOT NULL DEFAULT 0, -- Number of minutes the schedule was shifted from its original schedule
+  snapshot_at timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone,
+  CONSTRAINT schedule_backups_pkey PRIMARY KEY (schedule_id)
+)
+WITH (
+  OIDS=FALSE
+);
+
+DROP TRIGGER IF EXISTS tr_schedule_backups ON public.schedule_backups;
+CREATE TRIGGER tr_schedule_backups
+    BEFORE UPDATE
+    ON public.schedule_backups
+    FOR EACH ROW
+    EXECUTE PROCEDURE set_snapshot_at()
+;
+
+
+CREATE UNIQUE INDEX IF NOT EXISTS schedule_backups_schedule_id_idx
+  ON public.schedule_backups
+  USING btree
+  (schedule_id);
+
+CREATE INDEX IF NOT EXISTS schedule_backups_server_id_idx
+  ON public.schedule_backups
+  USING btree
+  (server_id);
 
 COMMIT TRANSACTION;

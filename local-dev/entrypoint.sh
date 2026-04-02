@@ -45,7 +45,6 @@ pwd
 # Build backend database
 export PGPASSWORD=${DB_POSTGRES_PASS}
 psql -v ON_ERROR_STOP=1 "sslmode=prefer user=${DB_POSTGRES_USER} host=${DB_POSTGRES_HOST} port=${DB_POSTGRES_PORT} dbname=${DB_POSTGRES_DB}" --file=setup/schema.sql --quiet
-psql -v ON_ERROR_STOP=1 "sslmode=prefer user=${DB_POSTGRES_USER} host=${DB_POSTGRES_HOST} port=${DB_POSTGRES_PORT} dbname=${DB_POSTGRES_DB}" --file=setup/create_test_tap_setup.sql --quiet
 # If not exists, create definitions file for cli
 test -f ${CICADA_HOME}/config/definitions.yml || cat > ${CICADA_HOME}/config/definitions.yml <<EOL
 db_cicada:
@@ -66,6 +65,7 @@ make dev --file=${CICADA_HOME}/Makefile --always-make python=python3.8
 
 # Register this server in Database
 ${CICADA_HOME}/venv/bin/cicada register_server
+psql -v ON_ERROR_STOP=1 "sslmode=prefer user=${DB_POSTGRES_USER} host=${DB_POSTGRES_HOST} port=${DB_POSTGRES_PORT} dbname=${DB_POSTGRES_DB}" --file=setup/create_test_tap_setup.sql --quiet
 
 # Upsert some manual test schedules
 ${CICADA_HOME}/venv/bin/cicada upsert_schedule --schedule_id=missing_exec --is_enabled=1 --exec_command="death.exe" --interval_mask="* * * * *"

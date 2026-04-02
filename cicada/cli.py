@@ -19,6 +19,7 @@ from cicada.commands import ping_slack
 from cicada.commands import list_schedules
 from cicada.commands import delete_schedule
 from cicada.commands import smart_schedule
+from cicada.commands import rollback
 
 
 @utils.named_exception_handler("Cicada")
@@ -286,6 +287,33 @@ class Cicada:
         parser.add_argument("--server_id", type=str, required=False, help="ID of the server")
         args = parser.parse_args(sys.argv[2:])
         smart_schedule.main(args.server_id)
+
+    @staticmethod
+    def rollback():
+        """Rollback to original schedules in case of any issues during assignment."""
+        parser = argparse.ArgumentParser(
+            allow_abbrev=False,
+            add_help=True,
+            prog=inspect.stack()[0][3],
+            description="Rollback to original schedules in case of any issues during assignment",
+        )
+        parser.add_argument(
+            "--full",
+            default=False,
+            action="store_true",
+            help="If specified, will roll back to the original schedule instead of the previous schedule",
+        )
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument(
+            "--server_id",
+            type=str,
+            required=False,
+            help="ID of the server to rollback, if not specified will rollback all servers",
+        )
+        group.add_argument("--schedule_id", type=str, required=False, help="ID of the schedule to rollback")
+        args = parser.parse_args(sys.argv[2:])
+        rollback.main(args.server_id, args.schedule_id, full = args.full)
+
 
     @staticmethod
     def version():
