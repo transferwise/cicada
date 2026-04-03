@@ -17,6 +17,7 @@ def get_schedules_per_server(server_id, db_cur=None):
 
     if not schedule_ids:
         print(f"No schedules found for server_id {server_id}")
+        sys.exit(1)
 
     return schedule_ids
 
@@ -27,20 +28,22 @@ def create_tap_objects(schedule_ids, db_cur):
     
     taps : list[Tap] = []
 
-    # Get information from schedule_backups table 
-    schedule_backups = scheduler.get_all_schedule_backups(db_cur)
-
     # Fetch details for each schedule and convert to Tap objects
     for schedule_id in schedule_ids:
         details = scheduler.get_schedule_details(db_cur, schedule_id)
         try:
             tap = Tap(details, db_cur=db_cur)
             # Ignore the few taps that have irregular cron expressions for now. There are few enough that this shouldn't impact the optimisation and is not worth the effort to try and support these irregular schedules in the GA
-            if not tap.is_regular_schedule():
-                raise ValueError(f"Skipping irregular cron expression: {tap.interval_mask}")
+            if tap.is_unsupported():
+                if tap.is_blacklisted():
+                    print(f"Skipping blacklisted schedule {tap.schedule_id} with cron expression {tap.interval_mask}")
+                elif not tap.is_regular_schedule():
+                    print(f"Skipping irregular schedule {tap.schedule_id} with cron expression {tap.interval_mask}")
+                else:
+                    print(f"Skipping schedule {tap.schedule_id} with frequency {tap.frequency_minutes} minutes as shifting for these taps is unsupported currently")
+
             else:
-                tap.start_time_blocks = [backup[1] for backup in schedule_backups if backup[0] == schedule_id][0]                                                                                                                  
-                tap.original_interval_mask = [backup[2] for backup in schedule_backups if backup[0] == schedule_id][0]
+                tap._determine_start_time_mins()
                 taps.append(tap)
 
         except Exception as e:
@@ -57,23 +60,32 @@ def update_schedule_cron(tap : Tap) -> str:
     frequency = tap.frequency_minutes
     shift = tap.shift 
 
-    if not shift or shift == 0:
+    if not shift:
         return tap  # No shift needed
     
-    if frequency >= 60:
-        minute = shift % 60
-        hour = shift // 60 + croniter(tap.interval_mask).get_next(datetime.datetime).hour  # Get the hour of the first scheduled run and add the shift in hours
+    if frequency == 1440:  # For daily taps, we can shift within the hour
+        hour = shift // 60 
+        minute = (shift - hour * 60) % 60
         tap.interval_mask = f"{minute} {hour} * * *"
         # Check that the new cron expression is valid
         if not croniter.is_valid(tap.interval_mask):
-            raise ValueError(f"Invalid cron expression generated: {tap.interval_mask}")
+            raise ValueError(f"Invalid cron expression generated: {tap.interval_mask} for tap {tap.schedule_id}")
         return tap
-    else:
+    elif frequency == 60:  # For hourly taps, we can shift within the hour
+        minute = shift % 60
+        tap.interval_mask = f"{minute} * * * *"
+        # Check that the new cron expression is valid
+        if not croniter.is_valid(tap.interval_mask):
+            raise ValueError(f"Invalid cron expression generated: {tap.interval_mask} for tap {tap.schedule_id}")
+        return tap
+    elif frequency < 60:
+        assert shift < frequency, f"Shift {shift} cannot be greater than or equal to frequency {frequency} for tap {tap.schedule_id}"
         tap.interval_mask = f"{shift}-59/{frequency} * * * *"
         # Check that the new cron expression is valid
         if not croniter.is_valid(tap.interval_mask):
-            raise ValueError(f"Invalid cron expression generated: {tap.interval_mask}")
+            raise ValueError(f"Invalid cron expression generated: {tap.interval_mask} for tap {tap.schedule_id}")
         return tap
+        
 
 
 def assign_new_schedules(optimised_taps: list[pygad.Tap], db_cur):
@@ -81,7 +93,10 @@ def assign_new_schedules(optimised_taps: list[pygad.Tap], db_cur):
 
     # For each tap, update the schedule in the DB with the new interval_mask based on the shift calculated by the GA optimizer
     for tap in optimised_taps:
+        previous_schedule_mask = tap.interval_mask
         tap = update_schedule_cron(tap)
+        print(f"Updating schedule {tap.schedule_id} with new interval mask: {tap.interval_mask} and shift of {tap.shift} minutes")
+        tap._determine_start_time_mins() 
 
         schedule_details = {
             "adhoc_parameters": None,
@@ -107,15 +122,15 @@ def assign_new_schedules(optimised_taps: list[pygad.Tap], db_cur):
         previous_schedule_details = {
             "schedule_id": tap.schedule_id,
             "server_id": tap.server_id,
-            "previous_interval_mask": tap.original_interval_mask,
+            "previous_interval_mask": previous_schedule_mask,
             "interval_mask": tap.interval_mask,
-            "start_time_shift_mins": tap.shift or 0
+            "start_time_shift_mins": tap.start_time_mins
         }
         scheduler.update_schedule_backups(db_cur, previous_schedule_details)
 
 
 @utils.named_exception_handler("smart_schedule")
-def main(server_id=None, dbname=None):
+def main(server_id=None, dbname=None, ga_config=None):
     db_conn = postgres.db_cicada(dbname)
     db_cur = db_conn.cursor()
 
@@ -124,32 +139,31 @@ def main(server_id=None, dbname=None):
         server_ids = scheduler.get_all_server_ids(db_cur)
         for id in server_ids:
             main(server_id=id[0], dbname=dbname)
-        return
-    
-    # Get schedules for the server_id
-    schedule_ids = get_schedules_per_server(server_id=server_id, db_cur=db_cur)
-    print(f"Found schedules for server_id {server_id}: {schedule_ids}")
+        
+    else:
+        # Get schedules for the server_id
+        schedule_ids = get_schedules_per_server(server_id=server_id, db_cur=db_cur)
+        print(f"Found {len(schedule_ids)} schedules for server_id {server_id}")
 
-    # Build Tap objects
-    taps = create_tap_objects(schedule_ids, db_cur=db_cur)
-    if not taps:
-        print("No valid schedules found to optimize.")
-        sys.exit(1)
+        # Build Tap objects
+        taps = create_tap_objects(schedule_ids, db_cur=db_cur)
+        if not taps:
+            print("No valid schedules found to optimize.")
+            sys.exit(1)
 
-    # Run GA optimizer ---> add in way to change GAConfig parameters    !
-    try:
-        ga = pygad.GAPyGADScheduler()
-        optimised_taps, start_blocks, peak_cpu, usage, initial_fitness = ga.solve(taps)
-        print(f"Optimized schedule for server_id {server_id}: new peak CPU {peak_cpu}")
+        try:
+            ga = pygad.GAPyGADScheduler(config=ga_config)
+            optimised_taps, start_blocks, peak_cpu, usage, initial_fitness = ga.solve(taps)
+            print(f"Optimized schedule for server_id {server_id}: new peak CPU {peak_cpu}")
 
-        if peak_cpu < initial_fitness:  # Only update schedules if we have found an improvement
-            assign_new_schedules(optimised_taps, db_cur=db_cur)
-        else:
-            print(f"No improvement found for server_id {server_id}. Current peak CPU: {initial_fitness}, Optimized peak CPU: {peak_cpu}. No schedule updates will be made.")
+            if peak_cpu < initial_fitness:  # Only update schedules if we have found an improvement
+                assign_new_schedules(optimised_taps, db_cur=db_cur)
+            else:
+                print(f"No improvement found for server_id {server_id}. Current peak CPU: {initial_fitness}, Optimized peak CPU: {peak_cpu}. No schedule updates will be made.")
 
-    except Exception as e:
-        print(f"Error during optimization for server_id {server_id}: {e}")
-        sys.exit(1)
+        except Exception as e:
+            print(f"Error during optimization for server_id {server_id}: {e}")
+            sys.exit(1)
 
     db_cur.close()
     db_conn.close()

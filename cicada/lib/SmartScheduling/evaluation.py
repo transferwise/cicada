@@ -52,17 +52,24 @@ def evaluate_cpu_usage_and_peak(start_blocks: Sequence[int], taps: Sequence[Tap]
     blocks_per_day = calculate_blocks_per_day(minutes_per_block)
     freq_blocks, run_blocks = discretize_taps(taps, minutes_per_block)
     diff = np.zeros(blocks_per_day + 1, dtype=float)
+
     for i, tap in enumerate(taps):
-        s0 = int(start_blocks[i])
         freq = freq_blocks[i]
         run_len = run_blocks[i]
         cpu = float(tap.cpu_max)
-        block = s0
+        block = int(start_blocks[i])
+
+        # Iterate through the day in increments of the tap's frequency, adding the tap's CPU usage to the diff array for the duration 
+        # of its runtime. We use a diff array to efficiently calculate the cumulative CPU usage at each time block. Instead of 
+        # appending the CPU usage for each block the tap runs in, we add the CPU usage at the start block and subtract it at the end block.
         while block < blocks_per_day:
             end = min(block + run_len, blocks_per_day)
             diff[block] += cpu
             diff[end] -= cpu
             block += freq
-        usage = np.cumsum(diff[:-1])
-        peak = float(np.max(usage)) if usage.size else 0.0
+
+    # Sums up everything in the diff array to get the total CPU usage at each time block, and finds the peak usage. 
+    # Ignore the last element of the diff array since it's just a placeholder to handle the end block subtraction for taps that run until the end of the day.
+    usage = np.cumsum(diff[:-1])
+    peak = float(np.max(usage)) if usage.size else 0.0
     return usage, peak

@@ -285,8 +285,33 @@ class Cicada:
             description="Generate smart schedules for a server using genetic algorithm",
         )
         parser.add_argument("--server_id", type=str, required=False, help="ID of the server")
+
+        # Optional GA Configurations
+        ga_config = parser.add_argument_group("ga_config", "Optional configurations for the genetic algorithm optimizer")
+        ga_config.add_argument("--minutes_per_block", type=int, required=False, help="Minutes per block for the genetic algorithm")
+        ga_config.add_argument("--num_generations",type=int,required=False, help="Number of generations for the genetic algorithm")
+        ga_config.add_argument("--sol_per_pop",type=int,required=False, help="Number of solutions per population for the genetic algorithm")
+        ga_config.add_argument("--num_parents_mating",type=int,required=False, help="Number of parents mating for the genetic algorithm")
+        ga_config.add_argument("--mutation_percent_genes",type=int,required=False, help="Mutation percentage of genes for the genetic algorithm")
+        ga_config.add_argument("--parent_selection_type",type=str,required=False, help="Parent selection type for the genetic algorithm. Allowed values: ['sss', 'rws', 'sus', 'tournament', 'rank', 'random']")
+        ga_config.add_argument("--crossover_type",type=str,required=False, help="Crossover type for the genetic algorithm. Allowed values: ['single_point', 'two_point', 'uniform']")
+        ga_config.add_argument("--mutation_type",type=str,required=False, help="Mutation type for the genetic algorithm. Allowed values: ['random', 'swap', 'inversion', 'scramble']")
+        ga_config.add_argument("--keep_elitism",type=int,required=False, help="Number of elite solutions to keep for the next generation")
         args = parser.parse_args(sys.argv[2:])
-        smart_schedule.main(args.server_id)
+        smart_schedule.main(
+            args.server_id,
+            ga_config={
+                "minutes_per_block": args.minutes_per_block,
+                "num_generations": args.num_generations,
+                "sol_per_pop": args.sol_per_pop,
+                "num_parents_mating": args.num_parents_mating,
+                "mutation_percent_genes": args.mutation_percent_genes,
+                "parent_selection_type": args.parent_selection_type,
+                "crossover_type": args.crossover_type,
+                "mutation_type": args.mutation_type,
+                "keep_elitism": args.keep_elitism,
+            },
+        )
 
     @staticmethod
     def rollback():

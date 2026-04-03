@@ -1,13 +1,11 @@
 from __future__ import annotations
-from typing import List, Optional, Sequence 
+from typing import List, Mapping, Optional, Sequence 
 import numpy as np 
 from .config import GAConfig 
 from .domain import Tap 
 from .evaluation import evaluate_cpu_usage_and_peak, discretize_taps, calculate_blocks_per_day 
 import pygad
 
-
-# """Blacklist functionality - to be added later"""
 
 class GAPyGADScheduler:
     """
@@ -25,34 +23,53 @@ class GAPyGADScheduler:
                          We cap the max shift of a tap to within the hour to prevent large shifts for taps that run daily.
     """
 
-    def __init__(self, config: Optional[GAConfig] = None):
-        self.cfg = config or GAConfig()
+    def __init__(self, config: Optional[Mapping[str, object]] = None):
+        if config is None:
+            self.cfg = GAConfig()
+        else:
+            filtered_config = {key: value for key, value in config.items() if value is not None}
+            self.cfg = GAConfig(**filtered_config)
 
 
     def _gene_space(self, taps: Sequence[Tap]) -> List[List[int]]:
         # Build gene_space per tap: each gene space is limited by it's frequency (e.g. a 15min freq tap can only traverse the first 15min worth of time blocks)
-        # Computed in blocks to make it time-block-interval agnostic. we don't want to have to rewrite all the start_times if we e.g. decide to change the scheduling interval
-        freq_blocks, _ = discretize_taps(taps, self.cfg.minutes_per_block)
-
+        # Unless the tap is unsupported (either blacklisted, irregular or has frequency greater than 60 mins) in which case we set the gene space to be just 0 
+        # so they remain unchanged in the GA but are still included in the fitness evaluation. Also constrain taps with frequency > 60 mins to an hour to prevent
+        # large shifts and huge gene spaces.
+        # Computed in blocks to make it time-block-interval agnostic
+        interval_blocks, _ = discretize_taps(taps, self.cfg.minutes_per_block)
+        start_blocks = [0] * len(taps)
+        end_blocks = [1] * len(taps)
+        blocks_per_day = calculate_blocks_per_day(self.cfg.minutes_per_block)
 
         for i, tap in enumerate(taps):
             # Ignore any blacklist taps -> fix the gene space to be 0 so they're still included in the fitness eval
-            if tap.schedule_id in self.cfg.blacklist_schedule_ids:
-                freq_blocks[i] = 1 
+            if tap.is_unsupported():
+                pass
 
             # Limit gene space to only shift within the hour for the taps which run less frequently
-            if tap.frequency_minutes >= 60:
-                freq_blocks[i] = 59 // self.cfg.minutes_per_block
-        return [list(range(fb)) for fb in freq_blocks]
+            elif tap.frequency_minutes >= 60:
+                interval_blocks[i] = 59 // self.cfg.minutes_per_block
+                # Prevent any end blocks from going beyond the day limit 
+                end_blocks[i] = min(tap.start_time_mins // self.cfg.minutes_per_block + interval_blocks[i], blocks_per_day)
+                start_blocks[i] = end_blocks[i] - interval_blocks[i]
+
+            # Gene space for the rest is just the frequency 
+            else:
+                start_blocks[i] = 0
+                end_blocks[i] = interval_blocks[i]
+
+        return [list(range(start_block, end_block)) for start_block, end_block in zip(start_blocks, end_blocks)]
+    
 
     def _initial_population(self, taps: Sequence[Tap], gene_space: List[List[int]]) -> np.ndarray:
         rng = np.random.default_rng(self.cfg.random_seed)
         seed = []
 
-        # Add current start blocks as first solution to bias solution space towaards current solution
+        # Add current start minutes as first solution to bias solution space towards current solution
         for i, tap in enumerate(taps):
             gs = gene_space[i]
-            s = 0 if tap.start_time_blocks is None else int(tap.start_time_blocks)
+            s = 0 if tap.start_time_mins is None else int(tap.start_time_mins // self.cfg.minutes_per_block)
             seed.append(max(min(s, gs[-1]), gs[0]))
         pop = [seed]
 
