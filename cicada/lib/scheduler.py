@@ -394,6 +394,14 @@ def get_all_schedule_ids_per_server(db_cur, server_id):
 
     return schedule_ids
 
+def get_all_schedule_backups(db_cur):
+    """Get all entries from the schedule_backups table"""
+    sqlquery = "SELECT schedule_id, start_time_shift_mins, original_interval_mask FROM schedule_backups"
+    db_cur.execute(sqlquery)
+    schedule_backups = db_cur.fetchall()
+
+    return schedule_backups
+
 
 def get_median_run_time(db_cur, schedule_id):
     sqlquery = f"""
@@ -415,8 +423,8 @@ def get_median_run_time(db_cur, schedule_id):
 
 def reset_schedule_backup_mask(db_cur, schedule_details):
     """
-    Update the interval_mask of a schedule in the schedule_backups table. 
-    Called when schedule frequency is changed or a new schedule is added.
+    Resets the interval_mask of a schedule in the schedule_backups table. Called when schedule frequency is changed or a new schedule is added.
+    Sets all interval_mask fiedls to the new interval_mask to ensure that the rollback won't revert to an outdated frequency.
     """
     sqlquery = f"""
         MERGE INTO public.schedule_backups 
@@ -463,6 +471,7 @@ def rollback_schedule_backup_mask(db_cur, schedule_id=None, server_id=None):
         UPDATE public.schedule_backups 
         SET interval_mask = original_interval_mask,
             previous_interval_mask = original_interval_mask,
+            start_time_shift_mins = 0,
             server_id = server_id
         WHERE schedule_id = '{schedule_id}' or server_id = '{server_id}'
     """

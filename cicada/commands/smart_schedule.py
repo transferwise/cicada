@@ -27,17 +27,20 @@ def create_tap_objects(schedule_ids, db_cur):
     
     taps : list[Tap] = []
 
+    # Get information from schedule_backups table 
+    schedule_backups = scheduler.get_all_schedule_backups(db_cur)
+
     # Fetch details for each schedule and convert to Tap objects
     for schedule_id in schedule_ids:
         details = scheduler.get_schedule_details(db_cur, schedule_id)
         try:
             tap = Tap(details, db_cur=db_cur)
-
             # Ignore the few taps that have irregular cron expressions for now. There are few enough that this shouldn't impact the optimisation and is not worth the effort to try and support these irregular schedules in the GA
             if not tap.is_regular_schedule():
                 raise ValueError(f"Skipping irregular cron expression: {tap.interval_mask}")
             else:
-                tap.determine_attributes(db_cur)
+                tap.start_time_blocks = [backup[1] for backup in schedule_backups if backup[0] == schedule_id][0]                                                                                                                  
+                tap.original_interval_mask = [backup[2] for backup in schedule_backups if backup[0] == schedule_id][0]
                 taps.append(tap)
 
         except Exception as e:
@@ -136,10 +139,13 @@ def main(server_id=None, dbname=None):
     # Run GA optimizer ---> add in way to change GAConfig parameters    !
     try:
         ga = pygad.GAPyGADScheduler()
-        optimised_taps, start_blocks, peak_cpu, usage = ga.solve(taps)
+        optimised_taps, start_blocks, peak_cpu, usage, initial_fitness = ga.solve(taps)
         print(f"Optimized schedule for server_id {server_id}: new peak CPU {peak_cpu}")
 
-        assign_new_schedules(optimised_taps, db_cur=db_cur)
+        if peak_cpu < initial_fitness:  # Only update schedules if we have found an improvement
+            assign_new_schedules(optimised_taps, db_cur=db_cur)
+        else:
+            print(f"No improvement found for server_id {server_id}. Current peak CPU: {initial_fitness}, Optimized peak CPU: {peak_cpu}. No schedule updates will be made.")
 
     except Exception as e:
         print(f"Error during optimization for server_id {server_id}: {e}")

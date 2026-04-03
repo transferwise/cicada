@@ -74,7 +74,8 @@ class GAPyGADScheduler:
         self.taps = taps
         
         initial_population = self._initial_population(taps, gene_space)
-        print("Initial population fitness (max_cpu load):", -self.fitness_fn(None, initial_population[0], 0))
+        initial_fitness = self.fitness_fn(None, initial_population[0], 0)
+        print("Initial population fitness (max_cpu load):", -initial_fitness)
 
         ga = pygad.GA(
             num_generations=self.cfg.num_generations,
@@ -104,4 +105,4 @@ class GAPyGADScheduler:
         for i, tap in enumerate(taps):
             tap.shift = start_blocks[i] * self.cfg.minutes_per_block
             
-        return taps, start_blocks, peak_cpu, usage
+        return taps, start_blocks, peak_cpu, usage, -initial_fitness

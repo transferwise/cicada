@@ -64,11 +64,3 @@ class Tap:
             return freq1 == freq2 == freq3 == freq4
         except (ValueError, KeyError):
             return False
-
-
-# @dataclass
-# class Schedule:
-#     start_blocks: List[int] = None
-#     usage: np.ndarray
-#     peak_cpu: float
-#     taps: List[Tap]
