@@ -28,6 +28,7 @@ class Tap:
     def determine_attributes(self, db_cur):
         """Determine frequency and average runtime from interval_mask and scheduler module"""
         self._determine_frequency()
+        self._determine_start_time_mins()
         self._get_average_runtime(db_cur)
 
     def _determine_frequency(self):
@@ -66,9 +67,15 @@ class Tap:
         # Blacklist shouldn't be stored in GA and instead be in db
         return self.schedule_id in self.cfg.blacklist_schedule_ids
 
+    def frequency_is_supported(self):
+        """Determine if the tap frequency is supported for smart scheduling"""
+        if (self.frequency_minutes != 1440 and self.frequency_minutes > 60): return False
+        if (self.frequency_minutes <= 1): return False
+        return True
+
     def is_unsupported(self):
         """Determine if the tap is unsupported for smart scheduling based on frequency or if it's blacklisted"""
-        return ((self.frequency_minutes != 1440 and self.frequency_minutes > 60) or self.is_blacklisted() or not self.is_regular_schedule())
+        return (not self.frequency_is_supported() or self.is_blacklisted() or not self.is_regular_schedule())
 
     def is_regular_schedule(self):
         """Check if the cron expression is a regular schedule that can be optimized by the GA """

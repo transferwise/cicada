@@ -49,7 +49,7 @@ class GAPyGADScheduler:
 
             # Limit gene space to only shift within the hour for the taps which run less frequently
             elif tap.frequency_minutes >= 60:
-                interval_blocks[i] = 59 // self.cfg.minutes_per_block
+                interval_blocks[i] = 60 // self.cfg.minutes_per_block
                 # Prevent any end blocks from going beyond the day limit 
                 end_blocks[i] = min(tap.start_time_mins // self.cfg.minutes_per_block + interval_blocks[i], blocks_per_day)
                 start_blocks[i] = end_blocks[i] - interval_blocks[i]

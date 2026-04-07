@@ -444,7 +444,13 @@ def reset_schedule_backup_mask(db_cur, schedule_details):
 
 
 def update_schedule_backups(db_cur, previous_schedule_details):
-    """Insert a schedule configuration into the schedule_backups table for rollback."""
+    """
+    Insert a schedule configuration into the schedule_backups table for rollback.
+    Args:        db_cur: Database cursor.
+        previous_schedule_details: dict with keys schedule_id, server_id, interval_mask, previous_interval_mask, start_time_shift_mins, original_interval_mask
+                                    or 
+                                    dict with keys schedule_id, interval_mask, previous_interval_mask, start_time_shift_mins
+    """
 
     sqlquery = f"""
         INSERT INTO schedule_backups (schedule_id, server_id, interval_mask, previous_interval_mask, start_time_shift_mins, original_interval_mask)

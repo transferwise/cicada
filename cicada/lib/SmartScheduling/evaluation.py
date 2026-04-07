@@ -52,6 +52,8 @@ def evaluate_cpu_usage_and_peak(start_blocks: Sequence[int], taps: Sequence[Tap]
     blocks_per_day = calculate_blocks_per_day(minutes_per_block)
     freq_blocks, run_blocks = discretize_taps(taps, minutes_per_block)
     diff = np.zeros(blocks_per_day + 1, dtype=float)
+    assert len(start_blocks) == len(taps) == len(freq_blocks) == len(run_blocks), "Length of start_blocks, taps, freq_blocks, and run_blocks must all be the same"
+    assert all(start_blocks[i] < freq_blocks[i] for i in range(len(start_blocks))), "Start block should be the earliest it can be"
 
     for i, tap in enumerate(taps):
         freq = freq_blocks[i]

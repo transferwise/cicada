@@ -43,7 +43,6 @@ def create_tap_objects(schedule_ids, db_cur):
                     print(f"Skipping schedule {tap.schedule_id} with frequency {tap.frequency_minutes} minutes as shifting for these taps is unsupported currently")
 
             else:
-                tap._determine_start_time_mins()
                 taps.append(tap)
 
         except Exception as e:
@@ -51,17 +50,22 @@ def create_tap_objects(schedule_ids, db_cur):
 
     return taps
 
-def update_schedule_cron(tap : Tap) -> str:
+def update_schedule_cron(tap : Tap):
     """
         Uses the start_blocks to shift the cron expression accordingly. Gene space is already limited from 0 to the frequency of the tap
 
         Ex. form of cron expression: "8-59/15 * * * *" (every 15 minutes starting at minute 8 of each hour)
+
+        Args:
+            tap (Tap): Tap object with updated shift attribute based on GA solution
+        Returns:
+            Updated tap object with new interval_mask based on the shift calculated by the GA optimizer
     """
     frequency = tap.frequency_minutes
     shift = tap.shift 
 
     if not shift:
-        return tap  # No shift needed
+        return  # No shift needed
     
     if frequency == 1440:  # For daily taps, we can shift within the hour
         hour = shift // 60 
@@ -70,21 +74,21 @@ def update_schedule_cron(tap : Tap) -> str:
         # Check that the new cron expression is valid
         if not croniter.is_valid(tap.interval_mask):
             raise ValueError(f"Invalid cron expression generated: {tap.interval_mask} for tap {tap.schedule_id}")
-        return tap
+        return
     elif frequency == 60:  # For hourly taps, we can shift within the hour
         minute = shift % 60
         tap.interval_mask = f"{minute} * * * *"
         # Check that the new cron expression is valid
         if not croniter.is_valid(tap.interval_mask):
             raise ValueError(f"Invalid cron expression generated: {tap.interval_mask} for tap {tap.schedule_id}")
-        return tap
+        return
     elif frequency < 60:
         assert shift < frequency, f"Shift {shift} cannot be greater than or equal to frequency {frequency} for tap {tap.schedule_id}"
         tap.interval_mask = f"{shift}-59/{frequency} * * * *"
         # Check that the new cron expression is valid
         if not croniter.is_valid(tap.interval_mask):
             raise ValueError(f"Invalid cron expression generated: {tap.interval_mask} for tap {tap.schedule_id}")
-        return tap
+        return
         
 
 
@@ -94,7 +98,7 @@ def assign_new_schedules(optimised_taps: list[pygad.Tap], db_cur):
     # For each tap, update the schedule in the DB with the new interval_mask based on the shift calculated by the GA optimizer
     for tap in optimised_taps:
         previous_schedule_mask = tap.interval_mask
-        tap = update_schedule_cron(tap)
+        update_schedule_cron(tap)
         print(f"Updating schedule {tap.schedule_id} with new interval mask: {tap.interval_mask} and shift of {tap.shift} minutes")
         tap._determine_start_time_mins() 
 
