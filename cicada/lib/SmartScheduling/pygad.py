@@ -23,12 +23,13 @@ class GAPyGADScheduler:
                          We cap the max shift of a tap to within the hour to prevent large shifts for taps that run daily.
     """
 
-    def __init__(self, config: Optional[Mapping[str, object]] = None):
+    def __init__(self, config: Optional[Mapping[str, object]] = None, blacklist_schedule_ids: Optional[List[str]] = None):
         if config is None:
             self.cfg = GAConfig()
         else:
             filtered_config = {key: value for key, value in config.items() if value is not None}
             self.cfg = GAConfig(**filtered_config)
+        self.blacklist_schedule_ids = blacklist_schedule_ids if blacklist_schedule_ids is not None else []
 
 
     def _gene_space(self, taps: Sequence[Tap]) -> List[List[int]]:

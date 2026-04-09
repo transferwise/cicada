@@ -519,4 +519,6 @@ INSERT INTO public.schedules (SERVER_ID, SCHEDULE_ID, INTERVAL_MASK, EXEC_COMMAN
 INSERT INTO public.schedules (SERVER_ID, SCHEDULE_ID, INTERVAL_MASK, EXEC_COMMAND, IS_ENABLED, IS_RUNNING) VALUES (6, 'cumulative_limit', '*/30 * * * *', 'dummy_command', 1, 1) ON CONFLICT DO NOTHING;
 
 
+INSERT INTO public.schedule_blacklist (SCHEDULE_ID, SERVER_ID, REASON) VALUES ('plastic_full_table', 3, 'test for blacklist functionality') ON CONFLICT DO NOTHING;
+
 COMMIT TRANSACTION;

@@ -17,6 +17,7 @@ class Tap:
     median_runtime_minutes: int = 5
     shift: Optional[int] = 0
     start_time_mins: Optional[int] = None
+    blacklisted: bool = False
     
 
     def __init__(self, details, db_cur):
@@ -24,6 +25,8 @@ class Tap:
         self.server_id = details['server_id']
         self.interval_mask = details['interval_mask']
         self.determine_attributes(db_cur)
+        if details['blacklisted'] is not None:
+            self.blacklisted = details['blacklisted']
 
     def determine_attributes(self, db_cur):
         """Determine frequency and average runtime from interval_mask and scheduler module"""
@@ -38,7 +41,7 @@ class Tap:
         second_iter = schedule.get_next(datetime.datetime)
         frequency = (second_iter - first_iter).total_seconds() / 60 
         self.frequency_minutes = int(frequency)
-        
+
     
     def _get_average_runtime(self, db_cur):
         """Get average runtime from scheduler module"""
@@ -62,10 +65,7 @@ class Tap:
 
     def is_blacklisted(self):
         """Determine if the tap is blacklisted based on schedule_id"""
-        return False 
-        # Change implementation to check against blacklist in DB once blacklist functionality is implemented
-        # Blacklist shouldn't be stored in GA and instead be in db
-        return self.schedule_id in self.cfg.blacklist_schedule_ids
+        return self.blacklisted
 
     def frequency_is_supported(self):
         """Determine if the tap frequency is supported for smart scheduling"""

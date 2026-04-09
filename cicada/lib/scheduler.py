@@ -477,10 +477,15 @@ def rollback_schedule_backup_mask(db_cur, schedule_id=None, server_id=None):
         UPDATE public.schedule_backups 
         SET interval_mask = original_interval_mask,
             previous_interval_mask = original_interval_mask,
-            start_time_shift_mins = 0,
-            server_id = server_id
-        WHERE schedule_id = '{schedule_id}' or server_id = '{server_id}'
+            start_time_shift_mins = 0
     """
+    if schedule_id is not None:
+        sqlquery = sqlquery + f" WHERE schedule_id = '{schedule_id}'"
+    elif server_id is not None:
+        sqlquery = sqlquery + f",\n server_id = server_id\n "
+        sqlquery = sqlquery + f" WHERE server_id = '{server_id}'"
+    else:
+        raise ValueError("Either schedule_id or server_id must be provided for rollback_schedule_backup_mask")
     db_cur.execute(sqlquery)
 
 
@@ -491,12 +496,12 @@ def restore_previous_schedules(db_cur, server_id=None, schedule_id=None, full=Fa
         db_cur: Database cursor.
         server_id: Optional[int] Target server to roll back.
         schedule_id: Optional[str] Target schedule to roll back.
-        prev: bool If True, restore from previous_interval_mask, else restore from original_interval_mask.
+        full: bool If True, roll back to the original schedule in the schedule_backups table. If False, roll back to the previous schedule in the schedule_backups table.
     """
-    if server_id is None and not schedule_id:
+    if server_id is None and schedule_id is None:
         raise ValueError("Either server_id or schedule_id must be provided")
 
-    if server_id and schedule_id:
+    if server_id is not None and schedule_id is not None:
         raise ValueError("server_id and schedule_id cannot both be provided")
     
     sqlquery = """
@@ -519,7 +524,13 @@ def restore_previous_schedules(db_cur, server_id=None, schedule_id=None, full=Fa
 
     db_cur.execute(sqlquery, tuple(params))
 
-    # Rewrite the schedule_backups table to remove the rolled back schedules
-    rollback_schedule_backup_mask(db_cur, schedule_id, server_id)
+    print("Resetting schedule_backups table to reflect rolled back schedules...")
+    rollback_schedule_backup_mask(db_cur, schedule_id=schedule_id, server_id=server_id)
 
 
+def get_blacklisted_schedule_ids(db_cur):
+    """Get a list of schedule_ids that are blacklisted from optimization"""
+    sqlquery = "SELECT schedule_id FROM schedule_blacklist"
+    db_cur.execute(sqlquery)
+    blacklist_schedule_ids = [row[0] for row in db_cur.fetchall()]
+    return blacklist_schedule_ids

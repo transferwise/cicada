@@ -27,16 +27,22 @@ def create_tap_objects(schedule_ids, db_cur):
     """Create Tap objects from schedule_ids."""
     
     taps : list[Tap] = []
+    blacklisted_taps = scheduler.get_blacklisted_schedule_ids(db_cur)
 
     # Fetch details for each schedule and convert to Tap objects
     for schedule_id in schedule_ids:
         details = scheduler.get_schedule_details(db_cur, schedule_id)
+        if schedule_id in blacklisted_taps:
+            details['blacklisted'] = True
+        else:
+            details['blacklisted'] = False
+
         try:
             tap = Tap(details, db_cur=db_cur)
             # Ignore the few taps that have irregular cron expressions for now. There are few enough that this shouldn't impact the optimisation and is not worth the effort to try and support these irregular schedules in the GA
             if tap.is_unsupported():
                 if tap.is_blacklisted():
-                    print(f"Skipping blacklisted schedule {tap.schedule_id} with cron expression {tap.interval_mask}")
+                    print(f"Skipping blacklisted schedule {tap.schedule_id}")
                 elif not tap.is_regular_schedule():
                     print(f"Skipping irregular schedule {tap.schedule_id} with cron expression {tap.interval_mask}")
                 else:
@@ -146,6 +152,7 @@ def main(server_id=None, dbname=None, ga_config=None):
         
     else:
         # Get schedules for the server_id
+        print("\n-----------------Tap Setup----------------------") 
         schedule_ids = get_schedules_per_server(server_id=server_id, db_cur=db_cur)
         print(f"Found {len(schedule_ids)} schedules for server_id {server_id}")
 
@@ -154,16 +161,25 @@ def main(server_id=None, dbname=None, ga_config=None):
         if not taps:
             print("No valid schedules found to optimize.")
             sys.exit(1)
+        print("-------------------------------------------------\n")
+        
 
         try:
-            ga = pygad.GAPyGADScheduler(config=ga_config)
+            print("\n------------Starting Optimisation-----------------") 
+            blacklist_schedule_ids = scheduler.get_blacklisted_schedule_ids(db_cur)
+            print(f"Blacklisted schedule IDs that will be excluded from optimization: {blacklist_schedule_ids}")
+            ga = pygad.GAPyGADScheduler(config=ga_config, blacklist_schedule_ids=blacklist_schedule_ids)
             optimised_taps, start_blocks, peak_cpu, usage, initial_fitness = ga.solve(taps)
             print(f"Optimized schedule for server_id {server_id}: new peak CPU {peak_cpu}")
+            print("--------------------------------------------------\n")
 
+
+            print("\n-------------Updating Schedules------------------") 
             if peak_cpu < initial_fitness:  # Only update schedules if we have found an improvement
                 assign_new_schedules(optimised_taps, db_cur=db_cur)
             else:
                 print(f"No improvement found for server_id {server_id}. Current peak CPU: {initial_fitness}, Optimized peak CPU: {peak_cpu}. No schedule updates will be made.")
+            print("--------------------------------------------------\n")
 
         except Exception as e:
             print(f"Error during optimization for server_id {server_id}: {e}")
