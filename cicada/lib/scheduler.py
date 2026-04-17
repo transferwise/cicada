@@ -372,6 +372,11 @@ def delete_schedule(db_cur, schedule_id):
     db_cur.execute(sqlquery)
 
 
+def delete_schedule_backup(db_cur, schedule_id):
+    sqlquery = f"DELETE from schedule_backups WHERE schedule_id = '{schedule_id}'"
+    db_cur.execute(sqlquery)
+
+
 def get_all_server_ids(db_cur):
     """Get all possible server_ids from the servers table"""
     sqlquery = "SELECT DISTINCT server_id FROM schedules ORDER BY server_id"

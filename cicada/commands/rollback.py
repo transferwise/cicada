@@ -21,6 +21,9 @@ def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbn
         prev: bool
             If True, roll back to the previous schedule in the schedule_backups table. If False, roll back to the original schedule 
     """
+    if type(server_id) != int and server_id is not None: raise TypeError(f"server_id needs to be of type int. {type(server_id)}")
+    if type(schedule_id) != str and schedule_id is not None: raise TypeError("schedule_id needs to be of type str")
+
     db_conn = postgres.db_cicada(dbname)
     db_cur = db_conn.cursor()
     

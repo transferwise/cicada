@@ -31,6 +31,7 @@ class Cicada:
             "register_server",
             "list_server_schedules",
             "exec_server_schedules",
+            "smart_schedule",
             "show_schedule",
             "upsert_schedule",
             "exec_schedule",
@@ -284,18 +285,19 @@ class Cicada:
             prog=inspect.stack()[0][3],
             description="Generate smart schedules for a server using genetic algorithm",
         )
-        parser.add_argument("--server_id", type=str, required=False, help="ID of the server")
+        parser.add_argument("--server_id", type=int, required=False, help="ID of the server")
 
         # Optional GA Configurations
         ga_config = parser.add_argument_group("ga_config", "Optional configurations for the genetic algorithm optimizer")
-        ga_config.add_argument("--num_generations",type=int,required=False, help="Number of generations for the genetic algorithm")
-        ga_config.add_argument("--sol_per_pop",type=int,required=False, help="Number of solutions per population for the genetic algorithm")
-        ga_config.add_argument("--num_parents_mating",type=int,required=False, help="Number of parents mating for the genetic algorithm")
-        ga_config.add_argument("--mutation_percent_genes",type=int,required=False, help="Mutation percentage of genes for the genetic algorithm")
-        ga_config.add_argument("--parent_selection_type",type=str,required=False, help="Parent selection type for the genetic algorithm. Allowed values: ['sss', 'rws', 'sus', 'tournament', 'rank', 'random']")
-        ga_config.add_argument("--crossover_type",type=str,required=False, help="Crossover type for the genetic algorithm. Allowed values: ['single_point', 'two_point', 'uniform']")
-        ga_config.add_argument("--mutation_type",type=str,required=False, help="Mutation type for the genetic algorithm. Allowed values: ['random', 'swap', 'inversion', 'scramble']")
-        ga_config.add_argument("--keep_elitism",type=int,required=False, help="Number of elite solutions to keep for the next generation")
+        ga_config.add_argument("--num_generations",type=int,required=False, help="Number of generations for the genetic algorithm. Default: 20")
+        ga_config.add_argument("--sol_per_pop",type=int,required=False, help="Number of solutions per population for the genetic algorithm. Default: 40")
+        ga_config.add_argument("--num_parents_mating",type=int,required=False, help="Number of parents mating for the genetic algorithm. Default: 10")
+        ga_config.add_argument("--mutation_percent_genes",type=int,required=False, help="Mutation percentage of genes for the genetic algorithm. Default: 20")
+        ga_config.add_argument("--parent_selection_type",type=str,required=False, help="Parent selection type for the genetic algorithm. Allowed values: ['sss', 'rws', 'sus', 'tournament', 'rank', 'random']. Default: rank")
+        ga_config.add_argument("--crossover_type",type=str,required=False, help="Crossover type for the genetic algorithm. Allowed values: ['single_point', 'two_point', 'uniform']. Default: uniform")
+        ga_config.add_argument("--mutation_type",type=str,required=False, help="Mutation type for the genetic algorithm. Allowed values: ['random', 'swap', 'inversion', 'scramble']. Default: random")
+        ga_config.add_argument("--keep_elitism",type=int,required=False, help="Number of elite solutions to keep for the next generation. Default: 2")
+        ga_config.add_argument("--random-seed",type=int,required=False, help="Set a random seed to get repeatable results. Default: None")
         args = parser.parse_args(sys.argv[2:])
         smart_schedule.main(
             args.server_id,
@@ -308,6 +310,7 @@ class Cicada:
                 "crossover_type": args.crossover_type,
                 "mutation_type": args.mutation_type,
                 "keep_elitism": args.keep_elitism,
+                "random_seed": args.random_seed,
             },
         )
 
@@ -329,7 +332,7 @@ class Cicada:
         group = parser.add_mutually_exclusive_group()
         group.add_argument(
             "--server_id",
-            type=str,
+            type=int,
             required=False,
             help="ID of the server to rollback, if not specified will rollback all servers",
         )

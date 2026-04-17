@@ -11,8 +11,10 @@ from cicada.lib.SmartScheduling import pygad
 from cicada.lib.SmartScheduling.domain import Tap
 
 
-def get_schedules_per_server(server_id, db_cur=None):
+def _get_schedules_per_server(server_id, db_cur=None):
     """Get all schedules for a given server_id."""
+    existing_servers = [server[0] for server in scheduler.get_all_server_ids(db_cur)]
+    if server_id not in existing_servers: raise ValueError(f"server_id not in list of existing servers. Existing servers: {existing_servers}")
     schedule_ids = [row[0] for row in scheduler.get_all_schedule_ids_per_server(db_cur, server_id)]
 
     if not schedule_ids:
@@ -23,7 +25,7 @@ def get_schedules_per_server(server_id, db_cur=None):
 
 
 
-def create_tap_objects(schedule_ids, db_cur):
+def _create_tap_objects(schedule_ids, db_cur):
     """Create Tap objects from schedule_ids."""
     
     taps : list[Tap] = []
@@ -56,9 +58,9 @@ def create_tap_objects(schedule_ids, db_cur):
 
     return taps
 
-def update_schedule_cron(tap : Tap):
+def _update_schedule_cron(tap : Tap):
     """
-        Uses the start_blocks to shift the cron expression accordingly. Gene space is already limited from 0 to the frequency of the tap
+        Uses the start_time to shift the cron expression accordingly. Gene space is already limited from 0 to the frequency of the tap
 
         Ex. form of cron expression: "8-59/15 * * * *" (every 15 minutes starting at minute 8 of each hour)
 
@@ -98,14 +100,14 @@ def update_schedule_cron(tap : Tap):
         
 
 
-def assign_new_schedules(optimised_taps: list[pygad.Tap], db_cur):
+def _assign_new_schedules(optimised_taps: list[pygad.Tap], db_cur):
     """Assign new schedules based on the optimal schedule found."""
 
     # For each tap, update the schedule in the DB with the new interval_mask based on the shift calculated by the GA optimizer
     for tap in optimised_taps:
         previous_schedule_mask = tap.interval_mask
-        update_schedule_cron(tap)
-        print(f"Updating schedule {tap.schedule_id} with new interval mask: {tap.interval_mask} and shift of {tap.shift} minutes")
+        _update_schedule_cron(tap)
+        print(f"- {tap.schedule_id} : {tap.interval_mask}")
         tap._determine_start_time_mins() 
 
         schedule_details = {
@@ -141,6 +143,8 @@ def assign_new_schedules(optimised_taps: list[pygad.Tap], db_cur):
 
 @utils.named_exception_handler("smart_schedule")
 def main(server_id=None, dbname=None, ga_config=None):
+    if type(server_id) != int: raise TypeError(f"server_id should be int not {type(server_id)}")
+
     db_conn = postgres.db_cicada(dbname)
     db_cur = db_conn.cursor()
 
@@ -153,11 +157,11 @@ def main(server_id=None, dbname=None, ga_config=None):
     else:
         # Get schedules for the server_id
         print("\n-----------------Tap Setup----------------------") 
-        schedule_ids = get_schedules_per_server(server_id=server_id, db_cur=db_cur)
+        schedule_ids = _get_schedules_per_server(server_id=server_id, db_cur=db_cur)
         print(f"Found {len(schedule_ids)} schedules for server_id {server_id}")
 
         # Build Tap objects
-        taps = create_tap_objects(schedule_ids, db_cur=db_cur)
+        taps = _create_tap_objects(schedule_ids, db_cur=db_cur)
         if not taps:
             print("No valid schedules found to optimize.")
             sys.exit(1)
@@ -169,14 +173,15 @@ def main(server_id=None, dbname=None, ga_config=None):
             blacklist_schedule_ids = scheduler.get_blacklisted_schedule_ids(db_cur)
             print(f"Blacklisted schedule IDs that will be excluded from optimization: {blacklist_schedule_ids}")
             ga = pygad.GAPyGADScheduler(config=ga_config, blacklist_schedule_ids=blacklist_schedule_ids)
-            optimised_taps, start_blocks, peak_cpu, usage, initial_fitness = ga.solve(taps)
+            print("Running PyGAD solver ...")
+            optimised_taps, __, peak_cpu, __, initial_fitness = ga.solve(taps)
             print(f"Optimized schedule for server_id {server_id}: new peak CPU {peak_cpu}")
             print("--------------------------------------------------\n")
 
 
             print("\n-------------Updating Schedules------------------") 
             if peak_cpu < initial_fitness:  # Only update schedules if we have found an improvement
-                assign_new_schedules(optimised_taps, db_cur=db_cur)
+                _assign_new_schedules(optimised_taps, db_cur=db_cur)
             else:
                 print(f"No improvement found for server_id {server_id}. Current peak CPU: {initial_fitness}, Optimized peak CPU: {peak_cpu}. No schedule updates will be made.")
             print("--------------------------------------------------\n")

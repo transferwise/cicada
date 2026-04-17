@@ -11,6 +11,6 @@ class GAConfig:
     parent_selection_type: str = "rank"
     crossover_type: str = "uniform"
     mutation_type: str = "random"
-    keep_elitism: int = 1
+    keep_elitism: int = 2
     random_seed: Optional[int] = None
     blacklist_schedule_ids: Optional[List[str]] = field(default_factory=list)
