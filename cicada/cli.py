@@ -288,7 +288,6 @@ class Cicada:
 
         # Optional GA Configurations
         ga_config = parser.add_argument_group("ga_config", "Optional configurations for the genetic algorithm optimizer")
-        ga_config.add_argument("--minutes_per_block", type=int, required=False, help="Minutes per block for the genetic algorithm")
         ga_config.add_argument("--num_generations",type=int,required=False, help="Number of generations for the genetic algorithm")
         ga_config.add_argument("--sol_per_pop",type=int,required=False, help="Number of solutions per population for the genetic algorithm")
         ga_config.add_argument("--num_parents_mating",type=int,required=False, help="Number of parents mating for the genetic algorithm")
@@ -301,7 +300,6 @@ class Cicada:
         smart_schedule.main(
             args.server_id,
             ga_config={
-                "minutes_per_block": args.minutes_per_block,
                 "num_generations": args.num_generations,
                 "sol_per_pop": args.sol_per_pop,
                 "num_parents_mating": args.num_parents_mating,

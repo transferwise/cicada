@@ -4,7 +4,6 @@ from typing import Optional, List
 
 @dataclass
 class GAConfig:
-    minutes_per_block: int = 1
     num_generations: int = 20
     sol_per_pop: int = 40
     num_parents_mating: int = 10

@@ -3,7 +3,7 @@ from typing import List, Mapping, Optional, Sequence
 import numpy as np 
 from .config import GAConfig 
 from .domain import Tap 
-from .evaluation import evaluate_cpu_usage_and_peak, discretize_taps, calculate_blocks_per_day 
+from .evaluation import evaluate_cpu_usage_and_peak
 import pygad
 
 
@@ -33,34 +33,32 @@ class GAPyGADScheduler:
 
 
     def _gene_space(self, taps: Sequence[Tap]) -> List[List[int]]:
-        # Build gene_space per tap: each gene space is limited by it's frequency (e.g. a 15min freq tap can only traverse the first 15min worth of time blocks)
+        # Build gene_space per tap: each gene space is limited by it's frequency
         # Unless the tap is unsupported (either blacklisted, irregular or has frequency greater than 60 mins) in which case we set the gene space to be just 0 
         # so they remain unchanged in the GA but are still included in the fitness evaluation. Also constrain taps with frequency > 60 mins to an hour to prevent
         # large shifts and huge gene spaces.
-        # Computed in blocks to make it time-block-interval agnostic
-        interval_blocks, _ = discretize_taps(taps, self.cfg.minutes_per_block)
-        start_blocks = [0] * len(taps)
-        end_blocks = [1] * len(taps)
-        blocks_per_day = calculate_blocks_per_day(self.cfg.minutes_per_block)
+
+        min_start_times = [0] * len(taps)
+        max_start_times = [1] * len(taps)
+        mins_per_day = 1440
 
         for i, tap in enumerate(taps):
-            # Ignore any blacklist taps -> fix the gene space to be 0 so they're still included in the fitness eval
+            # Ignore any blacklist taps -> this fixes the gene space to be 0 so they're still included in the fitness eval but remain unshifted
             if tap.is_unsupported():
                 pass
 
             # Limit gene space to only shift within the hour for the taps which run less frequently
             elif tap.frequency_minutes > 60:
-                interval_blocks[i] = 60 // self.cfg.minutes_per_block
-                # Prevent any end blocks from going beyond the day limit 
-                end_blocks[i] = min(tap.start_time_mins // self.cfg.minutes_per_block + interval_blocks[i], blocks_per_day)
-                start_blocks[i] = end_blocks[i] - interval_blocks[i]
+                # Prevent any max_start_time from going beyond the day limit 
+                max_start_times[i] = min(tap.start_time_mins + 60, mins_per_day)
+                min_start_times[i] = max_start_times[i] - 60
 
             # Gene space for the rest is just the frequency 
             else:
-                start_blocks[i] = 0
-                end_blocks[i] = interval_blocks[i]
+                min_start_times[i] = 0
+                max_start_times[i] = tap.frequency_minutes
 
-        return [list(range(start_block, end_block)) for start_block, end_block in zip(start_blocks, end_blocks)]
+        return [list(range(min_start_time, max_start_time)) for min_start_time, max_start_time in zip(min_start_times, max_start_times)]
     
 
     def _initial_population(self, taps: Sequence[Tap], gene_space: List[List[int]]) -> np.ndarray:
@@ -70,7 +68,7 @@ class GAPyGADScheduler:
         # Add current start minutes as first solution to bias solution space towards current solution
         for i, tap in enumerate(taps):
             gs = gene_space[i]
-            s = 0 if tap.start_time_mins is None else int(tap.start_time_mins // self.cfg.minutes_per_block)
+            s = 0 if tap.start_time_mins is None else int(tap.start_time_mins)
             seed.append(max(min(s, gs[-1]), gs[0]))
         pop = [seed]
 
@@ -84,14 +82,17 @@ class GAPyGADScheduler:
         raise NotImplementedError("Blacklist functionality not yet implemented")
 
     def fitness_fn(self, ga, solution, solution_idx):
-        _, peak = evaluate_cpu_usage_and_peak(solution, self.taps, self.cfg.minutes_per_block)
+        _, peak = evaluate_cpu_usage_and_peak(solution, self.taps)
         return -float(peak)
         
     def solve(self, taps: Sequence[Tap]) -> tuple[Sequence[Tap], List[int], float, np.ndarray]:
-        gene_space = self._gene_space(taps)
         self.taps = taps
+        gene_space = self._gene_space(taps)
+        print("Successfully initialised gene space")
         
         initial_population = self._initial_population(taps, gene_space)
+        print("Created initial population")
+
         initial_fitness = self.fitness_fn(None, initial_population[0], 0)
         print("Initial population fitness (max_cpu load):", -initial_fitness)
 
@@ -115,12 +116,12 @@ class GAPyGADScheduler:
         ga.run()
         
         best_solution, best_fitness, _ = ga.best_solution()
-        start_blocks = [int(v) for v in best_solution]
+        start_times = [int(v) for v in best_solution]
         peak_cpu = -float(best_fitness)
-        usage, _ = evaluate_cpu_usage_and_peak(start_blocks, taps, self.cfg.minutes_per_block)
+        usage, _ = evaluate_cpu_usage_and_peak(start_times, taps)
 
         # Update tap objects shift attribute based on GA solution
         for i, tap in enumerate(taps):
-            tap.shift = start_blocks[i] * self.cfg.minutes_per_block
+            tap.shift = start_times[i]
             
-        return taps, start_blocks, peak_cpu, usage, -initial_fitness
+        return taps, start_times, peak_cpu, usage, -initial_fitness
