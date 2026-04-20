@@ -68,7 +68,7 @@ class GAPyGADScheduler:
         # Add current start minutes as first solution to bias solution space towards current solution
         for i, tap in enumerate(taps):
             gs = gene_space[i]
-            s = 0 if tap.start_time_mins is None else int(tap.start_time_mins)
+            s = int(tap.start_time_mins)
             seed.append(max(min(s, gs[-1]), gs[0]))
         pop = [seed]
 
@@ -91,7 +91,8 @@ class GAPyGADScheduler:
         print("Successfully initialised gene space")
         
         initial_population = self._initial_population(taps, gene_space)
-        print("Created initial population")
+        print("Created initial population. Current Solution Start Times:")
+        print(initial_population[0])
 
         initial_fitness = self.fitness_fn(None, initial_population[0], 0)
         print("Initial population fitness (max_cpu load):", -initial_fitness)
@@ -118,10 +119,16 @@ class GAPyGADScheduler:
         best_solution, best_fitness, _ = ga.best_solution()
         start_times = [int(v) for v in best_solution]
         peak_cpu = -float(best_fitness)
+
+        print(f"Optimised for {self.cfg.num_generations} generations. Best Solution Start Times:")
+        print(best_solution)
+        
         usage, _ = evaluate_cpu_usage_and_peak(start_times, taps)
 
-        # Update tap objects shift attribute based on GA solution
+        # Update tap objects start_time_mins attribute based on GA solution
         for i, tap in enumerate(taps):
-            tap.shift = start_times[i]
+            if tap.start_time_mins != start_times[i]: 
+                tap.shifted = True
+                tap.start_time_mins = start_times[i]
             
         return taps, start_times, peak_cpu, usage, -initial_fitness

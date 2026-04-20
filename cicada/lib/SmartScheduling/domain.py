@@ -15,8 +15,8 @@ class Tap:
     frequency_minutes: int
     cpu_max: float = 1
     median_runtime_minutes: int = 5
-    shift: Optional[int] = 0
-    start_time_mins: Optional[int] = None
+    shifted: bool = False
+    start_time_mins: Optional[int] = 0
     blacklisted: bool = False
     
 

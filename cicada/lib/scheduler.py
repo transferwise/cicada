@@ -401,7 +401,7 @@ def get_all_schedule_ids_per_server(db_cur, server_id):
 
 def get_all_schedule_backups(db_cur):
     """Get all entries from the schedule_backups table"""
-    sqlquery = "SELECT schedule_id, start_time_shift_mins, original_interval_mask FROM schedule_backups"
+    sqlquery = "SELECT schedule_id, original_interval_mask FROM schedule_backups"
     db_cur.execute(sqlquery)
     schedule_backups = db_cur.fetchall()
 
@@ -452,37 +452,34 @@ def update_schedule_backups(db_cur, previous_schedule_details):
     """
     Insert a schedule configuration into the schedule_backups table for rollback.
     Args:        db_cur: Database cursor.
-        previous_schedule_details: dict with keys schedule_id, server_id, interval_mask, previous_interval_mask, start_time_shift_mins, original_interval_mask
+        previous_schedule_details: dict with keys schedule_id, server_id, interval_mask, previous_interval_mask, original_interval_mask
                                     or 
-                                    dict with keys schedule_id, interval_mask, previous_interval_mask, start_time_shift_mins
+                                    dict with keys schedule_id, interval_mask, previous_interval_mask
     """
 
     sqlquery = f"""
-        INSERT INTO schedule_backups (schedule_id, server_id, interval_mask, previous_interval_mask, start_time_shift_mins, original_interval_mask)
+        INSERT INTO schedule_backups (schedule_id, server_id, interval_mask, previous_interval_mask, original_interval_mask)
         VALUES (
             '{previous_schedule_details["schedule_id"]}',
             '{previous_schedule_details["server_id"]}',
             '{previous_schedule_details["interval_mask"]}',
             '{previous_schedule_details["previous_interval_mask"]}',
-            '{previous_schedule_details["start_time_shift_mins"]}',
             '{previous_schedule_details["previous_interval_mask"]}') -- Assuming original_interval_mask is the same as previous_interval_mask on the first insert
         ON CONFLICT (schedule_id) DO UPDATE SET
             interval_mask = EXCLUDED.interval_mask,
-            previous_interval_mask = EXCLUDED.previous_interval_mask,
-            start_time_shift_mins = EXCLUDED.start_time_shift_mins;
+            previous_interval_mask = EXCLUDED.previous_interval_mask;
     """
     db_cur.execute(sqlquery)
 
 
-def rollback_schedule_backup_mask(db_cur, schedule_id=None, server_id=None):
+def rollback_schedule_backup_mask(db_cur, schedule_id=None, server_id=None, full=False):
     """
     Sets the interval_masks back to the schedule_backups table to the original_interval_mask. 
     """
     sqlquery = f"""
         UPDATE public.schedule_backups 
-        SET interval_mask = original_interval_mask,
-            previous_interval_mask = original_interval_mask,
-            start_time_shift_mins = 0
+        SET interval_mask = {'original_interval_mask' if full else 'previous_interval_mask'},
+            previous_interval_mask = original_interval_mask
     """
     if schedule_id is not None:
         sqlquery = sqlquery + f" WHERE schedule_id = '{schedule_id}'"
@@ -530,7 +527,7 @@ def restore_previous_schedules(db_cur, server_id=None, schedule_id=None, full=Fa
     db_cur.execute(sqlquery, tuple(params))
 
     print("Resetting schedule_backups table to reflect rolled back schedules...")
-    rollback_schedule_backup_mask(db_cur, schedule_id=schedule_id, server_id=server_id)
+    rollback_schedule_backup_mask(db_cur, schedule_id=schedule_id, server_id=server_id, full=full)
 
 
 def get_blacklisted_schedule_ids(db_cur):

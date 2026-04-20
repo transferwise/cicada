@@ -79,7 +79,6 @@ Located in `cicada/lib/SmartScheduling/`
   - `schedule_id`, `server_id`, `interval_mask` (cron expression)
   - `frequency_minutes`, `median_runtime_minutes`, `cpu_max`
   - `shift`: offset in minutes applied to shift job start time
-  - `start_time_mins`: job start time from midnight (calculated from cron)
   - `blacklisted`: flag to exclude from GA optimization
 
 **`config.py`**

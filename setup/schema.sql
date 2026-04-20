@@ -210,7 +210,6 @@ CREATE TABLE IF NOT EXISTS public.schedule_backups
   original_interval_mask character varying(32) NOT NULL,
   previous_interval_mask character varying(32) NOT NULL,
   interval_mask character varying(32) NOT NULL,
-  start_time_shift_mins INT NOT NULL DEFAULT 0, -- Number of minutes the schedule was shifted from its original schedule
   snapshot_at timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone,
   CONSTRAINT schedule_backups_pkey PRIMARY KEY (schedule_id)
 )
@@ -218,14 +217,13 @@ WITH (
   OIDS=FALSE
 );
 
-INSERT INTO public.schedule_backups (schedule_id, server_id, original_interval_mask, previous_interval_mask, interval_mask, start_time_shift_mins, snapshot_at)
+INSERT INTO public.schedule_backups (schedule_id, server_id, original_interval_mask, previous_interval_mask, interval_mask, snapshot_at)
   SELECT
     schedule_id,
     server_id,
     interval_mask,
     interval_mask,
     interval_mask,
-    0,
     now()
   FROM schedules
 ON CONFLICT (schedule_id) DO NOTHING;

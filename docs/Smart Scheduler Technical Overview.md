@@ -35,7 +35,6 @@ The GA evolves shift offsets for each schedule over multiple generations to find
   - `original_interval_mask`: pristine cron expression (before any optimization)
   - `previous_interval_mask`: cron before this optimization run
   - `interval_mask`: current cron after optimization
-  - `start_time_shift_mins`: shift offset applied (in minutes)
   - `snapshot_at`: timestamp of last update (auto-set on INSERT/UPDATE)
   - Indexes on `schedule_id` and `server_id` for fast lookups
 
