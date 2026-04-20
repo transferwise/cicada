@@ -218,6 +218,18 @@ WITH (
   OIDS=FALSE
 );
 
+INSERT INTO public.schedule_backups (schedule_id, server_id, original_interval_mask, previous_interval_mask, interval_mask, start_time_shift_mins, snapshot_at)
+  SELECT
+    schedule_id,
+    server_id,
+    interval_mask,
+    interval_mask,
+    interval_mask,
+    0,
+    now()
+  FROM schedules
+ON CONFLICT (schedule_id) DO NOTHING;
+
 DROP TRIGGER IF EXISTS tr_schedule_backups ON public.schedule_backups;
 CREATE TRIGGER tr_schedule_backups
     BEFORE UPDATE

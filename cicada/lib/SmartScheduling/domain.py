@@ -81,15 +81,8 @@ class Tap:
         """Check if the cron expression is a regular schedule that can be optimized by the GA """
         try:
             schedule = croniter(self.interval_mask)
-            iter1 = schedule.get_next(datetime.datetime)
-            iter2 = schedule.get_next(datetime.datetime)
-            iter3 = schedule.get_next(datetime.datetime)
-            iter4 = schedule.get_next(datetime.datetime)
-            iter5 = schedule.get_next(datetime.datetime)
-            freq1 = (iter2 - iter1)
-            freq2 = (iter3 - iter2)
-            freq3 = (iter4 - iter3)
-            freq4 = (iter5 - iter4)
-            return freq1 == freq2 == freq3 == freq4
+            iters = [schedule.get_next(datetime.datetime) for _ in range(20)]
+            freqs = [iters[i + 1] - iters[i] for i in range(len(iters) - 1)]
+            return all(f == freqs[0] for f in freqs)
         except (ValueError, KeyError):
             return False

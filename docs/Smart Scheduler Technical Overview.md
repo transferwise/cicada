@@ -144,7 +144,6 @@ Tuning Considerations:
 - ↑ `num_generations`: Better solutions but slower
 - ↑ `sol_per_pop`: Larger search space but slower
 - ↑ `mutation_percent_genes`: More exploration, less exploitation
-- ↓ `minutes_per_block`: Finer granularity but larger gene space and slower evaluation
 
 ## Schedule Validation & Filtering
 

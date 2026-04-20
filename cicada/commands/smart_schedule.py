@@ -143,7 +143,7 @@ def _assign_new_schedules(optimised_taps: list[pygad.Tap], db_cur):
 
 @utils.named_exception_handler("smart_schedule")
 def main(server_id=None, dbname=None, ga_config=None):
-    if type(server_id) != int: raise TypeError(f"server_id should be int not {type(server_id)}")
+    if server_id and type(server_id) != int: raise TypeError(f"server_id should be int not {type(server_id)}")
 
     db_conn = postgres.db_cicada(dbname)
     db_cur = db_conn.cursor()
