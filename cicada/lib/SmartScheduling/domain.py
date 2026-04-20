@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
+import math
 from typing import Optional, List
 import numpy as np
 from croniter import croniter
@@ -45,9 +46,7 @@ class Tap:
     
     def _get_average_runtime(self, db_cur):
         """Get average runtime from scheduler module"""
-        # for local testing set everything to 5 mins
-        self.median_runtime_minutes = 5
-        # self.median_runtime_minutes = get_median_run_time(db_cur, self.schedule_id)
+        self.median_runtime_minutes = math.ceil(get_median_run_time(db_cur, self.schedule_id))
 
     def _determine_start_time_mins(self):
         """Determine the start time in minutes from midnight from the interval_mask"""

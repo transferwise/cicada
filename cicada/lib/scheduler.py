@@ -409,6 +409,13 @@ def get_all_schedule_backups(db_cur):
 
 
 def get_median_run_time(db_cur, schedule_id):
+    """
+    Calculate the median runtime in minutes for a schedule_id from the schedule_log table. 
+
+    Zero runs => 5 mins (conservative estimate, allows local testing without data and for new taps to be 
+    scheduled without having to wait for historical data to be collected. 
+    """
+
     sqlquery = f"""
         SELECT percentile_cont(0.5)
         WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (end_time - start_time)) / 60)
@@ -423,8 +430,8 @@ def get_median_run_time(db_cur, schedule_id):
         average_runtime_minutes = float(row[0])
         return average_runtime_minutes
     except Exception:
-        print(f"ERROR : No runs associated with the schedule_id {schedule_id}")
-        sys.exit(1)
+        # No runs -> assigns default runtime of 5 minutes
+        return 5
 
 def reset_schedule_backup_mask(db_cur, schedule_details):
     """
