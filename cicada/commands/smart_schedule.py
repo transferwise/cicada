@@ -145,7 +145,7 @@ def main(server_id=None, dbname=None, ga_config=None):
         # Recursively call main for each server_id if no specific server_id is provided 
         server_ids = scheduler.get_all_server_ids(db_cur)
         for id in server_ids:
-            main(server_id=id[0], dbname=dbname)
+            main(server_id=id[0], dbname=dbname, ga_config=ga_config)
         
     else:
         # Get schedules for the server_id

@@ -387,14 +387,14 @@ def get_all_server_ids(db_cur):
 
 def get_all_schedule_ids_per_server(db_cur, server_id):
     """Get all possible schedule_ids for each server from the schedules table"""
-    sqlquery = f"""
+    sqlquery = """
         SELECT DISTINCT schedule_id
         FROM schedules
-        WHERE server_id = '{server_id}'
-            AND (schedule_description IS NULL OR schedule_description NOT LIKE '%==%')
+        WHERE server_id = %s
+            AND (schedule_description IS NULL OR schedule_description NOT LIKE '%%==%%')
         ORDER BY schedule_id
         """
-    db_cur.execute(sqlquery)
+    db_cur.execute(sqlquery, (server_id,))
     schedule_ids = db_cur.fetchall()
 
     return schedule_ids
@@ -438,19 +438,26 @@ def reset_schedule_backup_mask(db_cur, schedule_details):
     Resets the interval_mask of a schedule in the schedule_backups table. Called when schedule frequency is changed or a new schedule is added.
     Sets all interval_mask fiedls to the new interval_mask to ensure that the rollback won't revert to an outdated frequency.
     """
+    insert_columns = "schedule_id, interval_mask, original_interval_mask, previous_interval_mask"
+    insert_values = (
+        f"'{schedule_details['schedule_id']}', "
+        f"'{schedule_details['interval_mask']}', "
+        f"'{schedule_details['interval_mask']}', "
+        f"'{schedule_details['interval_mask']}'"
+    )
+    update_server_id = ""
+    if schedule_details["server_id"] is not None:
+        insert_columns += ", server_id"
+        insert_values += f", '{schedule_details['server_id']}'"
+        update_server_id = f", server_id = '{schedule_details['server_id']}'"
     sqlquery = f"""
-        MERGE INTO public.schedule_backups 
-        USING (SELECT '{schedule_details["schedule_id"]}' AS schedule_id) AS src
-        ON schedule_backups.schedule_id = src.schedule_id
-        WHEN MATCHED THEN
-            UPDATE SET 
-                interval_mask = '{schedule_details["interval_mask"]}',
-                original_interval_mask = '{schedule_details["interval_mask"]}',
-                previous_interval_mask = '{schedule_details["interval_mask"]}'
-                """ + (f", server_id = {schedule_details['server_id']}" if schedule_details["server_id"] is not None else "") + f"""
-        WHEN NOT MATCHED THEN
-            INSERT (schedule_id, interval_mask, original_interval_mask, previous_interval_mask)
-            VALUES ('{schedule_details["schedule_id"]}', '{schedule_details["interval_mask"]}', '{schedule_details["interval_mask"]}', '{schedule_details["interval_mask"]}')
+        INSERT INTO public.schedule_backups ({insert_columns})
+        VALUES ({insert_values})
+        ON CONFLICT (schedule_id) DO UPDATE SET
+            interval_mask = EXCLUDED.interval_mask,
+            original_interval_mask = EXCLUDED.original_interval_mask,
+            previous_interval_mask = EXCLUDED.previous_interval_mask
+            {update_server_id}
     """
     db_cur.execute(sqlquery)
 

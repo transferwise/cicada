@@ -123,7 +123,7 @@ Inverse of the peak_cpu since it's a minimisation problem. Peak_cpu is calculate
 - **Mutation Type**: Random (randomly select genes and replace with random value from gene space)
 - **Elitism**: Keep the best solution across generations (default: 1)
 
-The creation of the offsprings uses different methods to change the solutions, however they must remain within the gene limits. For more information checkout the official [PyGAD documentation](https://pypi.org/project/pygad/2.1.0/) as it will be infinitely better than anything I can produce
+The creation of the offsprings uses different methods to change the solutions, however they must remain within the gene limits. For more information checkout the official [PyGAD documentation](https://pypi.org/project/pygad/5.3.0/) as it will be infinitely better than anything I can produce
 
 ### Population Seeding
 
