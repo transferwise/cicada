@@ -2,13 +2,13 @@
 START TRANSACTION;
 
 -- Add all servers 
-INSERT INTO public.servers (server_id, hostname, fqdn, ip4_address, is_enabled) VALUES (1, '4e538ad035e1', '4e538ad035e1', ' 192.168.52.3', 1) ON CONFLICT (server_id) DO UPDATE SET is_enabled = 1;
-INSERT INTO public.servers (server_id, hostname, fqdn, ip4_address, is_enabled) VALUES (2, '4e538ad035e2', '4e538ad035e2', ' 192.168.52.2', 0) ON CONFLICT DO NOTHING;
-INSERT INTO public.servers (server_id, hostname, fqdn, ip4_address, is_enabled) VALUES (3, '4e538ad035e3', '4e538ad035e3', ' 192.168.52.1', 0) ON CONFLICT DO NOTHING;
-INSERT INTO public.servers (server_id, hostname, fqdn, ip4_address, is_enabled) VALUES (4, '4e538ad035e4', '4e538ad035e4', ' 192.168.52.4', 0) ON CONFLICT DO NOTHING;
-INSERT INTO public.servers (server_id, hostname, fqdn, ip4_address, is_enabled) VALUES (5, '4e538ad035e5', '4e538ad035e5', ' 192.168.52.5', 0) ON CONFLICT DO NOTHING;
-INSERT INTO public.servers (server_id, hostname, fqdn, ip4_address, is_enabled) VALUES (6, '4e538ad035e6', '4e538ad035e6', ' 192.168.52.6', 0) ON CONFLICT DO NOTHING;
-INSERT INTO public.servers (server_id, hostname, fqdn, ip4_address, is_enabled) VALUES (7, '4e538ad035e7', '4e538ad035e7', ' 192.168.52.7', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.servers (server_id, hostname, fqdn, ip4_address, is_enabled) VALUES (1, '4e538ad035e1', '4e538ad035e1', 'ip4_address_1', 1) ON CONFLICT (server_id) DO UPDATE SET is_enabled = 1;
+INSERT INTO public.servers (server_id, hostname, fqdn, ip4_address, is_enabled) VALUES (2, '4e538ad035e2', '4e538ad035e2', 'ip4_address_2', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.servers (server_id, hostname, fqdn, ip4_address, is_enabled) VALUES (3, '4e538ad035e3', '4e538ad035e3', 'ip4_address_3', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.servers (server_id, hostname, fqdn, ip4_address, is_enabled) VALUES (4, '4e538ad035e4', '4e538ad035e4', 'ip4_address_4', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.servers (server_id, hostname, fqdn, ip4_address, is_enabled) VALUES (5, '4e538ad035e5', '4e538ad035e5', 'ip4_address_5', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.servers (server_id, hostname, fqdn, ip4_address, is_enabled) VALUES (6, '4e538ad035e6', '4e538ad035e6', 'ip4_address_6', 0) ON CONFLICT DO NOTHING;
+INSERT INTO public.servers (server_id, hostname, fqdn, ip4_address, is_enabled) VALUES (7, '4e538ad035e7', '4e538ad035e7', 'ip4_address_7', 0) ON CONFLICT DO NOTHING;
 
 COMMIT TRANSACTION;
 
