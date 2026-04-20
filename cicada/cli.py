@@ -32,6 +32,7 @@ class Cicada:
             "list_server_schedules",
             "exec_server_schedules",
             "smart_schedule",
+            "rollback",
             "show_schedule",
             "upsert_schedule",
             "exec_schedule",

@@ -43,9 +43,10 @@ class GAPyGADScheduler:
         mins_per_day = 1440
 
         for i, tap in enumerate(taps):
-            # Ignore any blacklist taps -> this fixes the gene space to be 0 so they're still included in the fitness eval but remain unshifted
+            # Fix the gene space so they're still included in the fitness eval but remain unshifted
             if tap.is_unsupported():
-                pass
+                min_start_times[i] = tap.start_time_mins
+                max_start_times[i] = tap.start_time_mins + 1
 
             # Limit gene space to only shift within the hour for the taps which run less frequently
             elif tap.frequency_minutes > 60:
@@ -55,7 +56,6 @@ class GAPyGADScheduler:
 
             # Gene space for the rest is just the frequency 
             else:
-                min_start_times[i] = 0
                 max_start_times[i] = tap.frequency_minutes
 
         return [list(range(min_start_time, max_start_time)) for min_start_time, max_start_time in zip(min_start_times, max_start_times)]
@@ -74,7 +74,7 @@ class GAPyGADScheduler:
 
         # Populate the rest of the initial population randomly within the gene space limits for each tap
         for _ in range(self.cfg.sol_per_pop - 1):
-            pop.append([int(rng.integers(0, len(gene_space[i]))) for i in range(len(taps))])
+            pop.append([gene_space[i][int(rng.integers(0, len(gene_space[i])))] for i in range(len(taps))])
         return np.asarray(pop, dtype=int)
     
     def _blacklist(self):
@@ -122,12 +122,14 @@ class GAPyGADScheduler:
 
         print(f"Optimised for {self.cfg.num_generations} generations. Best Solution Start Times:")
         print(best_solution)
-        
+
         usage, _ = evaluate_cpu_usage_and_peak(start_times, taps)
 
         # Update tap objects start_time_mins attribute based on GA solution
         for i, tap in enumerate(taps):
-            if tap.start_time_mins != start_times[i]: 
+            assert start_times[i] >= gene_space[i][0] and start_times[i] <= gene_space[i][-1], f"Start time for tap {tap.schedule_id} is out of gene space bounds. Start time: {start_times[i]}, Gene space: {gene_space[i]}"
+            if tap.is_unsupported(): assert start_times[i] == tap.start_time_mins, f"Unsupported tap {tap.schedule_id} should not have been shifted in the GA solution. {tap.start_time_mins} != {start_times[i]}"
+            elif tap.start_time_mins != start_times[i]: 
                 tap.shifted = True
                 tap.start_time_mins = start_times[i]
             

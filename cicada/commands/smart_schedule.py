@@ -42,17 +42,10 @@ def _create_tap_objects(schedule_ids, db_cur):
         try:
             tap = Tap(details, db_cur=db_cur)
             # Ignore the few taps that have irregular cron expressions for now. There are few enough that this shouldn't impact the optimisation and is not worth the effort to try and support these irregular schedules in the GA
-            if tap.is_unsupported():
-                if tap.is_blacklisted():
-                    print(f"Skipping blacklisted schedule {tap.schedule_id}")
-                elif not tap.is_regular_schedule():
+            if not tap.is_regular_schedule():
                     print(f"Skipping irregular schedule {tap.schedule_id} with cron expression {tap.interval_mask}")
-                else:
-                    print(f"Skipping schedule {tap.schedule_id} with frequency {tap.frequency_minutes} minutes as shifting for these taps is unsupported currently")
-
             else:
                 taps.append(tap)
-
         except Exception as e:
             print(f"Skipping schedule {schedule_id} due to error: {e}")
 
@@ -108,7 +101,7 @@ def _assign_new_schedules(optimised_taps: list[pygad.Tap], db_cur):
     for tap in optimised_taps:
         previous_schedule_mask = tap.interval_mask
         _update_schedule_cron(tap)
-        print(f"- {tap.schedule_id} : {tap.interval_mask}")
+        if tap.shifted: print(f"- {tap.schedule_id} : {tap.interval_mask}")
         tap._determine_start_time_mins() 
 
         schedule_details = {
