@@ -17,24 +17,24 @@ class GAPyGADScheduler:
 
 
     Implementation Note: We only consider the regular taps during fitness evaluation to aid simplicity as there are few irregular 
-                         taps. All regular taps are fed into the scheduler however those on the blacklist will remain unchanged 
+                         taps. All regular taps are fed into the scheduler however those on the blocklist will remain unchanged 
                          and are kept purely to ensure the fitness evaluation is accurate to the actual schedule.
                          
                          We cap the max shift of a tap to within the hour to prevent large shifts for taps that run daily.
     """
 
-    def __init__(self, config: Optional[Mapping[str, object]] = None, blacklist_schedule_ids: Optional[List[str]] = None):
+    def __init__(self, config: Optional[Mapping[str, object]] = None, blocklist_schedule_ids: Optional[List[str]] = None):
         if config is None:
             self.cfg = GAConfig()
         else:
             filtered_config = {key: value for key, value in config.items() if value is not None}
             self.cfg = GAConfig(**filtered_config)
-        self.blacklist_schedule_ids = blacklist_schedule_ids if blacklist_schedule_ids is not None else []
+        self.blocklist_schedule_ids = blocklist_schedule_ids if blocklist_schedule_ids is not None else []
 
 
     def _gene_space(self, taps: Sequence[Tap]) -> List[List[int]]:
         # Build gene_space per tap: each gene space is limited by it's frequency
-        # Unless the tap is unsupported (either blacklisted, irregular or has frequency greater than 60 mins) in which case we set the gene space to be just 0 
+        # Unless the tap is unsupported (either blocklisted, irregular or has frequency greater than 60 mins) in which case we set the gene space to be just 0 
         # so they remain unchanged in the GA but are still included in the fitness evaluation. Also constrain taps with frequency > 60 mins to an hour to prevent
         # large shifts and huge gene spaces.
 
@@ -77,9 +77,9 @@ class GAPyGADScheduler:
             pop.append([gene_space[i][int(rng.integers(0, len(gene_space[i])))] for i in range(len(taps))])
         return np.asarray(pop, dtype=int)
     
-    def _blacklist(self):
-        self.cfg.blacklist_schedule_ids = set(self.cfg.blacklist_schedule_ids)
-        raise NotImplementedError("Blacklist functionality not yet implemented")
+    def _blocklist(self):
+        self.cfg.blocklist_schedule_ids = set(self.cfg.blocklist_schedule_ids)
+        raise NotImplementedError("blocklist functionality not yet implemented")
 
     def fitness_fn(self, ga, solution, solution_idx):
         _, peak = evaluate_cpu_usage_and_peak(solution, self.taps)

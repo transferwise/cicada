@@ -13,4 +13,4 @@ class GAConfig:
     mutation_type: str = "random"
     keep_elitism: int = 2
     random_seed: Optional[int] = None
-    blacklist_schedule_ids: Optional[List[str]] = field(default_factory=list)
+    blocklist_schedule_ids: Optional[List[str]] = field(default_factory=list)

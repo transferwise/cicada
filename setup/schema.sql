@@ -248,17 +248,19 @@ CREATE INDEX IF NOT EXISTS schedule_backups_server_id_idx
   (server_id);
 
 
-CREATE TABLE IF NOT EXISTS public.schedule_blacklist 
+CREATE TABLE IF NOT EXISTS public.schedule_blocklist 
 (
   schedule_id character varying(255) NOT NULL,
   server_id integer,
   timestamp timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone,
   reason character varying(255),
-  CONSTRAINT schedule_blacklist_pkey PRIMARY KEY (schedule_id)
+  CONSTRAINT schedule_blocklist_pkey PRIMARY KEY (schedule_id)
 )
 WITH (
   OIDS=FALSE
 );
+
+-- Add in schedules 
 
 
 COMMIT TRANSACTION;

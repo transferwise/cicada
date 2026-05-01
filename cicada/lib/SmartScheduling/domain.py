@@ -18,7 +18,7 @@ class Tap:
     median_runtime_minutes: int = 5
     shifted: bool = False
     start_time_mins: Optional[int] = 0
-    blacklisted: bool = False
+    blocklisted: bool = False
     
 
     def __init__(self, details, db_cur):
@@ -26,8 +26,8 @@ class Tap:
         self.server_id = details['server_id']
         self.interval_mask = details['interval_mask']
         self.determine_attributes(db_cur)
-        if details['blacklisted'] is not None:
-            self.blacklisted = details['blacklisted']
+        if details['blocklisted'] is not None:
+            self.blocklisted = details['blocklisted']
 
     def determine_attributes(self, db_cur):
         """Determine frequency and average runtime from interval_mask and scheduler module"""
@@ -62,9 +62,9 @@ class Tap:
             first_iter = it.get_next(datetime.datetime)
             self.start_time_mins = first_iter.hour * 60 + first_iter.minute
 
-    def is_blacklisted(self):
-        """Determine if the tap is blacklisted based on schedule_id"""
-        return self.blacklisted
+    def is_blocklisted(self):
+        """Determine if the tap is blocklisted based on schedule_id"""
+        return self.blocklisted
 
     def frequency_is_supported(self):
         """Determine if the tap frequency is supported for smart scheduling"""
@@ -73,8 +73,8 @@ class Tap:
         return True
 
     def is_unsupported(self):
-        """Determine if the tap is unsupported for smart scheduling based on frequency or if it's blacklisted"""
-        return (not self.frequency_is_supported() or self.is_blacklisted() or not self.is_regular_schedule())
+        """Determine if the tap is unsupported for smart scheduling based on frequency or if it's blocklisted"""
+        return (not self.frequency_is_supported() or self.is_blocklisted() or not self.is_regular_schedule())
 
     def is_regular_schedule(self):
         """Check if the cron expression is a regular schedule that can be optimized by the GA """

@@ -29,15 +29,15 @@ def _create_tap_objects(schedule_ids, db_cur):
     """Create Tap objects from schedule_ids."""
     
     taps : list[Tap] = []
-    blacklisted_taps = scheduler.get_blacklisted_schedule_ids(db_cur)
+    blocklisted_taps = scheduler.get_blocklisted_schedule_ids(db_cur)
 
     # Fetch details for each schedule and convert to Tap objects
     for schedule_id in schedule_ids:
         details = scheduler.get_schedule_details(db_cur, schedule_id)
-        if schedule_id in blacklisted_taps:
-            details['blacklisted'] = True
+        if schedule_id in blocklisted_taps:
+            details['blocklisted'] = True
         else:
-            details['blacklisted'] = False
+            details['blocklisted'] = False
 
         try:
             tap = Tap(details, db_cur=db_cur)
@@ -163,9 +163,9 @@ def main(server_id=None, dbname=None, ga_config=None):
 
         try:
             print("\n------------Starting Optimisation-----------------") 
-            blacklist_schedule_ids = scheduler.get_blacklisted_schedule_ids(db_cur)
-            print(f"Blacklisted schedule IDs that will be excluded from optimization: {blacklist_schedule_ids}")
-            ga = pygad.GAPyGADScheduler(config=ga_config, blacklist_schedule_ids=blacklist_schedule_ids)
+            blocklist_schedule_ids = scheduler.get_blocklisted_schedule_ids(db_cur)
+            print(f"blocklisted schedule IDs that will be excluded from optimization: {blocklist_schedule_ids}")
+            ga = pygad.GAPyGADScheduler(config=ga_config, blocklist_schedule_ids=blocklist_schedule_ids)
             print("Running PyGAD solver ...")
             optimised_taps, __, peak_cpu, __, initial_fitness = ga.solve(taps)
             print(f"Optimized schedule for server_id {server_id}: new peak CPU {peak_cpu}")

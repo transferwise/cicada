@@ -544,9 +544,9 @@ def restore_previous_schedules(db_cur, server_id=None, schedule_id=None, full=Fa
     rollback_schedule_backup_mask(db_cur, schedule_id=schedule_id, server_id=server_id, full=full)
 
 
-def get_blacklisted_schedule_ids(db_cur):
-    """Get a list of schedule_ids that are blacklisted from optimization"""
-    sqlquery = "SELECT schedule_id FROM schedule_blacklist"
+def get_blocklisted_schedule_ids(db_cur):
+    """Get a list of schedule_ids that are blocklisted from optimization"""
+    sqlquery = "SELECT schedule_id FROM schedule_blocklist"
     db_cur.execute(sqlquery)
-    blacklist_schedule_ids = [row[0] for row in db_cur.fetchall()]
-    return blacklist_schedule_ids
+    blocklist_schedule_ids = [row[0] for row in db_cur.fetchall()]
+    return blocklist_schedule_ids

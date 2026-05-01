@@ -79,12 +79,12 @@ Located in `cicada/lib/SmartScheduling/`
   - `schedule_id`, `server_id`, `interval_mask` (cron expression)
   - `frequency_minutes`, `median_runtime_minutes`, `cpu_max`
   - `shift`: offset in minutes applied to shift job start time
-  - `blacklisted`: flag to exclude from GA optimization
+  - `blocklisted`: flag to exclude from GA optimization
 
 **`config.py`**
 - `GAConfig` dataclass: hyperparameters for the genetic algorithm
   - `num_generations`, `sol_per_pop`, `mutation_percent_genes`, etc.
-  - `blacklist_schedule_ids`: list of schedule IDs to exclude from optimization
+  - `blocklist_schedule_ids`: list of schedule IDs to exclude from optimization
 
 **`pygad.py`**
 - Wraps the external `pygad` library (genetic algorithm)
@@ -120,7 +120,7 @@ Database setup SQL is in `setup/db_and_user.sql` and `setup/schema.sql`. Example
 
 ### SmartScheduling Workflow
 1. **Load schedules**: Fetch all schedules for a server via `get_schedules_per_server()`
-2. **Create Tap objects**: Convert schedule details to Tap instances; filter unsupported schedules (irregular cron, too frequent, blacklisted)
+2. **Create Tap objects**: Convert schedule details to Tap instances; filter unsupported schedules (irregular cron, too frequent, blocklisted)
 3. **Run GA optimization**: PyGAD evolves shifts over N generations to minimize resource conflicts
 4. **Apply and checkpoint**: Save optimized shifts back to DB; record checkpoint for potential rollback
 

@@ -38,7 +38,7 @@ The GA evolves shift offsets for each schedule over multiple generations to find
   - `snapshot_at`: timestamp of last update (auto-set on INSERT/UPDATE)
   - Indexes on `schedule_id` and `server_id` for fast lookups
 
-- **`schedule_blacklist`** — Excludes schedules from optimization
+- **`schedule_blocklist`** — Excludes schedules from optimization
   - `schedule_id` (PK): schedule to exclude
   - `reason`: free-text explanation (e.g., "manual request", "irregular cron")
   - Allows selective opt-out without deleting schedule
@@ -54,7 +54,7 @@ The GA evolves shift offsets for each schedule over multiple generations to find
 
 2. Create Tap Objects per schedule_id
    └─> Calculating properties based on cron schedule
-   └─> Check whether it's supported (blacklist, irregular etc.)
+   └─> Check whether it's supported (blocklist, irregular etc.)
 
 3. Run GA Optimization
    └─> GAPyGADScheduler.solve(taps):
@@ -151,13 +151,13 @@ Not all schedules are suitable for GA optimization:
 ### Supported Schedules
 - **Frequency**: `x > 1` & `x <=1440` minutes (1 minute to 1 day)
 - **Regularity**: Cron expression must be perfectly regular (same interval between every consecutive run)
-- **Blacklist**: Schedule is not in `schedule_blacklist` table
+- **blocklist**: Schedule is not in `schedule_blocklist` table
 
 ### Unsupported Schedules (Skipped)
 - **Irregular cron**: e.g., "0 0,12 * * *" (runs at two different times) — frequency varies
 - **Too frequent**: <= 1 minute
 - **Too rare**: > 1440 minutes (more than a day)
-- **Blacklisted**: Explicitly marked in `schedule_blacklist` table
+- **blocklisted**: Explicitly marked in `schedule_blocklist` table
 - **Parsing errors**: Invalid cron expressions
 
 **Unsupported taps remain in the fitness evaluation** but don't participate in the optimization (shift = 0 fixed), ensuring the fitness score reflects realistic daily load.
@@ -195,7 +195,7 @@ Added to `cicada/cli.py`:
 
 ### Database Dependencies
 
-- **Read**: `schedules`, `servers`, `schedule_logs`, `schedule_blacklist`
+- **Read**: `schedules`, `servers`, `schedule_logs`, `schedule_blocklist`
 - **Write**: `schedules` (interval_mask), `schedule_backups` (checkpoints)
 - **Functions**: `set_snapshot_at()` trigger
 
@@ -204,7 +204,7 @@ Added to `cicada/cli.py`:
 ### Why a Genetic Algorithm?
 
 1. **NP-hard problem**: Optimal schedule assignment is combinatorially hard; GA provides good approximations in reasonable time
-2. **Flexible constraints**: GA naturally handles irregular constraints (blacklists, unsupported frequencies). It allows us an easy mechanism to include these in the calculations while not changing them
+2. **Flexible constraints**: GA naturally handles irregular constraints (blocklists, unsupported frequencies). It allows us an easy mechanism to include these in the calculations while not changing them
 3. **No gradient**: Fitness landscape is non-smooth; gradient-free methods suit this
 4. **Mature libraries**: PyGAD is well-maintained and configurable
 5. **Discrete Runs**: Works well with discrete times
@@ -217,7 +217,7 @@ Added to `cicada/cli.py`:
 
 ### Why Unsupported Taps Stay in Fitness?
 
-- Ensures fitness reflects real daily load (including irregular jobs, blacklisted, etc.)
+- Ensures fitness reflects real daily load (including irregular jobs, blocklisted, etc.)
 - Allows GA to account for load from non-optimizable schedules
 - Prevents GA from misoptimizing around missing jobs
 
@@ -235,7 +235,7 @@ Added to `cicada/cli.py`:
 - **Bottleneck**: Fitness evaluation (diff array accumulation); PyGAD overhead minimal
 
 **Optimization Tips:**
-- Blacklist irregular/infrequent taps to reduce optimization scope
+- blocklist irregular/infrequent taps to reduce optimization scope
 - Reduce `num_generations` or `sol_per_pop` for faster, lower-quality results (specifically for when testing)
 
 ## Future Enhancements
