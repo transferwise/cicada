@@ -9,7 +9,7 @@ from ..scheduler import get_median_run_time
 
 
 @dataclass(frozen=False)
-class Tap:
+class Schedule:
     schedule_id: int
     server_id: int
     interval_mask: str 
@@ -63,17 +63,17 @@ class Tap:
             self.start_time_mins = first_iter.hour * 60 + first_iter.minute
 
     def is_blocklisted(self):
-        """Determine if the tap is blocklisted based on schedule_id"""
+        """Determine if the Schedule is blocklisted based on schedule_id"""
         return self.blocklisted
 
     def frequency_is_supported(self):
-        """Determine if the tap frequency is supported for smart scheduling"""
+        """Determine if the Schedule frequency is supported for smart scheduling"""
         if (self.frequency_minutes != 1440 and self.frequency_minutes > 60): return False
         if (self.frequency_minutes <= 1): return False
         return True
 
     def is_unsupported(self):
-        """Determine if the tap is unsupported for smart scheduling based on frequency or if it's blocklisted"""
+        """Determine if the Schedule is unsupported for smart scheduling based on frequency or if it's blocklisted"""
         return (not self.frequency_is_supported() or self.is_blocklisted() or not self.is_regular_schedule())
 
     def is_regular_schedule(self):

@@ -14,7 +14,7 @@ The GA evolves shift offsets for each schedule over multiple generations to find
 
 ### Core Components
 
-1. **Domain Layer** (`domain.py`) — Represents schedules as "Taps"
+1. **Domain Layer** (`domain.py`) — Represents schedules as Schedule objects
 
 2. **GA Configuration** (`config.py`) — Hyperparameters for optimization
 
@@ -52,16 +52,16 @@ The GA evolves shift offsets for each schedule over multiple generations to find
 1. Load Schedules
    └─> Query database for all schedules on a server
 
-2. Create Tap Objects per schedule_id
+2. Create schedule Objects per schedule_id
    └─> Calculating properties based on cron schedule
    └─> Check whether it's supported (blocklist, irregular etc.)
 
 3. Run GA Optimization
-   └─> GAPyGADScheduler.solve(taps):
-       ├─> Build gene_space (permissible shifts per tap)
-       │   ├─> Unsupported taps: gene_space = [0] (no shift)
-       │   ├─> Frequent taps (< 60 min): gene_space = [0..frequency)
-       │   └─> Infrequent taps (> 60 min): gene_space = [0..60)
+   └─> GAPyGADScheduler.solve(schedules):
+       ├─> Build gene_space (permissible shifts per schedule)
+       │   ├─> Unsupported schedules: gene_space = [0] (no shift)
+       │   ├─> Frequent schedules (< 60 min): gene_space = [0..frequency)
+       │   └─> Infrequent schedules (> 60 min): gene_space = [0..60)
        ├─> Initialize population with current solution as seed
        ├─> PyGAD evolves population over N generations
        │   └─> Each generation: mutation, crossover, fitness evaluation
@@ -95,17 +95,17 @@ Rollback command triggered with server_id or schedule_id
 
 ### Gene Representation
 
-Each gene is a minute representing where a tap should start within a day.
+Each gene is a minute representing where a schedule should start within a day.
 - Gene value can take any value between the min and max start time
 - The gene space is limited to the smallest range it could be and then extrapolated out when it comes to evaluating the max cpu
-- Defining unique gene spaces where each tap has it's own gene space allows us to reduce the search space considerably. 
-- By tailoring our gene spaces we can allow the tap to only traverse a couple of discrete positions, this makes our algorithm run as efficiently as possible and have a more comprehensive search of the solution space. 
+- Defining unique gene spaces where each schedule has it's own gene space allows us to reduce the search space considerably. 
+- By tailoring our gene spaces we can allow the schedule to only traverse a couple of discrete positions, this makes our algorithm run as efficiently as possible and have a more comprehensive search of the solution space. 
 
 
 ### Fitness Function
 
-Inverse of the peak_cpu since it's a minimisation problem. Peak_cpu is calculated over a single day since that covers 99% of all taps. 
-   - For each tap, add its cpu_max to the usage array from `start_time` to `start_time + runtime`
+Inverse of the peak_cpu since it's a minimisation problem. Peak_cpu is calculated over a single day since that covers 99% of all schedules. 
+   - For each schedule, add its cpu_max to the usage array from `start_time` to `start_time + runtime`
    - Repeat for minute
    - Use a difference array for efficient cumulative calculation
    - Uses only the maximum CPU usage across entire day
@@ -129,11 +129,11 @@ The creation of the offsprings uses different methods to change the solutions, h
 
 We seed the initial population with the current solution as we want to **prioritise stability over minor gains**. 
 The system is already quite imprecise:
-   - assumes uniform CPU usage across all taps
+   - assumes uniform CPU usage across all schedules
    - rounds runtime to nearest minute
-   - assumes consistent runtimes from one tap run to another
+   - assumes consistent runtimes from one schedule run to another
 
-Because of this imprecision and a natural desire not to overfit the system (e.g. we don't want a solution that minimises the peak cpu unless a heavy tap runs a minute longer than usual and then it clashes with another heavy tap) we want to only change the tap runs when it offers an actual advantage. Shifting schedules occassionally is needed to minimise the cpu usage, however shifting can also cause missed tap runs (if we e.g. change schedule 13-59/15 * * * * to 9-59/15 * * * * at 11 minutes past the hour).
+Because of this imprecision and a natural desire not to overfit the system (e.g. we don't want a solution that minimises the peak cpu unless a heavy schedule runs a minute longer than usual and then it clashes with another heavy schedule) we want to only change the schedule runs when it offers an actual advantage. Shifting schedules occassionally is needed to minimise the cpu usage, however shifting can also cause missed schedule runs (if we e.g. change schedule 13-59/15 * * * * to 9-59/15 * * * * at 11 minutes past the hour).
 
 ## Configuration
 
@@ -160,7 +160,7 @@ Not all schedules are suitable for GA optimization:
 - **blocklisted**: Explicitly marked in `schedule_blocklist` table
 - **Parsing errors**: Invalid cron expressions
 
-**Unsupported taps remain in the fitness evaluation** but don't participate in the optimization (shift = 0 fixed), ensuring the fitness score reflects realistic daily load.
+**Unsupported schedules remain in the fitness evaluation** but don't participate in the optimization (shift = 0 fixed), ensuring the fitness score reflects realistic daily load.
 
 
 ## Checkpointing & Rollback
@@ -215,7 +215,7 @@ Added to `cicada/cli.py`:
 - Biases the GA towards an existing solution space (there are many solutions that are equally good and we don't need to explore every single one, this isn't a problem with a clear global minimum)
 - Biases search toward improvements on the current baseline which avoids "thrashing" between very different schedules 
 
-### Why Unsupported Taps Stay in Fitness?
+### Why Unsupported schedules Stay in Fitness?
 
 - Ensures fitness reflects real daily load (including irregular jobs, blocklisted, etc.)
 - Allows GA to account for load from non-optimizable schedules
@@ -223,19 +223,19 @@ Added to `cicada/cli.py`:
 
 ### Why No Frequency Constraints in Fitness?
 
-- GA gene space enforces frequency constraints (each tap's shifts are within its frequency)
+- GA gene space enforces frequency constraints (each schedule's shifts are within its frequency)
 - Fitness function only evaluates peak, not constraint satisfaction
 - Simpler, faster fitness evaluation without redundant checking
 
 ## Performance Considerations
 
-- **Time Complexity**: O(pop_size × num_generations × num_taps × blocks_per_day)
-- **Space Complexity**: O(num_taps × blocks_per_day)
+- **Time Complexity**: O(pop_size × num_generations × num_schedules × blocks_per_day)
+- **Space Complexity**: O(num_schedules × blocks_per_day)
 - **Typical Runtime**: ~5-30 seconds for 100-500 schedules, 20 generations, 40 population size
 - **Bottleneck**: Fitness evaluation (diff array accumulation); PyGAD overhead minimal
 
 **Optimization Tips:**
-- blocklist irregular/infrequent taps to reduce optimization scope
+- blocklist irregular/infrequent schedules to reduce optimization scope
 - Reduce `num_generations` or `sol_per_pop` for faster, lower-quality results (specifically for when testing)
 
 ## Future Enhancements

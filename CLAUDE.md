@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Cicada** is a centralized, distributed job scheduler for Pipelinewise taps. It acts as a lightweight management layer between Linux CRON and executables, allowing jobs to be scheduled across multiple nodes via a central database rather than local cron.
+**Cicada** is a centralized, distributed job scheduler for Pipelinewise schedules. It acts as a lightweight management layer between Linux CRON and executables, allowing jobs to be scheduled across multiple nodes via a central database rather than local cron.
 
 Key architectural concepts:
 - **Nodes/Servers**: Machines that register with Cicada and pull scheduling information from the central database. They execute `cicada exec_server_schedules` via cron.
@@ -75,7 +75,7 @@ Commands are located in `cicada/commands/` and implement specific operations:
 Located in `cicada/lib/SmartScheduling/`
 
 **`domain.py`**
-- `Tap` dataclass: represents a schedule as a "tap" (job) with properties:
+- `Schedule` dataclass: represents a schedule as a "schedule" (job) with properties:
   - `schedule_id`, `server_id`, `interval_mask` (cron expression)
   - `frequency_minutes`, `median_runtime_minutes`, `cpu_max`
   - `shift`: offset in minutes applied to shift job start time
@@ -101,7 +101,7 @@ Key tables:
 - `schedule_logs` – Historical execution records with runtime, status, output
 - `schedule_backups` – GA optimization snapshots for rollback
 
-Database setup SQL is in `setup/db_and_user.sql` and `setup/schema.sql`. Example tap setup for smart scheduling in `setup/create_test_tap_sertup`.
+Database setup SQL is in `setup/db_and_user.sql` and `setup/schema.sql`. Example schedule setup for smart scheduling in `setup/create_test_schedule_sertup`.
 
 ## Key Architectural Patterns
 
@@ -120,7 +120,7 @@ Database setup SQL is in `setup/db_and_user.sql` and `setup/schema.sql`. Example
 
 ### SmartScheduling Workflow
 1. **Load schedules**: Fetch all schedules for a server via `get_schedules_per_server()`
-2. **Create Tap objects**: Convert schedule details to Tap instances; filter unsupported schedules (irregular cron, too frequent, blocklisted)
+2. **Create Schedule objects**: Convert schedule details to Schedule instances; filter unsupported schedules (irregular cron, too frequent, blocklisted)
 3. **Run GA optimization**: PyGAD evolves shifts over N generations to minimize resource conflicts
 4. **Apply and checkpoint**: Save optimized shifts back to DB; record checkpoint for potential rollback
 
@@ -144,7 +144,7 @@ Mock fixtures often include a test PostgreSQL database or in-memory alternatives
 
 ### Modifying Schedule Logic
 - Edit `cicada/lib/scheduler.py` for core logic changes (e.g., new state transitions)
-- Update `cicada/lib/SmartScheduling/domain.py` if Tap validation rules change
+- Update `cicada/lib/SmartScheduling/domain.py` if Schedule validation rules change
 - Update tests in `test_lib_scheduler.py` to cover new behavior
 
 ### Database Schema Changes

@@ -1,4 +1,4 @@
--- Current state of taps as of 31st Mar 2026
+-- Current state of schedules as of 31st Mar 2026
 START TRANSACTION;
 
 -- Add all servers 
