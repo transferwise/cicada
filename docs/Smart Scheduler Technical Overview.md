@@ -8,7 +8,7 @@ Cicada schedules jobs across multiple servers. Without optimization, jobs natura
 
 **SmartScheduling** uses a Genetic Algorithm (GA) to automatically shift job start times, distributing them across the 24-hour period while respecting original cron frequencies and maintaining schedule validity. This reduces peak resource contention and improves system throughput.
 
-The GA evolves shift offsets for each schedule over multiple generations to find near-optimal start time distributions that minimize peak CPU load.
+The GA evolves shift offsets for each schedule over multiple generations to find near-optimal start time distributions that minimize peak usage.
 
 ## Architecture
 
@@ -65,11 +65,11 @@ The GA evolves shift offsets for each schedule over multiple generations to find
        ├─> Initialize population with current solution as seed
        ├─> PyGAD evolves population over N generations
        │   └─> Each generation: mutation, crossover, fitness evaluation
-       ├─> Calculate fitness (-peak_cpu) for each candidate
+       ├─> Calculate fitness (-peak_usage) for each candidate
        └─> Returns best solution
 
 4. Evaluate Improvement
-   └─> Compare initial_peak_cpu vs optimized_peak_cpu. If improved: proceed to assignment
+   └─> Compare initial_peak_usage vs optimized_peak_usage. If improved: proceed to assignment
 
 5. Update Schedules
    └─> both schedule table and schedule_backups in case of rollback
@@ -97,18 +97,18 @@ Rollback command triggered with server_id or schedule_id
 
 Each gene is a minute representing where a schedule should start within a day.
 - Gene value can take any value between the min and max start time
-- The gene space is limited to the smallest range it could be and then extrapolated out when it comes to evaluating the max cpu
+- The gene space is limited to the smallest range it could be and then extrapolated out when it comes to evaluating the max usage over the day
 - Defining unique gene spaces where each schedule has it's own gene space allows us to reduce the search space considerably. 
 - By tailoring our gene spaces we can allow the schedule to only traverse a couple of discrete positions, this makes our algorithm run as efficiently as possible and have a more comprehensive search of the solution space. 
 
 
 ### Fitness Function
 
-Inverse of the peak_cpu since it's a minimisation problem. Peak_cpu is calculated over a single day since that covers 99% of all schedules. 
-   - For each schedule, add its cpu_max to the usage array from `start_time` to `start_time + runtime`
+Inverse of the peak_usage since it's a minimisation problem. Peak_usage is calculated over a single day since that covers 99% of all schedules. 
+   - For each schedule, add it to the usage array from `start_time` to `start_time + runtime`
    - Repeat for minute
    - Use a difference array for efficient cumulative calculation
-   - Uses only the maximum CPU usage across entire day
+   - Uses only the maximum usage across entire day
 
 
 ### Crossover & Mutation
@@ -133,7 +133,7 @@ The system is already quite imprecise:
    - rounds runtime to nearest minute
    - assumes consistent runtimes from one schedule run to another
 
-Because of this imprecision and a natural desire not to overfit the system (e.g. we don't want a solution that minimises the peak cpu unless a heavy schedule runs a minute longer than usual and then it clashes with another heavy schedule) we want to only change the schedule runs when it offers an actual advantage. Shifting schedules occassionally is needed to minimise the cpu usage, however shifting can also cause missed schedule runs (if we e.g. change schedule 13-59/15 * * * * to 9-59/15 * * * * at 11 minutes past the hour).
+Because of this imprecision and a natural desire not to overfit the system (e.g. we don't want a solution that minimises the peak usage unless a heavy schedule runs a minute longer than usual and then it clashes with another heavy schedule) we want to only change the schedule runs when it offers an actual advantage. Shifting schedules occassionally is needed to minimise the usage, however shifting can also cause missed schedule runs (if we e.g. change schedule 13-59/15 * * * * to 9-59/15 * * * * at 11 minutes past the hour).
 
 ## Configuration
 

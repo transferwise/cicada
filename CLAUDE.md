@@ -77,7 +77,7 @@ Located in `cicada/lib/SmartScheduling/`
 **`domain.py`**
 - `Schedule` dataclass: represents a schedule as a "schedule" (job) with properties:
   - `schedule_id`, `server_id`, `interval_mask` (cron expression)
-  - `frequency_minutes`, `median_runtime_minutes`, `cpu_max`
+  - `frequency_minutes`, `median_runtime_minutes`
   - `shift`: offset in minutes applied to shift job start time
   - `blocklisted`: flag to exclude from GA optimization
 

@@ -171,16 +171,16 @@ def main(server_id=None, dbname=None, ga_config=None, rollback=False, schedule_i
             print(f"blocklisted schedule IDs that will be excluded from optimization: {blocklist_schedule_ids}")
             ga = pygad.GAPyGADScheduler(config=ga_config, blocklist_schedule_ids=blocklist_schedule_ids)
             print("Running PyGAD solver ...")
-            optimised_schedules, __, peak_cpu, __, initial_fitness = ga.solve(schedules)
-            print(f"Optimized schedule for server_id {server_id}: new peak CPU {peak_cpu}")
+            optimised_schedules, __, peak_usage, __, initial_fitness = ga.solve(schedules)
+            print(f"Optimized schedule for server_id {server_id}: new peak usage {peak_usage}")
             print("--------------------------------------------------\n")
 
 
             print("\n-------------Updating Schedules------------------") 
-            if peak_cpu < initial_fitness:  # Only update schedules if we have found an improvement
+            if peak_usage < initial_fitness:  # Only update schedules if we have found an improvement
                 _assign_new_schedules(optimised_schedules, db_cur=db_cur)
             else:
-                print(f"No improvement found for server_id {server_id}. Current peak CPU: {initial_fitness}, Optimized peak CPU: {peak_cpu}. No schedule updates will be made.")
+                print(f"No improvement found for server_id {server_id}. Current peak usage: {initial_fitness}, Optimized peak usage: {peak_usage}. No schedule updates will be made.")
             print("--------------------------------------------------\n")
 
         except Exception as e:

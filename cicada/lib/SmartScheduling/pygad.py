@@ -3,7 +3,7 @@ from typing import List, Mapping, Optional, Sequence
 import numpy as np 
 from .config import GAConfig 
 from .domain import Schedule 
-from .evaluation import evaluate_cpu_usage_and_peak
+from .evaluation import evaluate_usage_and_peak
 import pygad
 
 
@@ -82,7 +82,7 @@ class GAPyGADScheduler:
         raise NotImplementedError("blocklist functionality not yet implemented")
 
     def fitness_fn(self, ga, solution, solution_idx):
-        _, peak = evaluate_cpu_usage_and_peak(solution, self.schedules)
+        _, peak = evaluate_usage_and_peak(solution, self.schedules)
         return -float(peak)
         
     def solve(self, schedules: Sequence[Schedule]) -> tuple[Sequence[Schedule], List[int], float, np.ndarray]:
@@ -95,7 +95,7 @@ class GAPyGADScheduler:
         print(initial_population[0])
 
         initial_fitness = self.fitness_fn(None, initial_population[0], 0)
-        print("Initial population fitness (max_cpu load):", -initial_fitness)
+        print("Initial population fitness (max usage):", -initial_fitness)
 
         ga = pygad.GA(
             num_generations=self.cfg.num_generations,
@@ -118,12 +118,12 @@ class GAPyGADScheduler:
         
         best_solution, best_fitness, _ = ga.best_solution()
         start_times = [int(v) for v in best_solution]
-        peak_cpu = -float(best_fitness)
+        peak_usage = -float(best_fitness)
 
         print(f"Optimised for {self.cfg.num_generations} generations. Best Solution Start Times:")
         print(best_solution)
 
-        usage, _ = evaluate_cpu_usage_and_peak(start_times, schedules)
+        usage, _ = evaluate_usage_and_peak(start_times, schedules)
 
         # Update schedule objects start_time_mins attribute based on GA solution
         for i, schedule in enumerate(schedules):
@@ -133,4 +133,4 @@ class GAPyGADScheduler:
                 schedule.shifted = True
                 schedule.start_time_mins = start_times[i]
             
-        return schedules, start_times, peak_cpu, usage, -initial_fitness
+        return schedules, start_times, peak_usage, usage, -initial_fitness

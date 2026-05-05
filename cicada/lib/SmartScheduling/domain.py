@@ -14,7 +14,6 @@ class Schedule:
     server_id: int
     interval_mask: str 
     frequency_minutes: int
-    cpu_max: float = 1
     median_runtime_minutes: int = 5
     shifted: bool = False
     start_time_mins: Optional[int] = 0

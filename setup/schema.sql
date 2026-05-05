@@ -202,7 +202,7 @@ WITH (
 ;
 
 
--- Table to record previous scheduling for rollback functionality with smart scheduling
+-- Table to record previous scheduling for smart schedule rollback functionality with smart scheduling
 CREATE TABLE IF NOT EXISTS public.schedule_backups 
 (
   schedule_id character varying(255) NOT NULL,
