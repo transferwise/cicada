@@ -1,7 +1,6 @@
 """Shifts the schedules on a node to distribute the load"""
 
 from __future__ import annotations
-import datetime
 import sys
 from croniter import croniter
 from typing import Optional
@@ -9,7 +8,7 @@ from cicada.lib import postgres, utils
 from cicada.lib import scheduler
 from cicada.lib.SmartScheduling import pygad
 from cicada.lib.SmartScheduling.domain import Schedule
-
+from cicada.commands import smart_schedule_rollback
 
 def _get_schedules_per_server(server_id, db_cur=None):
     """Get all schedules for a given server_id."""
@@ -135,7 +134,12 @@ def _assign_new_schedules(optimised_schedules: list[pygad.Schedule], db_cur):
 
 
 @utils.named_exception_handler("smart_schedule")
-def main(server_id=None, dbname=None, ga_config=None):
+def main(server_id=None, dbname=None, ga_config=None, rollback=False, schedule_id: Optional[str] = None, full=False):
+    if rollback:
+        print("Initiating rollback schedules.")
+        smart_schedule_rollback.main(server_id=server_id, schedule_id=schedule_id, dbname=dbname, full=full)
+        return
+    
     if server_id and type(server_id) != int: raise TypeError(f"server_id should be int not {type(server_id)}")
 
     db_conn = postgres.db_cicada(dbname)

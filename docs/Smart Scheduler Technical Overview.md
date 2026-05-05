@@ -24,7 +24,7 @@ The GA evolves shift offsets for each schedule over multiple generations to find
 
 5. **Command Handler** (`smart_schedule.py`) — Orchestrates optimization
 
-6. **Rollback System** (`rollback.py`) — Recovery mechanism
+6. **Rollback System** (`smart_schedule_rollback.py`) — Recovery mechanism
 
 ### Database Schema Changes
 
@@ -185,7 +185,7 @@ Every optimization run creates a checkpoint in `schedule_backups`:
 
 Added to `cicada/cli.py`:
 - `cicada smart_schedule [--server_id <id>]` — Run optimization
-- `cicada rollback [--server_id <id> | --schedule_id <id>] [--full]` — Revert changes
+- `cicada smart_schedule_rollback [--server_id <id> | --schedule_id <id>] [--full]` — Revert changes
 
 ### Command-Line Parameters for `smart_schedule`
 

@@ -1,10 +1,9 @@
-
 from typing import Optional
 from cicada.lib import postgres, utils
 from cicada.lib import scheduler
 
 
-@utils.named_exception_handler("rollback")
+@utils.named_exception_handler("smart_schedule_rollback")
 def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbname=None, full=False):
     """
     Roll back schedules in case of issues during assignment. 
@@ -13,7 +12,7 @@ def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbn
     Args:
         server_id: Optional[int] [Mutually exclusive with schedule_id]
             Target server to roll back. 
-        schedule_id: Optional[int] [Mutually exclusive with server_id]
+        schedule_id: Optional[str] [Mutually exclusive with server_id]
             Target schedule to roll back. 
         db_cur: Database cursor to use for the rollback operations.
         dbname: Optional[str]
