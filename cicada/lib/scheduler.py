@@ -235,6 +235,56 @@ def update_schedule_details(db_cur, schedule_details):
     db_cur.execute(sqlquery)
 
 
+def update_schedule_details_bulk(db_cur, schedule_list):
+    """Update multiple schedules in a single bulk query using CASE statements.
+
+    Args:
+        db_cur: Database cursor
+        schedule_list: List of dicts, each with schedule_id and any fields to update
+
+    """
+    if not schedule_list:
+        return
+
+    schedule_ids = [str(s["schedule_id"]) for s in schedule_list]
+    columns_to_update = set()
+
+    for schedule in schedule_list:
+        columns_to_update.update(k for k, v in schedule.items() if k != "schedule_id" and v is not None)
+
+    if not columns_to_update:
+        print("No fields to update for any schedules. Bulk update skipped.")
+        return
+
+    case_clauses = []
+
+    for col in sorted(columns_to_update):
+        case_whens = []
+        for schedule in schedule_list:
+            if col in schedule and schedule[col] is not None:
+                val = schedule[col]
+                if col in ["schedule_description", "interval_mask", "smart_interval_mask", "first_run_date",
+                           "last_run_date", "exec_command", "parameters", "adhoc_parameters"]:
+                    if col in ["exec_command", "parameters", "adhoc_parameters"]:
+                        escaped_val = postgres.escape_upsert_string(str(val))
+                    else:
+                        escaped_val = str(val)
+                    case_whens.append(f"WHEN schedule_id = '{str(schedule['schedule_id'])}' THEN '{escaped_val}'")
+                else:
+                    case_whens.append(f"WHEN schedule_id = '{str(schedule['schedule_id'])}' THEN {val}")
+
+        if case_whens:
+            case_clauses.append(f"{col} = CASE {' '.join(case_whens)} ELSE {col} END")
+
+    if not case_clauses:
+        print("No fields to update for any schedules. Bulk update skipped.")
+        return
+
+    sqlquery = f"UPDATE schedules SET {', '.join(case_clauses)} WHERE schedule_id = ANY(%s)"
+    db_cur.execute(sqlquery, (schedule_ids,))
+    return 
+
+
 def get_schedule_executable(db_cur, schedule_id):
     """Extract details of executable of a schedule"""
     sqlquery = (
@@ -461,6 +511,23 @@ def get_schedules_by_snapshot_id(db_cur, snapshot_id, server_id):
         'smart_interval_mask': row[2],
     }
 
+def full_rollback(db_cur, server_id=None, schedule_id=None):
+
+    if server_id and schedule_id:
+        raise ValueError("Cannot specify both server_id and schedule_id for full rollback, please specify only one to rollback all schedules for a server or an individual schedule respectively")
+    if server_id:
+        schedule_ids = [row[0] for row in get_all_schedule_ids_per_server(db_cur, server_id)]
+    
+    print(f"Rolling back schedules for server_id {server_id} to original interval_mask by setting smart_interval_mask to NULL...")
+    print(f"Found {len(schedule_ids)} schedules to rollback for server_id {server_id}...")
+    # Set smart_schedule_mask to NULL for all affected schedules to rollback to original interval_mask
+    update_all_schedules_query = """
+        UPDATE schedules SET smart_interval_mask = NULL WHERE schedule_id = ANY(%s)
+        """
+    db_cur.execute(update_all_schedules_query, (schedule_ids,))
+    print(f"Schedules Updated: {schedule_ids}")
+    return
+
 
 def restore_previous_schedules(db_cur, server_id, snapshot_id=None):
     """
@@ -484,9 +551,20 @@ def restore_previous_schedules(db_cur, server_id, snapshot_id=None):
     return
 
 
-def get_blocklisted_schedule_ids(db_cur):
+def get_blocklisted_schedule_ids(db_cur, server_id=None):
     """Get a list of schedule_ids that are blocklisted from optimization"""
     sqlquery = "SELECT schedule_id FROM schedule_blocklist"
-    db_cur.execute(sqlquery)
+    if server_id:
+        sqlquery += " WHERE server_id = %s"
+        db_cur.execute(sqlquery, (server_id,))
+    else:
+        db_cur.execute(sqlquery)
     blocklist_schedule_ids = [row[0] for row in db_cur.fetchall()]
     return blocklist_schedule_ids
+
+
+def reset_schedule_backups(db_cur):
+    """Reset schedule_backups table by deleting all entries, used before creating new backups"""
+    sqlquery = "DELETE FROM schedule_backups"
+    db_cur.execute(sqlquery)
+    return 

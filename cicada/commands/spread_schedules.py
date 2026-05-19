@@ -125,7 +125,7 @@ def main(spread_details, dbname=None):
                 "previous_interval_mask": current_schedule_details["interval_mask"],
                 "interval_mask": new_schedule_details["interval_mask"],
             }
-            scheduler.update_schedule_backups(db_cur, previous_schedule_details)
+            scheduler.reset_schedule_backups(db_cur)
             
         else:
             output_message = (

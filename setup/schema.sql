@@ -225,7 +225,7 @@ CREATE OR REPLACE FUNCTION snapshot_schedules_table
     UPDATE schedule_backups SET snapshot_id = snapshot_id + 1;
 
     -- Snapshot current schedules table
-    INSERT INTO schedule_backups SELECT NEW.*, 1, NOW(), 'UPDATE';
+    INSERT INTO schedule_backups SELECT *, 1, NOW(), 'UPDATE' FROM schedules; 
 
     -- Keep only the most recent 10 snapshots
     DELETE FROM schedule_backups
@@ -238,7 +238,7 @@ CREATE OR REPLACE FUNCTION snapshot_schedules_table
 
 CREATE TRIGGER schedule_changes
   AFTER UPDATE ON schedules
-  FOR EACH ROW EXECUTE FUNCTION snapshot_schedules_table();
+  EXECUTE FUNCTION snapshot_schedules_table();
 
 
 CREATE TABLE IF NOT EXISTS public.schedule_blocklist 
@@ -262,6 +262,11 @@ INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_snow
 INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_roles', 'Admin Schedules') ON CONFLICT DO NOTHING;
 INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_roles_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
 INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('import_pipelinewise_config_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('archive_ap_tools_logs', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('archive_cicada_schedule_log', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('archive_pipelinewise_logs', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('expose_iceberg_tables', 'Admin Schedules') ON CONFLICT DO NOTHING;
+
 
 
 

@@ -38,13 +38,15 @@ def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbn
 
     try:
         if full:
-            print("\n------------Starting Full Rollback (set smart_interval_mask to NULL)-----------------")
-            _rollback_full(db_cur, server_id, schedule_id)
+            print("\n------------Starting Full Rollback-----------------")
+            scheduler.full_rollback(db_cur, server_id, schedule_id)
             print("Full rollback successful\n")
 
         elif previous:
             print("\n------------Starting Rollback to Previous Snapshot-----------------")
-            _rollback_previous(db_cur, server_id, schedule_id, snapshot_id)
+            if not server_id:
+                raise ValueError("server_id must be provided for rollback to previous snapshot, rollback for individual schedules must be a full rollback")
+            scheduler.restore_previous_schedules(db_cur, server_id=server_id, snapshot_id=snapshot_id)
             print("Rollback to previous snapshot successful\n")
 
     except Exception as e:
@@ -54,39 +56,3 @@ def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbn
     finally:
         db_cur.close()
         db_conn.close()
-
-
-def _rollback_full(db_cur, server_id: Optional[int], schedule_id: Optional[str]):
-    """
-    Full rollback: Set smart_interval_mask to NULL for all affected schedules.
-    """
-    if not server_id and not schedule_id:
-        raise ValueError("Either server_id or schedule_id must be provided")
-
-    if server_id and schedule_id:
-        raise ValueError("Cannot specify both server_id and schedule_id")
-
-    # Determine which schedules to rollback
-    if schedule_id:
-        schedule_ids = [schedule_id]
-    else:
-        query = "SELECT DISTINCT schedule_id FROM schedules WHERE server_id = %s"
-        db_cur.execute(query, (server_id,))
-        schedule_ids = [row[0] for row in db_cur.fetchall()]
-
-    update_all_schedules_query = """
-        UPDATE schedules SET smart_interval_mask = NULL WHERE schedule_id = ANY(%s)
-        """
-    db_cur.execute(update_all_schedules_query, (schedule_ids,))
-    print(f"{len(schedule_ids)} schedules rolled back to original interval_mask")
-
-
-def _rollback_previous(db_cur, server_id: Optional[int], snapshot_id: Optional[int]):
-    """
-    Rollback to previous snapshot: Restore schedule state from a historical snapshot.
-    """
-    if not server_id:
-        raise ValueError("server_id must be provided")
-
-    scheduler.restore_previous_schedules(db_cur, server_id=server_id, snapshot_id=snapshot_id)
-    print(f"Schedules for server_id {server_id} rolled back to snapshot_id {snapshot_id} from schedule_backups")

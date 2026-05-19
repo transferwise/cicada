@@ -24,11 +24,11 @@ def _get_schedules_per_server(server_id, db_cur=None):
 
 
 
-def _create_schedule_objects(schedule_ids, db_cur):
+def _create_schedule_objects(schedule_ids, db_cur, server_id):
     """Create Schedule objects from schedule_ids."""
     
     schedules : list[Schedule] = []
-    blocklisted_schedules = scheduler.get_blocklisted_schedule_ids(db_cur)
+    blocklisted_schedules = scheduler.get_blocklisted_schedule_ids(db_cur, server_id=server_id)
 
     # Fetch details for each schedule and convert to Schedule objects
     for schedule_id in schedule_ids:
@@ -96,34 +96,37 @@ def _update_schedule_cron(schedule : Schedule):
 def _assign_new_schedules(optimised_schedules: list[pygad.Schedule], db_cur):
     """Assign new schedules based on the optimal schedule found."""
 
+    schedule_details_list = []
     # For each schedule, update the schedule in the DB with the new interval_mask based on the start_time_mins calculated by the GA optimizer
     for schedule in optimised_schedules:
         _update_schedule_cron(schedule)
-        if schedule.shifted: print(f"- {schedule.schedule_id} : {schedule.interval_mask}")
-        schedule._determine_start_time_mins() 
+        if schedule.shifted:
+            print(f"- {schedule.schedule_id} : {schedule.interval_mask}")
+            schedule._determine_start_time_mins() 
 
-        schedule_details = {
-            "adhoc_parameters": None,
-            "adhoc_execute": None,
-            "schedule_group_id": None,
-            "parameters": None,
-            "server_id": None,
-            "last_run_date": None,
-            "is_enabled": None,
-            "interval_mask": schedule.interval_mask,
-            "schedule_description": None,
-            "auto_update_time": None,
-            "schedule_order": None,
-            "schedule_id": schedule.schedule_id,
-            "is_async": None,
-            "abort_running": None,
-            "exec_command": None,
-            "first_run_date": None,
-            "is_running": None,
-            "smart_interval_mask": None
-        }
-        scheduler.update_schedule_details(db_cur=db_cur, schedule_details=schedule_details)
+            schedule_details = {
+                "adhoc_parameters": None,
+                "adhoc_execute": None,
+                "schedule_group_id": None,
+                "parameters": None,
+                "server_id": None,
+                "last_run_date": None,
+                "is_enabled": None,
+                "interval_mask": None,
+                "schedule_description": None,
+                "auto_update_time": None,
+                "schedule_order": None,
+                "schedule_id": schedule.schedule_id,
+                "is_async": None,
+                "abort_running": None,
+                "exec_command": None,
+                "first_run_date": None,
+                "is_running": None,
+                "smart_interval_mask": schedule.interval_mask
+            }
+            schedule_details_list.append(schedule_details)
 
+    scheduler.update_schedule_details_bulk(db_cur=db_cur, schedule_list=schedule_details_list)
 
 
 @utils.named_exception_handler("smart_schedule")
@@ -151,7 +154,7 @@ def main(server_id=None, dbname=None, ga_config=None, rollback=False, schedule_i
         print(f"Found {len(schedule_ids)} schedules for server_id {server_id}")
 
         # Build schedule objects
-        schedules = _create_schedule_objects(schedule_ids, db_cur=db_cur)
+        schedules = _create_schedule_objects(schedule_ids, db_cur=db_cur, server_id=server_id)
         if not schedules:
             print("No valid schedules found to optimize.")
             sys.exit(1)
@@ -160,7 +163,7 @@ def main(server_id=None, dbname=None, ga_config=None, rollback=False, schedule_i
 
         try:
             print("\n------------Starting Optimisation-----------------") 
-            blocklist_schedule_ids = scheduler.get_blocklisted_schedule_ids(db_cur)
+            blocklist_schedule_ids = scheduler.get_blocklisted_schedule_ids(db_cur, server_id=server_id)
             print(f"blocklisted schedule IDs that will be excluded from optimization: {blocklist_schedule_ids}")
             ga = pygad.GAPyGADScheduler(config=ga_config, blocklist_schedule_ids=blocklist_schedule_ids)
             print("Running PyGAD solver ...")
