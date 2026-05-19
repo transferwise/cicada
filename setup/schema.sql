@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS public.schedules
   is_running smallint NOT NULL DEFAULT 0,
   abort_running smallint NOT NULL DEFAULT 0,
   interval_mask character varying(32) NOT NULL,
+  smart_interval_mask character varying(32),
   first_run_date timestamp(3) without time zone NOT NULL DEFAULT '1000-01-01 00:00:00.000'::timestamp without time zone,
   last_run_date timestamp(3) without time zone NOT NULL DEFAULT '9999-12-31 23:59:59.999'::timestamp without time zone,
   exec_command character varying NOT NULL,
@@ -103,6 +104,10 @@ COMMENT ON COLUMN schedules.exec_command IS 'Command to execute';
 COMMENT ON COLUMN schedules.parameters IS 'Exact string of parameters for command';
 COMMENT ON COLUMN schedules.adhoc_parameters IS 'If specified, will overwrite parameters for next run';
 COMMENT ON COLUMN schedules.schedule_group_id IS 'Optional field to help group schedules';
+
+-- Add smart_interval_mask column if not  exists (for existing installations upgrading to a version with smart scheduling)
+ALTER TABLE public.schedules
+ADD COLUMN IF NOT EXISTS smart_interval_mask character varying(32);
 
 -- Index: schedules_adhoc_execute_idx
 CREATE INDEX IF NOT EXISTS schedules_adhoc_execute_idx
@@ -202,50 +207,38 @@ WITH (
 ;
 
 
--- Table to record previous scheduling for smart schedule rollback functionality with smart scheduling
-CREATE TABLE IF NOT EXISTS public.schedule_backups 
-(
-  schedule_id character varying(255) NOT NULL,
-  server_id integer,
-  original_interval_mask character varying(32) NOT NULL,
-  previous_interval_mask character varying(32) NOT NULL,
-  interval_mask character varying(32) NOT NULL,
-  snapshot_at timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone,
-  CONSTRAINT schedule_backups_pkey PRIMARY KEY (schedule_id)
-)
-WITH (
-  OIDS=FALSE
-);
+-- Table to snapshot full schedule state whenever smart_schedule command runs (optimize or rollback)
+-- Keeps last 5 snapshots per schedule for rollback and audit trail
+CREATE TABLE IF NOT EXISTS public.schedule_backups AS TABLE public.schedules WITH NO DATA;
 
-INSERT INTO public.schedule_backups (schedule_id, server_id, original_interval_mask, previous_interval_mask, interval_mask, snapshot_at)
-  SELECT
-    schedule_id,
-    server_id,
-    interval_mask,
-    interval_mask,
-    interval_mask,
-    now()
-  FROM schedules
-ON CONFLICT (schedule_id) DO NOTHING;
-
-DROP TRIGGER IF EXISTS tr_schedule_backups ON public.schedule_backups;
-CREATE TRIGGER tr_schedule_backups
-    BEFORE UPDATE
-    ON public.schedule_backups
-    FOR EACH ROW
-    EXECUTE PROCEDURE set_snapshot_at()
-;
+ALTER TABLE public.schedule_backups ADD COLUMN IF NOT EXISTS snapshot_id serial NOT NULL;
+ALTER TABLE public.schedule_backups ADD COLUMN IF NOT EXISTS snapshot_timestamp timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone;
+ALTER TABLE public.schedule_backups ADD COLUMN IF NOT EXISTS operation_type character varying(20);
+ALTER TABLE public.schedule_backups ADD CONSTRAINT schedule_backups_pkey PRIMARY KEY (snapshot_id, schedule_id);
 
 
-CREATE UNIQUE INDEX IF NOT EXISTS schedule_backups_schedule_id_idx
-  ON public.schedule_backups
-  USING btree
-  (schedule_id);
+CREATE OR REPLACE FUNCTION snapshot_schedules_table
+()
+  RETURNS TRIGGER AS $$
+  BEGIN
+    -- Increment snapshot_id for existing snapshots 
+    UPDATE schedule_backups SET snapshot_id = snapshot_id + 1;
 
-CREATE INDEX IF NOT EXISTS schedule_backups_server_id_idx
-  ON public.schedule_backups
-  USING btree
-  (server_id);
+    -- Snapshot current schedules table
+    INSERT INTO schedule_backups SELECT NEW.*, 1, NOW(), 'UPDATE';
+
+    -- Keep only the most recent 10 snapshots
+    DELETE FROM schedule_backups
+    WHERE snapshot_id NOT IN (
+      SELECT snapshot_id FROM schedule_backups ORDER BY snapshot_timestamp DESC LIMIT 10
+    );
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER schedule_changes
+  AFTER UPDATE ON schedules
+  FOR EACH ROW EXECUTE FUNCTION snapshot_schedules_table();
 
 
 CREATE TABLE IF NOT EXISTS public.schedule_blocklist 
@@ -260,7 +253,16 @@ WITH (
   OIDS=FALSE
 );
 
--- Add in schedules 
+-- Add in cicada schedules used for running (admin schedules)
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('source_obf_views_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('source_obf_views', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_snowflake_static_objects_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_schema_roles', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_snowflake_service_accounts_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_roles', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_roles_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('import_pipelinewise_config_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
+
 
 
 COMMIT TRANSACTION;

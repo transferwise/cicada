@@ -351,7 +351,8 @@ class Cicada:
         # Parse arguments and call smart_schedule.main with appropriate arguments based on subcommand
         args = parser.parse_args(sys.argv[2:])
 
-        if args.action == "optimize" or args.action is None:
+        if args.action == "optimise" or args.action is None:
+            print("Initiating smart schedule optimization.")
             smart_schedule.main(
                 server_id=getattr(args, 'server_id', None),
                 ga_config={
@@ -367,6 +368,7 @@ class Cicada:
                 },
             )
         elif args.action == "rollback":
+            print("Initiating smart schedule rollback.")
             smart_schedule.main(
                 server_id=getattr(args, 'server_id', None),
                 schedule_id=getattr(args, 'schedule_id', None),

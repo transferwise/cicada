@@ -81,6 +81,7 @@ def get_schedule_details(db_cur, schedule_id):
         ,is_running
         ,abort_running
         ,interval_mask
+        ,smart_interval_mask
         ,first_run_date
         ,last_run_date
         ,exec_command
@@ -107,12 +108,13 @@ def get_schedule_details(db_cur, schedule_id):
         schedule_details["is_running"] = row[7]
         schedule_details["abort_running"] = row[8]
         schedule_details["interval_mask"] = row[9]
-        schedule_details["first_run_date"] = row[10]
-        schedule_details["last_run_date"] = row[11]
-        schedule_details["exec_command"] = row[12]
-        schedule_details["parameters"] = row[13]
-        schedule_details["adhoc_parameters"] = row[14]
-        schedule_details["schedule_group_id"] = row[15]
+        schedule_details["smart_interval_mask"] = row[10]
+        schedule_details["first_run_date"] = row[11]
+        schedule_details["last_run_date"] = row[12]
+        schedule_details["exec_command"] = row[13]
+        schedule_details["parameters"] = row[14]
+        schedule_details["adhoc_parameters"] = row[15]
+        schedule_details["schedule_group_id"] = row[16]
 
     return schedule_details
 
@@ -288,7 +290,7 @@ def get_all_schedules(db_cur, server_id, is_async):
         ( /* foo */
           (SELECT
             schedule_id,
-            interval_mask,
+            COALESCE(smart_interval_mask, interval_mask),
             exec_command,
             COALESCE(adhoc_parameters, parameters, '') AS parameters,
             adhoc_execute,
@@ -372,10 +374,6 @@ def delete_schedule(db_cur, schedule_id):
     db_cur.execute(sqlquery)
 
 
-def delete_schedule_backup(db_cur, schedule_id):
-    sqlquery = f"DELETE from schedule_backups WHERE schedule_id = '{schedule_id}'"
-    db_cur.execute(sqlquery)
-
 
 def get_all_server_ids(db_cur):
     """Get all possible server_ids from the servers table"""
@@ -391,21 +389,12 @@ def get_all_schedule_ids_per_server(db_cur, server_id):
         SELECT DISTINCT schedule_id
         FROM schedules
         WHERE server_id = %s
-            AND (schedule_description IS NULL OR schedule_description NOT LIKE '%%==%%')
         ORDER BY schedule_id
         """
     db_cur.execute(sqlquery, (server_id,))
     schedule_ids = db_cur.fetchall()
 
     return schedule_ids
-
-def get_all_schedule_backups(db_cur):
-    """Get all entries from the schedule_backups table"""
-    sqlquery = "SELECT schedule_id, original_interval_mask FROM schedule_backups"
-    db_cur.execute(sqlquery)
-    schedule_backups = db_cur.fetchall()
-
-    return schedule_backups
 
 
 def get_median_run_time(db_cur, schedule_id):
@@ -433,115 +422,66 @@ def get_median_run_time(db_cur, schedule_id):
         # No runs -> assigns default runtime of 5 minutes
         return 5
 
-def reset_schedule_backup_mask(db_cur, schedule_details):
-    """
-    Resets the interval_mask of a schedule in the schedule_backups table. Called when schedule frequency is changed or a new schedule is added.
-    Sets all interval_mask fiedls to the new interval_mask to ensure that the rollback won't revert to an outdated frequency.
-    """
-    insert_columns = "schedule_id, interval_mask, original_interval_mask, previous_interval_mask"
-    insert_values = (
-        f"'{schedule_details['schedule_id']}', "
-        f"'{schedule_details['interval_mask']}', "
-        f"'{schedule_details['interval_mask']}', "
-        f"'{schedule_details['interval_mask']}'"
-    )
-    update_server_id = ""
-    if schedule_details["server_id"] is not None:
-        insert_columns += ", server_id"
-        insert_values += f", '{schedule_details['server_id']}'"
-        update_server_id = f", server_id = '{schedule_details['server_id']}'"
-    sqlquery = f"""
-        INSERT INTO public.schedule_backups ({insert_columns})
-        VALUES ({insert_values})
-        ON CONFLICT (schedule_id) DO UPDATE SET
-            interval_mask = EXCLUDED.interval_mask,
-            original_interval_mask = EXCLUDED.original_interval_mask,
-            previous_interval_mask = EXCLUDED.previous_interval_mask
-            {update_server_id}
-    """
-    db_cur.execute(sqlquery)
 
-
-def update_schedule_backups(db_cur, previous_schedule_details):
+def retrieve_snapshots(db_cur, server_id):
     """
-    Insert a schedule configuration into the schedule_backups table for rollback.
-    Args:        db_cur: Database cursor.
-        previous_schedule_details: dict with keys schedule_id, server_id, interval_mask, previous_interval_mask, original_interval_mask
-                                    or 
-                                    dict with keys schedule_id, interval_mask, previous_interval_mask
+    Retrieve all snapshots for a schedule in reverse chronological order.
     """
-
-    sqlquery = f"""
-        INSERT INTO schedule_backups (schedule_id, server_id, interval_mask, previous_interval_mask, original_interval_mask)
-        VALUES (
-            '{previous_schedule_details["schedule_id"]}',
-            '{previous_schedule_details["server_id"]}',
-            '{previous_schedule_details["interval_mask"]}',
-            '{previous_schedule_details["previous_interval_mask"]}',
-            '{previous_schedule_details["previous_interval_mask"]}') -- Assuming original_interval_mask is the same as previous_interval_mask on the first insert
-        ON CONFLICT (schedule_id) DO UPDATE SET
-            interval_mask = EXCLUDED.interval_mask,
-            previous_interval_mask = EXCLUDED.previous_interval_mask;
-    """
-    db_cur.execute(sqlquery)
-
-
-def rollback_schedule_backup_mask(db_cur, schedule_id=None, server_id=None, full=False):
-    """
-    Sets the interval_masks back to the schedule_backups table to the original_interval_mask. 
-    """
-    sqlquery = f"""
-        UPDATE public.schedule_backups 
-        SET interval_mask = {'original_interval_mask' if full else 'previous_interval_mask'},
-            previous_interval_mask = original_interval_mask
-    """
-    if schedule_id is not None:
-        sqlquery = sqlquery + f" WHERE schedule_id = '{schedule_id}'"
-    elif server_id is not None:
-        sqlquery = sqlquery + f",\n server_id = server_id\n "
-        sqlquery = sqlquery + f" WHERE server_id = '{server_id}'"
-    else:
-        raise ValueError("Either schedule_id or server_id must be provided for rollback_schedule_backup_mask")
-    db_cur.execute(sqlquery)
-
-
-def restore_previous_schedules(db_cur, server_id=None, schedule_id=None, full=False):
-    """
-    Restore schedules from the last-known rollback snapshot or the original schedule.
-    Args:
-        db_cur: Database cursor.
-        server_id: Optional[int] Target server to roll back.
-        schedule_id: Optional[str] Target schedule to roll back.
-        full: bool If True, roll back to the original schedule in the schedule_backups table. If False, roll back to the previous schedule in the schedule_backups table.
-    """
-    if server_id is None and schedule_id is None:
-        raise ValueError("Either server_id or schedule_id must be provided")
-
-    if server_id is not None and schedule_id is not None:
-        raise ValueError("server_id and schedule_id cannot both be provided")
-    
     sqlquery = """
-        UPDATE schedules AS s
-        SET
-            interval_mask = ps.
-            """ + ("previous_interval_mask" if not full else "original_interval_mask") + """
-        FROM schedule_backups AS ps
-        WHERE s.schedule_id = ps.schedule_id
-        """
+        SELECT DISTINCT(snapshot_id), snapshot_timestamp
+        FROM schedule_backups
+        WHERE server_id = %s
+        ORDER BY snapshot_timestamp DESC
+    """
+    db_cur.execute(sqlquery, (server_id,))
+    return db_cur.fetchall()
 
-    params = []
-    if server_id is not None:
-        sqlquery = sqlquery + " AND ps.server_id = %s"
-        params.append(server_id)
 
-    if schedule_id is not None:
-        sqlquery = sqlquery + " AND ps.schedule_id = %s"
-        params.append(schedule_id)
+def get_schedules_by_snapshot_id(db_cur, snapshot_id, server_id):
+    """
+    Fetch a specific snapshot by ID.
+    """
+    sqlquery = """
+        SELECT
+            schedule_id,
+            interval_mask, 
+            smart_interval_mask
+        FROM schedule_backups
+        WHERE snapshot_id = %s AND server_id = %s
+    """
+    db_cur.execute(sqlquery, (snapshot_id, server_id))
+    row = db_cur.fetchone()
 
-    db_cur.execute(sqlquery, tuple(params))
+    if not row:
+        return None
 
-    print("Resetting schedule_backups table to reflect rolled back schedules...")
-    rollback_schedule_backup_mask(db_cur, schedule_id=schedule_id, server_id=server_id, full=full)
+    return {
+        'schedule_id': row[0],
+        'interval_mask': row[1],
+        'smart_interval_mask': row[2],
+    }
+
+
+def restore_previous_schedules(db_cur, server_id, snapshot_id=None):
+    """
+    Restore schedules from snapshots.
+    """
+    if not snapshot_id:
+        snapshot_id = retrieve_snapshots(db_cur, server_id)[0][0]
+
+    print(f"Restoring schedules for server_id {server_id} from snapshot_id {snapshot_id}")
+    print("Skipping any schedules that aren't in the snapshot or have a different interval mask...")
+    sqlquery = """
+        UPDATE schedules
+        SET smart_interval_mask = schedule_backups.smart_interval_mask
+        FROM schedule_backups
+        WHERE schedules.schedule_id = schedule_backups.schedule_id
+        AND schedules.server_id = %s
+        AND schedule_backups.snapshot_id = %s
+        AND schedules.interval_mask = schedule_backups.interval_mask
+    """
+    db_cur.execute(sqlquery, (server_id, snapshot_id))
+    return
 
 
 def get_blocklisted_schedule_ids(db_cur):

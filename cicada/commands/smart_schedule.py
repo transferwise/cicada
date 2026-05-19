@@ -98,7 +98,6 @@ def _assign_new_schedules(optimised_schedules: list[pygad.Schedule], db_cur):
 
     # For each schedule, update the schedule in the DB with the new interval_mask based on the start_time_mins calculated by the GA optimizer
     for schedule in optimised_schedules:
-        previous_schedule_mask = schedule.interval_mask
         _update_schedule_cron(schedule)
         if schedule.shifted: print(f"- {schedule.schedule_id} : {schedule.interval_mask}")
         schedule._determine_start_time_mins() 
@@ -120,24 +119,18 @@ def _assign_new_schedules(optimised_schedules: list[pygad.Schedule], db_cur):
             "abort_running": None,
             "exec_command": None,
             "first_run_date": None,
-            "is_running": None
-        }  
+            "is_running": None,
+            "smart_interval_mask": None
+        }
         scheduler.update_schedule_details(db_cur=db_cur, schedule_details=schedule_details)
 
-        previous_schedule_details = {
-            "schedule_id": schedule.schedule_id,
-            "server_id": schedule.server_id,
-            "previous_interval_mask": previous_schedule_mask,
-            "interval_mask": schedule.interval_mask,
-        }
-        scheduler.update_schedule_backups(db_cur, previous_schedule_details)
 
 
 @utils.named_exception_handler("smart_schedule")
-def main(server_id=None, dbname=None, ga_config=None, rollback=False, schedule_id: Optional[str] = None, full=False):
+def main(server_id=None, dbname=None, ga_config=None, rollback=False, schedule_id: Optional[str] = None, full=False, previous=False, snapshot_id: Optional[int] = None):
     if rollback:
         print("Initiating rollback schedules.")
-        smart_schedule_rollback.main(server_id=server_id, schedule_id=schedule_id, dbname=dbname, full=full)
+        smart_schedule_rollback.main(server_id=server_id, schedule_id=schedule_id, dbname=dbname, full=full, previous=previous, snapshot_id=snapshot_id)
         return
     
     if server_id and type(server_id) != int: raise TypeError(f"server_id should be int not {type(server_id)}")
