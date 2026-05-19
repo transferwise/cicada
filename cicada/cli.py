@@ -277,17 +277,27 @@ class Cicada:
 
     @staticmethod
     def smart_schedule():
-        """Generate smart schedules for a server using genetic algorithm"""
+        """Generate smart schedules for a server using genetic algorithm, or rollback previous changes"""
         parser = argparse.ArgumentParser(
             allow_abbrev=False,
             add_help=True,
             prog=inspect.stack()[0][3],
-            description="Generate smart schedules for a server using genetic algorithm",
+            description="Generate smart schedules for a server using genetic algorithm, or rollback previous changes",
         )
-        parser.add_argument("--server_id", type=int, required=False, help="ID of the server")
+
+        # Two subcommands; optimise for generating smart schedules and rollback for rolling back to previous schedules
+        subparsers = parser.add_subparsers(dest="action", help="Action to perform. Either optimise schedules or rollback to previous/original schedules. Default = optimise")
+
+        # (Default) optimise subcommand
+        optimise_parser = subparsers.add_parser(
+            "optimise",
+            help="optimise schedules using genetic algorithm",
+            add_help=True,
+        )
+        optimise_parser.add_argument("--server_id", type=int, required=False, help="ID of the server")
 
         # Optional GA Configurations
-        ga_config = parser.add_argument_group("ga_config", "Optional configurations for the genetic algorithm optimizer")
+        ga_config = optimise_parser.add_argument_group("ga_config", "Optional configurations for the genetic algorithm optimiser")
         ga_config.add_argument("--num_generations",type=int,required=False, help="Number of generations for the genetic algorithm. Default: 20")
         ga_config.add_argument("--sol_per_pop",type=int,required=False, help="Number of solutions per population for the genetic algorithm. Default: 40")
         ga_config.add_argument("--num_parents_mating",type=int,required=False, help="Number of parents mating for the genetic algorithm. Default: 10")
@@ -297,38 +307,33 @@ class Cicada:
         ga_config.add_argument("--mutation_type",type=str,required=False, help="Mutation type for the genetic algorithm. Allowed values: ['random', 'swap', 'inversion', 'scramble']. Default: random")
         ga_config.add_argument("--keep_elitism",type=int,required=False, help="Number of elite solutions to keep for the next generation. Default: 2")
         ga_config.add_argument("--random-seed",type=int,required=False, help="Set a random seed to get repeatable results. Default: None")
-        args = parser.parse_args(sys.argv[2:])
-        smart_schedule.main(
-            args.server_id,
-            ga_config={
-                "num_generations": args.num_generations,
-                "sol_per_pop": args.sol_per_pop,
-                "num_parents_mating": args.num_parents_mating,
-                "mutation_percent_genes": args.mutation_percent_genes,
-                "parent_selection_type": args.parent_selection_type,
-                "crossover_type": args.crossover_type,
-                "mutation_type": args.mutation_type,
-                "keep_elitism": args.keep_elitism,
-                "random_seed": args.random_seed,
-            },
-        )
 
-    @staticmethod
-    def smart_schedule_rollback():
-        """Rollback to original cron schedules."""
-        parser = argparse.ArgumentParser(
-            allow_abbrev=False,
+        # Rollback subcommand
+        rollback_parser = subparsers.add_parser(
+            "rollback",
+            help="Rollback to original or previous cron schedules",
             add_help=True,
             prog=inspect.stack()[0][3],
             description="Rollback for smart scheduling, it resets the schedule to its original cron in case of any issues",
         )
-        parser.add_argument(
+
+        # Mutually exclusive flags for rollback mode
+        rollback_mode = rollback_parser.add_mutually_exclusive_group(required=True)
+        rollback_mode.add_argument(
             "--full",
             default=False,
             action="store_true",
-            help="If specified, will roll back to the original schedule instead of the previous schedule",
+            help="Rollback to original schedule (set smart_interval_mask to NULL)",
         )
-        group = parser.add_mutually_exclusive_group()
+        rollback_mode.add_argument(
+            "--previous",
+            default=False,
+            action="store_true",
+            help="Rollback to most recent snapshot (step back one optimization)",
+        )
+
+        # Add mutually exclusive arguments for rollback subcommand to specify either server_id or schedule_id for targeted rollback
+        group = rollback_parser.add_mutually_exclusive_group()
         group.add_argument(
             "--server_id",
             type=int,
@@ -336,9 +341,40 @@ class Cicada:
             help="ID of the server to rollback, if not specified will rollback all servers",
         )
         group.add_argument("--schedule_id", type=str, required=False, help="ID of the schedule to rollback")
-        args = parser.parse_args(sys.argv[2:])
-        smart_schedule_rollback.main(args.server_id, args.schedule_id, full = args.full)
+        rollback_parser.add_argument(
+            "--snapshot_id",
+            type=int,
+            required=False,
+            help="Specific snapshot ID to restore to (optional, used with --previous)",
+        )
 
+        # Parse arguments and call smart_schedule.main with appropriate arguments based on subcommand
+        args = parser.parse_args(sys.argv[2:])
+
+        if args.action == "optimize" or args.action is None:
+            smart_schedule.main(
+                server_id=getattr(args, 'server_id', None),
+                ga_config={
+                    "num_generations": getattr(args, 'num_generations', None),
+                    "sol_per_pop": getattr(args, 'sol_per_pop', None),
+                    "num_parents_mating": getattr(args, 'num_parents_mating', None),
+                    "mutation_percent_genes": getattr(args, 'mutation_percent_genes', None),
+                    "parent_selection_type": getattr(args, 'parent_selection_type', None),
+                    "crossover_type": getattr(args, 'crossover_type', None),
+                    "mutation_type": getattr(args, 'mutation_type', None),
+                    "keep_elitism": getattr(args, 'keep_elitism', None),
+                    "random_seed": getattr(args, 'random_seed', None),
+                },
+            )
+        elif args.action == "rollback":
+            smart_schedule.main(
+                server_id=getattr(args, 'server_id', None),
+                schedule_id=getattr(args, 'schedule_id', None),
+                rollback=True,
+                full=getattr(args, 'full', False),
+                previous=getattr(args, 'previous', False),
+                snapshot_id=getattr(args, 'snapshot_id', None),
+            )
 
     @staticmethod
     def version():
