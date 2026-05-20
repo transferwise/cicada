@@ -207,38 +207,39 @@ WITH (
 ;
 
 
--- Table to snapshot full schedule state whenever smart_schedule command runs (optimize or rollback)
--- Keeps last 5 snapshots per schedule for rollback and audit trail
-CREATE TABLE IF NOT EXISTS public.schedule_backups AS TABLE public.schedules WITH NO DATA;
+-- Snapshots table stores metadata about each snapshot (timestamp, operation type)
+CREATE TABLE IF NOT EXISTS public.snapshots
+(
+  snapshot_id serial NOT NULL,
+  snapshot_timestamp timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone,
+  server_id integer,
+  operation_type character varying(20),
+  reason character varying(255),
+  CONSTRAINT snapshots_pkey PRIMARY KEY (snapshot_id)
+)
+WITH (
+  OIDS=FALSE
+);
 
-ALTER TABLE public.schedule_backups ADD COLUMN IF NOT EXISTS snapshot_id serial NOT NULL;
-ALTER TABLE public.schedule_backups ADD COLUMN IF NOT EXISTS snapshot_timestamp timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone;
-ALTER TABLE public.schedule_backups ADD COLUMN IF NOT EXISTS operation_type character varying(20);
-ALTER TABLE public.schedule_backups ADD CONSTRAINT schedule_backups_pkey PRIMARY KEY (snapshot_id, schedule_id);
+-- Table to store schedule snapshots for rollback
+-- Keeps last 5 snapshots per schedule_id for rollback and audit trail
+CREATE TABLE IF NOT EXISTS public.schedule_backups
+(
+  schedule_id character varying(255) NOT NULL,
+  server_id integer NOT NULL,
+  interval_mask character varying(32) NOT NULL,
+  smart_interval_mask character varying(32),
+  snapshot_id integer NOT NULL,
+  CONSTRAINT schedule_backups_pkey PRIMARY KEY (schedule_id, snapshot_id),
+  CONSTRAINT schedule_backups_snapshot_fkey FOREIGN KEY (snapshot_id)
+      REFERENCES snapshots (snapshot_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE
+)
+WITH (
+  OIDS=FALSE
+);
 
 
-CREATE OR REPLACE FUNCTION snapshot_schedules_table
-()
-  RETURNS TRIGGER AS $$
-  BEGIN
-    -- Increment snapshot_id for existing snapshots 
-    UPDATE schedule_backups SET snapshot_id = snapshot_id + 1;
-
-    -- Snapshot current schedules table
-    INSERT INTO schedule_backups SELECT *, 1, NOW(), 'UPDATE' FROM schedules; 
-
-    -- Keep only the most recent 10 snapshots
-    DELETE FROM schedule_backups
-    WHERE snapshot_id NOT IN (
-      SELECT snapshot_id FROM schedule_backups ORDER BY snapshot_timestamp DESC LIMIT 10
-    );
-    RETURN NEW;
-  END;
-  $$ LANGUAGE plpgsql;
-
-CREATE TRIGGER schedule_changes
-  AFTER UPDATE ON schedules
-  EXECUTE FUNCTION snapshot_schedules_table();
 
 
 CREATE TABLE IF NOT EXISTS public.schedule_blocklist 
@@ -257,15 +258,23 @@ WITH (
 INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('source_obf_views_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
 INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('source_obf_views', 'Admin Schedules') ON CONFLICT DO NOTHING;
 INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_snowflake_static_objects_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_snowflake_static_objects', 'Admin Schedules') ON CONFLICT DO NOTHING;
 INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_schema_roles', 'Admin Schedules') ON CONFLICT DO NOTHING;
 INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_snowflake_service_accounts_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_snowflake_service_accounts', 'Admin Schedules') ON CONFLICT DO NOTHING;
 INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_roles', 'Admin Schedules') ON CONFLICT DO NOTHING;
 INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_roles_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
 INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('import_pipelinewise_config_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('import_pipelinewise_config', 'Admin Schedules') ON CONFLICT DO NOTHING;
 INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('archive_ap_tools_logs', 'Admin Schedules') ON CONFLICT DO NOTHING;
 INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('archive_cicada_schedule_log', 'Admin Schedules') ON CONFLICT DO NOTHING;
 INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('archive_pipelinewise_logs', 'Admin Schedules') ON CONFLICT DO NOTHING;
 INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('expose_iceberg_tables', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('terminate_mixpanel_taps', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('backup_states', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('purge_elt_cluster_tmp', 'Admin Schedules') ON CONFLICT DO NOTHING;
+
+
 
 
 

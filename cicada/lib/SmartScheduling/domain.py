@@ -24,6 +24,7 @@ class Schedule:
         self.schedule_id = details['schedule_id']
         self.server_id = details['server_id']
         self.interval_mask = details['interval_mask']
+        self.current_interval_mask = details['smart_interval_mask'] if details['smart_interval_mask'] is not None else self.interval_mask
         self.determine_attributes(db_cur)
         if details['blocklisted'] is not None:
             self.blocklisted = details['blocklisted']
@@ -53,8 +54,8 @@ class Schedule:
         today = datetime.datetime.now().date()
         midnight = datetime.datetime.combine(today, datetime.time.min)
 
-        it = croniter(self.interval_mask, midnight)
-        if croniter.match(self.interval_mask, midnight):
+        it = croniter(self.current_interval_mask, midnight)
+        if croniter.match(self.current_interval_mask, midnight):
             first_iter = midnight
             self.start_time_mins = 0
         else:

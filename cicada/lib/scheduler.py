@@ -235,7 +235,7 @@ def update_schedule_details(db_cur, schedule_details):
     db_cur.execute(sqlquery)
 
 
-def update_schedule_details_bulk(db_cur, schedule_list):
+def update_schedule_details_bulk(db_cur, schedule_list, reason=None):
     """Update multiple schedules in a single bulk query using CASE statements.
 
     Args:
@@ -282,7 +282,49 @@ def update_schedule_details_bulk(db_cur, schedule_list):
 
     sqlquery = f"UPDATE schedules SET {', '.join(case_clauses)} WHERE schedule_id = ANY(%s)"
     db_cur.execute(sqlquery, (schedule_ids,))
+
     return 
+
+
+def snapshot_schedules(db_cur, schedule_ids, operation_type=None, server_id=None, reason=None):
+    """Create a snapshot of specific schedules with the same snapshot_id.
+
+    Args:
+        db_cur: Database cursor
+        schedule_ids: List of schedule_ids to snapshot
+        operation_type: Type of operation (e.g., 'UPDATE', 'OPTIMIZE', 'SPREAD')
+        server_id: server_id for the snapshot
+        reason: Optional reason/context for the snapshot
+    """
+    if not schedule_ids:
+        return
+
+    # Insert into snapshots table to get a new snapshot_id
+    sqlquery = "INSERT INTO snapshots (operation_type, reason, server_id) VALUES (%s, %s, %s) RETURNING snapshot_id"
+    db_cur.execute(sqlquery, (operation_type, reason, server_id))
+    snapshot_id = db_cur.fetchone()[0]
+
+    # Snapshot the specified schedules with the same snapshot_id
+    sqlquery = """
+        INSERT INTO schedule_backups (schedule_id, server_id, interval_mask, smart_interval_mask, snapshot_id)
+        SELECT schedule_id, server_id, interval_mask, smart_interval_mask, %s
+        FROM schedules WHERE schedule_id = ANY(%s)
+    """
+    db_cur.execute(sqlquery, (snapshot_id, schedule_ids))
+
+    # Clean up old snapshots (keep last 3 per schedule_id)
+    cleanup_query = """
+        DELETE FROM schedule_backups sb
+        WHERE sb.schedule_id = ANY(%s)
+        AND sb.snapshot_id NOT IN (
+            SELECT snapshot_id FROM schedule_backups
+            WHERE schedule_id = sb.schedule_id
+            ORDER BY snapshot_id DESC
+            LIMIT 3
+        )
+    """
+    print("Updated snapshots table")
+    db_cur.execute(cleanup_query, (schedule_ids,))
 
 
 def get_schedule_executable(db_cur, schedule_id):
@@ -475,11 +517,11 @@ def get_median_run_time(db_cur, schedule_id):
 
 def retrieve_snapshots(db_cur, server_id):
     """
-    Retrieve all snapshots for a schedule in reverse chronological order.
+    Retrieve all snapshots in reverse chronological order.
     """
     sqlquery = """
-        SELECT DISTINCT(snapshot_id), snapshot_timestamp
-        FROM schedule_backups
+        SELECT snapshot_id, snapshot_timestamp
+        FROM snapshots
         WHERE server_id = %s
         ORDER BY snapshot_timestamp DESC
     """
@@ -516,16 +558,20 @@ def full_rollback(db_cur, server_id=None, schedule_id=None):
     if server_id and schedule_id:
         raise ValueError("Cannot specify both server_id and schedule_id for full rollback, please specify only one to rollback all schedules for a server or an individual schedule respectively")
     if server_id:
+        print(f"Rolling back schedules for server_id {server_id} to original interval_mask by setting smart_interval_mask to NULL...")
         schedule_ids = [row[0] for row in get_all_schedule_ids_per_server(db_cur, server_id)]
-    
-    print(f"Rolling back schedules for server_id {server_id} to original interval_mask by setting smart_interval_mask to NULL...")
-    print(f"Found {len(schedule_ids)} schedules to rollback for server_id {server_id}...")
+    else:
+        print(f"Rolling back schedules for all servers to original interval_mask by setting smart_interval_mask to NULL...")
+        schedule_ids =[row[1] for row in get_all_schedule_ids(db_cur)]
+
+    print(f"Found {len(schedule_ids)} schedules to rollback for server_id ...")
     # Set smart_schedule_mask to NULL for all affected schedules to rollback to original interval_mask
     update_all_schedules_query = """
-        UPDATE schedules SET smart_interval_mask = NULL WHERE schedule_id = ANY(%s)
+        UPDATE schedules SET smart_interval_mask = NULL WHERE schedule_id = ANY(%s::text[])
         """
     db_cur.execute(update_all_schedules_query, (schedule_ids,))
-    print(f"Schedules Updated: {schedule_ids}")
+    print(f"Schedules Updated:{chr(10).join(schedule_ids)}")
+    
     return
 
 
@@ -535,6 +581,8 @@ def restore_previous_schedules(db_cur, server_id, snapshot_id=None):
     """
     if not snapshot_id:
         snapshot_id = retrieve_snapshots(db_cur, server_id)[0][0]
+
+    schedule_ids = get_all_schedule_ids_per_server(db_cur, server_id)
 
     print(f"Restoring schedules for server_id {server_id} from snapshot_id {snapshot_id}")
     print("Skipping any schedules that aren't in the snapshot or have a different interval mask...")
@@ -548,6 +596,8 @@ def restore_previous_schedules(db_cur, server_id, snapshot_id=None):
         AND schedules.interval_mask = schedule_backups.interval_mask
     """
     db_cur.execute(sqlquery, (server_id, snapshot_id))
+    print(f"Schedules Restored: {[schedule_id for schedule_id in schedule_ids]}")
+    reset_schedule_backups(db_cur, snapshot_id=snapshot_id)
     return
 
 
@@ -563,8 +613,20 @@ def get_blocklisted_schedule_ids(db_cur, server_id=None):
     return blocklist_schedule_ids
 
 
-def reset_schedule_backups(db_cur):
-    """Reset schedule_backups table by deleting all entries, used before creating new backups"""
-    sqlquery = "DELETE FROM schedule_backups"
-    db_cur.execute(sqlquery)
+def reset_schedule_backups(db_cur, snapshot_id=None):
+    """Reset schedule_backups table by deleting all entries"""
+    if snapshot_id:
+        sqlquery = "DELETE FROM schedule_backups WHERE snapshot_id = %s"
+        db_cur.execute(sqlquery, (snapshot_id,))
+
+        sqlquery_snapshots = "DELETE FROM snapshots WHERE snapshot_id = %s "
+        db_cur.execute(sqlquery_snapshots, (snapshot_id,))
+
+    else:
+        sqlquery_backups = "DELETE FROM schedule_backups"
+        db_cur.execute(sqlquery_backups)
+
+        sqlquery_snapshots = "DELETE FROM snapshots"
+        db_cur.execute(sqlquery_snapshots)
+        
     return 

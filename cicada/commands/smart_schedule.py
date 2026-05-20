@@ -93,10 +93,11 @@ def _update_schedule_cron(schedule : Schedule):
         
 
 
-def _assign_new_schedules(optimised_schedules: list[pygad.Schedule], db_cur):
+def _assign_new_schedules(optimised_schedules: list[pygad.Schedule], server_id, db_cur):
     """Assign new schedules based on the optimal schedule found."""
 
     schedule_details_list = []
+    schedule_ids = []
     # For each schedule, update the schedule in the DB with the new interval_mask based on the start_time_mins calculated by the GA optimizer
     for schedule in optimised_schedules:
         _update_schedule_cron(schedule)
@@ -125,8 +126,10 @@ def _assign_new_schedules(optimised_schedules: list[pygad.Schedule], db_cur):
                 "smart_interval_mask": schedule.interval_mask
             }
             schedule_details_list.append(schedule_details)
+            schedule_ids.append(schedule.schedule_id)
 
-    scheduler.update_schedule_details_bulk(db_cur=db_cur, schedule_list=schedule_details_list)
+    scheduler.update_schedule_details_bulk(db_cur=db_cur, schedule_list=schedule_details_list, reason='Smart Schedule Optimization')
+    scheduler.snapshot_schedules(db_cur, schedule_ids, operation_type='BULK UPDATE', server_id=server_id, reason='Smart Schedule Optimization')
 
 
 @utils.named_exception_handler("smart_schedule")
@@ -174,7 +177,7 @@ def main(server_id=None, dbname=None, ga_config=None, rollback=False, schedule_i
 
             print("\n-------------Updating Schedules------------------") 
             if peak_usage < initial_fitness:  # Only update schedules if we have found an improvement
-                _assign_new_schedules(optimised_schedules, db_cur=db_cur)
+                _assign_new_schedules(optimised_schedules, server_id=server_id, db_cur=db_cur)
             else:
                 print(f"No improvement found for server_id {server_id}. Current peak usage: {initial_fitness}, Optimized peak usage: {peak_usage}. No schedule updates will be made.")
             print("--------------------------------------------------\n")
