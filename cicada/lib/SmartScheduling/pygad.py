@@ -85,7 +85,7 @@ class GAPyGADScheduler:
         _, peak = evaluate_usage_and_peak(solution, self.schedules)
         return -float(peak)
         
-    def solve(self, schedules: Sequence[Schedule]) -> tuple[Sequence[Schedule], List[int], float, np.ndarray]:
+    def solve(self, schedules: Sequence[Schedule]) -> tuple[Sequence[Schedule], List[int], float, np.ndarray, float]:
         self.schedules = schedules
         gene_space = self._gene_space(schedules)
         print("Successfully initialised gene space")
@@ -127,9 +127,11 @@ class GAPyGADScheduler:
 
         # Update schedule objects start_time_mins attribute based on GA solution
         for i, schedule in enumerate(schedules):
-            assert start_times[i] >= gene_space[i][0] and start_times[i] <= gene_space[i][-1], f"Start time for schedule {schedule.schedule_id} is out of gene space bounds. Start time: {start_times[i]}, Gene space: {gene_space[i]}"
-            if schedule.is_unsupported(): assert start_times[i] == schedule.start_time_mins, f"Unsupported schedule {schedule.schedule_id} should not have been shifted in the GA solution. {schedule.start_time_mins} != {start_times[i]}"
-            elif schedule.start_time_mins != start_times[i]: 
+            if not (start_times[i] >= gene_space[i][0] and start_times[i] <= gene_space[i][-1]):
+                raise RuntimeError(f"Start time for schedule {schedule.schedule_id} is out of gene space bounds. Start time: {start_times[i]}, Gene space: {gene_space[i]}")
+            if schedule.is_unsupported() and start_times[i] != schedule.start_time_mins:
+                raise RuntimeError(f"Unsupported schedule {schedule.schedule_id} should not have been shifted in the GA solution. {schedule.start_time_mins} != {start_times[i]}")
+            elif schedule.start_time_mins != start_times[i]:
                 schedule.shifted = True
                 schedule.start_time_mins = start_times[i]
             

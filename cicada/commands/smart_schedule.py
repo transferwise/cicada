@@ -71,24 +71,26 @@ def _update_schedule_cron(schedule : Schedule):
     if frequency == 1440:  # For daily schedules, we can shift within the hour
         hour = start_time_mins // 60 
         minute = (start_time_mins - hour * 60) % 60
-        schedule.interval_mask = f"{minute} {hour} * * *"
+        schedule.smart_interval_mask = f"{minute} {hour} * * *"
         # Check that the new cron expression is valid
-        if not croniter.is_valid(schedule.interval_mask):
-            raise ValueError(f"Invalid cron expression generated: {schedule.interval_mask} for schedule {schedule.schedule_id}")
+        if not croniter.is_valid(schedule.smart_interval_mask):
+            raise ValueError(f"Invalid cron expression generated: {schedule.smart_interval_mask} for schedule {schedule.schedule_id}")
         return
     elif frequency == 60:  # For hourly schedules, we can shift within the hour
-        assert start_time_mins < frequency, f"Shift {start_time_mins} cannot be greater than or equal to frequency {frequency} for schedule {schedule.schedule_id}"
-        schedule.interval_mask = f"{start_time_mins} * * * *"
+        if start_time_mins >= frequency:
+            raise ValueError(f"Shift {start_time_mins} cannot be greater than or equal to frequency {frequency} for schedule {schedule.schedule_id}")
+        schedule.smart_interval_mask = f"{start_time_mins} * * * *"
         # Check that the new cron expression is valid
-        if not croniter.is_valid(schedule.interval_mask):
-            raise ValueError(f"Invalid cron expression generated: {schedule.interval_mask} for schedule {schedule.schedule_id}")
+        if not croniter.is_valid(schedule.smart_interval_mask):
+            raise ValueError(f"Invalid cron expression generated: {schedule.smart_interval_mask} for schedule {schedule.schedule_id}")
         return
     elif frequency < 60:
-        assert start_time_mins < frequency, f"Shift {start_time_mins} cannot be greater than or equal to frequency {frequency} for schedule {schedule.schedule_id}"
-        schedule.interval_mask = f"{start_time_mins}-59/{frequency} * * * *"
+        if start_time_mins >= frequency:
+            raise ValueError(f"Shift {start_time_mins} cannot be greater than or equal to frequency {frequency} for schedule {schedule.schedule_id}")
+        schedule.smart_interval_mask = f"{start_time_mins}-59/{frequency} * * * *"
         # Check that the new cron expression is valid
-        if not croniter.is_valid(schedule.interval_mask):
-            raise ValueError(f"Invalid cron expression generated: {schedule.interval_mask} for schedule {schedule.schedule_id}")
+        if not croniter.is_valid(schedule.smart_interval_mask):
+            raise ValueError(f"Invalid cron expression generated: {schedule.smart_interval_mask} for schedule {schedule.schedule_id}")
         return
         
 
@@ -102,7 +104,7 @@ def _assign_new_schedules(optimised_schedules: list[pygad.Schedule], server_id, 
     for schedule in optimised_schedules:
         _update_schedule_cron(schedule)
         if schedule.shifted:
-            print(f"- {schedule.schedule_id} : {schedule.interval_mask}")
+            print(f"- {schedule.schedule_id} : {schedule.smart_interval_mask}")
             schedule._determine_start_time_mins() 
 
             schedule_details = {
@@ -123,7 +125,7 @@ def _assign_new_schedules(optimised_schedules: list[pygad.Schedule], server_id, 
                 "exec_command": None,
                 "first_run_date": None,
                 "is_running": None,
-                "smart_interval_mask": schedule.interval_mask
+                "smart_interval_mask": schedule.smart_interval_mask
             }
             schedule_details_list.append(schedule_details)
             schedule_ids.append(schedule.schedule_id)

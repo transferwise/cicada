@@ -10,7 +10,7 @@ from ..scheduler import get_median_run_time
 
 @dataclass(frozen=False)
 class Schedule:
-    schedule_id: int
+    schedule_id: str
     server_id: int
     interval_mask: str 
     frequency_minutes: int
@@ -82,6 +82,7 @@ class Schedule:
             schedule = croniter(self.interval_mask)
             iters = [schedule.get_next(datetime.datetime) for _ in range(20)]
             freqs = [iters[i + 1] - iters[i] for i in range(len(iters) - 1)]
+            if any(freq <=  datetime.timedelta(minutes=1) for freq in freqs): return False
             return all(f == freqs[0] for f in freqs)
         except (ValueError, KeyError):
             return False

@@ -16,7 +16,7 @@ def main(schedule_id, dbname=None):
     db_conn = postgres.db_cicada(dbname)
     db_cur = db_conn.cursor()
     scheduler.delete_schedule(db_cur, str(schedule_id))
-    scheduler.delete_schedule_backup(db_cur, str(schedule_id))
+    scheduler.reset_schedule_backups(db_cur, str(schedule_id))
     db_cur.close()
     db_conn.close()
 

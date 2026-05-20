@@ -19,18 +19,6 @@ BEGIN
 END;
 $BODY$;
 
--- FUNCTION: set_snapshot_at()
-CREATE OR REPLACE FUNCTION public.set_snapshot_at()
-    RETURNS trigger
-    LANGUAGE 'plpgsql'
-    COST 100
-    VOLATILE NOT LEAKPROOF
-AS $BODY$
-BEGIN
-  NEW.snapshot_at = now()::timestamp without time zone;
-  RETURN NEW;
-END;
-$BODY$;
 
 -- Table: servers
 CREATE TABLE IF NOT EXISTS public.servers
@@ -222,7 +210,7 @@ WITH (
 );
 
 -- Table to store schedule snapshots for rollback
--- Keeps last 5 snapshots per schedule_id for rollback and audit trail
+-- Keeps last 3 snapshots per schedule_id for rollback and audit trail
 CREATE TABLE IF NOT EXISTS public.schedule_backups
 (
   schedule_id character varying(255) NOT NULL,

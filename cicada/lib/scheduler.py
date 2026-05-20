@@ -236,19 +236,16 @@ def update_schedule_details(db_cur, schedule_details):
 
 
 def update_schedule_details_bulk(db_cur, schedule_list, reason=None):
-    """Update multiple schedules in a single bulk query using CASE statements.
+    """Update multiple schedules in a single bulk query.
 
     Args:
         db_cur: Database cursor
         schedule_list: List of dicts, each with schedule_id and any fields to update
-
     """
     if not schedule_list:
         return
 
-    schedule_ids = [str(s["schedule_id"]) for s in schedule_list]
     columns_to_update = set()
-
     for schedule in schedule_list:
         columns_to_update.update(k for k, v in schedule.items() if k != "schedule_id" and v is not None)
 
@@ -257,33 +254,31 @@ def update_schedule_details_bulk(db_cur, schedule_list, reason=None):
         return
 
     case_clauses = []
+    params = []
 
+    # Construct CASE statements for each column to update
     for col in sorted(columns_to_update):
-        case_whens = []
+        case_parts = []
         for schedule in schedule_list:
             if col in schedule and schedule[col] is not None:
-                val = schedule[col]
-                if col in ["schedule_description", "interval_mask", "smart_interval_mask", "first_run_date",
-                           "last_run_date", "exec_command", "parameters", "adhoc_parameters"]:
-                    if col in ["exec_command", "parameters", "adhoc_parameters"]:
-                        escaped_val = postgres.escape_upsert_string(str(val))
-                    else:
-                        escaped_val = str(val)
-                    case_whens.append(f"WHEN schedule_id = '{str(schedule['schedule_id'])}' THEN '{escaped_val}'")
-                else:
-                    case_whens.append(f"WHEN schedule_id = '{str(schedule['schedule_id'])}' THEN {val}")
+                params.append(schedule['schedule_id'])
+                params.append(schedule[col])
+                case_parts.append("WHEN schedule_id = %s THEN %s")
 
-        if case_whens:
-            case_clauses.append(f"{col} = CASE {' '.join(case_whens)} ELSE {col} END")
+        if case_parts:
+            case_clauses.append(f"{col} = CASE {' '.join(case_parts)} ELSE {col} END")
 
     if not case_clauses:
-        print("No fields to update for any schedules. Bulk update skipped.")
         return
 
-    sqlquery = f"UPDATE schedules SET {', '.join(case_clauses)} WHERE schedule_id = ANY(%s)"
-    db_cur.execute(sqlquery, (schedule_ids,))
+    # Add schedule_ids to params
+    schedule_ids = [s['schedule_id'] for s in schedule_list]
+    params.append(schedule_ids)
 
-    return 
+    sqlquery = f"UPDATE schedules SET {', '.join(case_clauses)} WHERE schedule_id = ANY(%s)"
+    db_cur.execute(sqlquery, tuple(params))
+
+    return
 
 
 def snapshot_schedules(db_cur, schedule_ids, operation_type=None, server_id=None, reason=None):
@@ -313,8 +308,9 @@ def snapshot_schedules(db_cur, schedule_ids, operation_type=None, server_id=None
     db_cur.execute(sqlquery, (snapshot_id, schedule_ids))
 
     # Clean up old snapshots (keep last 3 per schedule_id)
-    cleanup_query = """
+    cleanup_backups_query = """
         DELETE FROM schedule_backups sb
+        DELETE FROM snapshots s
         WHERE sb.schedule_id = ANY(%s)
         AND sb.snapshot_id NOT IN (
             SELECT snapshot_id FROM schedule_backups
@@ -322,9 +318,9 @@ def snapshot_schedules(db_cur, schedule_ids, operation_type=None, server_id=None
             ORDER BY snapshot_id DESC
             LIMIT 3
         )
+        AND s.snapshot_id = sb.snapshot_id
     """
-    print("Updated snapshots table")
-    db_cur.execute(cleanup_query, (schedule_ids,))
+    print("Updated schedule_backups table")
 
 
 def get_schedule_executable(db_cur, schedule_id):
@@ -382,7 +378,7 @@ def get_all_schedules(db_cur, server_id, is_async):
         ( /* foo */
           (SELECT
             schedule_id,
-            COALESCE(smart_interval_mask, interval_mask),
+            COALESCE(smart_interval_mask, interval_mask) as interval_mask,
             exec_command,
             COALESCE(adhoc_parameters, parameters, '') AS parameters,
             adhoc_execute,
@@ -542,7 +538,7 @@ def get_schedules_by_snapshot_id(db_cur, snapshot_id, server_id):
         WHERE snapshot_id = %s AND server_id = %s
     """
     db_cur.execute(sqlquery, (snapshot_id, server_id))
-    row = db_cur.fetchone()
+    row = db_cur.fetchall()
 
     if not row:
         return None
@@ -554,18 +550,27 @@ def get_schedules_by_snapshot_id(db_cur, snapshot_id, server_id):
     }
 
 def full_rollback(db_cur, server_id=None, schedule_id=None):
+    """
+        Roll back schedules to original interval_mask by setting smart_interval_mask to NULL for either a server_id or an individual schedule_id.
+        Args:
+            server_id | schedule_id: Optional[int | str] [Mutually exclusive]
+                Target server/schedule to roll back all schedules for. If not provided, will roll back all schedules for all servers.
+    """
 
     if server_id and schedule_id:
         raise ValueError("Cannot specify both server_id and schedule_id for full rollback, please specify only one to rollback all schedules for a server or an individual schedule respectively")
     if server_id:
-        print(f"Rolling back schedules for server_id {server_id} to original interval_mask by setting smart_interval_mask to NULL...")
+        print(f"Rolling back schedules for server_id {server_id} to original interval_mask...")
         schedule_ids = [row[0] for row in get_all_schedule_ids_per_server(db_cur, server_id)]
+    elif schedule_id:
+        print(f"Rolling back schedule_id {schedule_id} to original interval_mask...")
+        schedule_ids = [schedule_id]
     else:
-        print(f"Rolling back schedules for all servers to original interval_mask by setting smart_interval_mask to NULL...")
+        print(f"Rolling back schedules for all servers to original interval_mask...")
         schedule_ids =[row[1] for row in get_all_schedule_ids(db_cur)]
 
     print(f"Found {len(schedule_ids)} schedules to rollback for server_id ...")
-    # Set smart_schedule_mask to NULL for all affected schedules to rollback to original interval_mask
+    print("Removing smart_interval_mask for selected schedules...")
     update_all_schedules_query = """
         UPDATE schedules SET smart_interval_mask = NULL WHERE schedule_id = ANY(%s::text[])
         """
@@ -613,20 +618,17 @@ def get_blocklisted_schedule_ids(db_cur, server_id=None):
     return blocklist_schedule_ids
 
 
-def reset_schedule_backups(db_cur, snapshot_id=None):
+def reset_schedule_backups(db_cur, snapshot_id=None, schedule_id=None):
     """Reset schedule_backups table by deleting all entries"""
+    sqlquery_backups = "DELETE FROM schedule_backups WHERE 1=1"
+    sqlquery_snapshots = "DELETE FROM snapshots WHERE 1=1"
     if snapshot_id:
-        sqlquery = "DELETE FROM schedule_backups WHERE snapshot_id = %s"
-        db_cur.execute(sqlquery, (snapshot_id,))
+        sqlquery_backups += " AND snapshot_id = %s"
+        sqlquery_snapshots += " AND snapshot_id = %s"
+    if schedule_id:
+        sqlquery_backups += " AND schedule_id = %s"
+        sqlquery_snapshots += " AND schedule_id = %s"
 
-        sqlquery_snapshots = "DELETE FROM snapshots WHERE snapshot_id = %s "
-        db_cur.execute(sqlquery_snapshots, (snapshot_id,))
-
-    else:
-        sqlquery_backups = "DELETE FROM schedule_backups"
-        db_cur.execute(sqlquery_backups)
-
-        sqlquery_snapshots = "DELETE FROM snapshots"
-        db_cur.execute(sqlquery_snapshots)
-        
+    db_cur.execute(sqlquery_backups, (snapshot_id, schedule_id) if snapshot_id and schedule_id else (schedule_id,) if schedule_id else (snapshot_id,) if snapshot_id else None)
+    db_cur.execute(sqlquery_snapshots, (snapshot_id, schedule_id) if snapshot_id and schedule_id else (schedule_id,) if schedule_id else (snapshot_id,) if snapshot_id else None)
     return 

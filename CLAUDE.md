@@ -99,9 +99,11 @@ Key tables:
 - `servers` – Registered nodes with hostname, FQDN, IP address
 - `schedules` – Job definitions with cron expressions, parameters, execution state
 - `schedule_logs` – Historical execution records with runtime, status, output
-- `schedule_backups` – GA optimization snapshots for rollback
+- `snapshots` – Metadata about optimization/rollback events (operation_type, reason, timestamp, server_id)
+- `schedule_backups` – Schedule state snapshots: stores `interval_mask` and `smart_interval_mask` at each snapshot for potential rollback
+- `schedule_changes` – Linked-list audit trail of all changes to schedules (replaces older snapshot model); each entry has `previous_change_id` for chain traversal, `changes_delta` (JSON) for what changed, and `operation_type` (SMART_SCHEDULE, ROLLBACK_FULL, ROLLBACK_TO_CHANGE, SPREAD_SCHEDULES, etc.)
 
-Database setup SQL is in `setup/db_and_user.sql` and `setup/schema.sql`. Example schedule setup for smart scheduling in `setup/create_test_schedule_sertup`.
+Database setup SQL is in `setup/db_and_user.sql` and `setup/schema.sql`. Migration script: `setup/migrate_snapshots_to_changes.sql`. Example schedule setup for smart scheduling in `setup/create_test_tap_setup`.
 
 ## Key Architectural Patterns
 
@@ -122,7 +124,27 @@ Database setup SQL is in `setup/db_and_user.sql` and `setup/schema.sql`. Example
 1. **Load schedules**: Fetch all schedules for a server via `get_schedules_per_server()`
 2. **Create Schedule objects**: Convert schedule details to Schedule instances; filter unsupported schedules (irregular cron, too frequent, blocklisted)
 3. **Run GA optimization**: PyGAD evolves shifts over N generations to minimize resource conflicts
-4. **Apply and checkpoint**: Save optimized shifts back to DB; record checkpoint for potential rollback
+4. **Apply and checkpoint**: Save optimized shifts back to DB; record change entry via `record_schedule_change()` for audit trail and rollback
+
+### Rollback System
+Cicada supports two rollback mechanisms:
+
+**Full Rollback** (`--full` flag):
+- Sets `smart_interval_mask = NULL` for affected schedules, reverting to original `interval_mask`
+- Works per-schedule or per-server
+- Records a `ROLLBACK_FULL` change entry in `schedule_changes`
+
+**Rollback to Specific Change** (`--change-id` flag):
+- Uses linked-list traversal via `compute_schedule_state_at_change()` to reconstruct schedule state at any historical change
+- Requires `schedule_id` and `change_id`
+- Records a `ROLLBACK_TO_CHANGE` entry documenting what was restored
+- Marks the target change as reverted
+
+**Change History** (`--history` flag):
+- Displays complete audit trail for a schedule via `get_schedule_history()`
+- Each entry shows operation_type, reason, timestamp, and delta (what changed)
+
+**Migration Note**: Old snapshot/schedule_backups model supported only last 3 snapshots. New `schedule_changes` model retains unlimited history via linked-list structure.
 
 ## Testing
 

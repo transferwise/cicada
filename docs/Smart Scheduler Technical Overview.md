@@ -197,7 +197,6 @@ Added to `cicada/cli.py`:
 
 - **Read**: `schedules`, `servers`, `schedule_logs`, `schedule_blocklist`
 - **Write**: `schedules` (interval_mask), `schedule_backups` (checkpoints)
-- **Functions**: `set_snapshot_at()` trigger
 
 ## Design Decisions
 

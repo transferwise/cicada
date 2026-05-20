@@ -117,14 +117,6 @@ def main(spread_details, dbname=None):
                 output_message += " | Forced abort_running and adhoc_execute"
 
             scheduler.update_schedule_details(db_cur, new_schedule_details)
-
-            # Update schedule_backups for rollback functionality    
-            previous_schedule_details = {
-                "schedule_id": current_schedule_details["schedule_id"],
-                "server_id": current_schedule_details["server_id"],
-                "previous_interval_mask": current_schedule_details["interval_mask"],
-                "interval_mask": new_schedule_details["interval_mask"],
-            }
             scheduler.reset_schedule_backups(db_cur)
             
         else:

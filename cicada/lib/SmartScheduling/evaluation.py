@@ -20,10 +20,17 @@ def evaluate_usage_and_peak(start_times: Sequence[int], schedules: Sequence[Sche
 
 
     diff = np.zeros(mins_per_day + 1, dtype=float)
-    assert len(start_times) == len(schedules) == len(freqs) == len(run_times), "Length of start_times, schedules, freqs, and run_times must all be the same"
-    assert all(start_times[i] < freqs[i] for i in range(len(start_times))), "Start time should be the earliest it can be"
+    if not (len(start_times) == len(schedules) == len(freqs) == len(run_times)):
+        raise ValueError("Length of start_times, schedules, freqs, and run_times must all be the same")
+
+    for i in range(len(start_times)):
+        if schedules[i].frequency_is_supported() and start_times[i] >= freqs[i]:
+            raise ValueError(f"Start time should be the earliest it can be for unsupported schedule at index {i}")
 
     for i, schedule in enumerate(schedules):
+        if not schedule.frequency_is_supported():
+            continue
+        
         freq = freqs[i]
         run_time = run_times[i]
         minute = int(start_times[i])
@@ -36,7 +43,7 @@ def evaluate_usage_and_peak(start_times: Sequence[int], schedules: Sequence[Sche
             diff[minute] += 1
             diff[end] -= 1
             minute += freq
-
+        
     # Sums up everything in the diff array to get the total usage at each minute, and finds the peak usage. 
     # Ignore the last element of the diff array since it's just a placeholder to handle the end minute subtraction for schedules that run until the end of the day.
     usage = np.cumsum(diff[:-1])
