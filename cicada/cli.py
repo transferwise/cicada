@@ -8,6 +8,7 @@ from pkg_resources import get_distribution
 from cicada.lib import utils
 
 from cicada.commands import register_server
+from cicada.commands import smart_schedule_rollback
 from cicada.commands import list_server_schedules
 from cicada.commands import exec_server_schedules
 from cicada.commands import upsert_schedule
@@ -388,13 +389,11 @@ class Cicada:
                 },
             )
         elif args.action == "rollback":
-            smart_schedule.main(
-                server_id=getattr(args, 'server_id', None),
-                schedule_id=getattr(args, 'schedule_id', None),
-                rollback=True,
-                full=getattr(args, 'full', False),
-                previous=getattr(args, 'previous', False),
-            )
+            smart_schedule_rollback.main(
+                server_id=getattr(args, 'server_id', None), 
+                schedule_id=getattr(args, 'schedule_id', None), 
+                full=getattr(args, 'full', False), 
+                previous=getattr(args, 'previous', False))
         elif args.action == "blocklist":
             blocklist_schedule_cmd.main(
                 schedule_id=args.schedule_id,
