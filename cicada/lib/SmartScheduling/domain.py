@@ -24,10 +24,10 @@ class Schedule:
         self.schedule_id = details['schedule_id']
         self.server_id = details['server_id']
         self.interval_mask = details['interval_mask']
-        self.current_interval_mask = details['smart_interval_mask'] if details['smart_interval_mask'] is not None else self.interval_mask
+        self.current_interval_mask = details.get('smart_interval_mask') if details.get('smart_interval_mask') is not None else self.interval_mask
         self.determine_attributes(db_cur)
-        if details['blocklisted'] is not None:
-            self.blocklisted = details['blocklisted']
+        if details.get('blocklisted') is not None:
+            self.blocklisted = details.get('blocklisted')
 
     def determine_attributes(self, db_cur):
         """Determine frequency and average runtime from interval_mask and scheduler module"""

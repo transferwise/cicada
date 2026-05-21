@@ -611,6 +611,12 @@ def blocklist_schedule(db_cur, schedule_id, reason=None):
     db_cur.execute(sqlquery, (schedule_id, reason))
     return
 
+def remove_blocklist_schedule(db_cur, schedule_id):
+    """Remove a schedule_id from the blocklist"""
+    sqlquery = "DELETE FROM schedule_blocklist WHERE schedule_id = %s"
+    db_cur.execute(sqlquery, (schedule_id,))
+    return
+
 def remove_snapshot(db_cur, snapshot_id):
     """Remove a snapshot_id from the snapshots table"""
     sqlquery = "DELETE FROM snapshots WHERE snapshot_id = %s"
