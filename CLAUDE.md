@@ -99,9 +99,9 @@ Key tables:
 - `servers` – Registered nodes with hostname, FQDN, IP address
 - `schedules` – Job definitions with cron expressions, parameters, execution state
 - `schedule_logs` – Historical execution records with runtime, status, output
-- `snapshots` – Metadata about optimization/rollback events (operation_type, reason, timestamp, server_id)
+- `snapshots` – Metadata about optimization/rollback events (reason, timestamp, server_id)
 - `schedule_backups` – Schedule state snapshots: stores `interval_mask` and `smart_interval_mask` at each snapshot for potential rollback
-- `schedule_changes` – Linked-list audit trail of all changes to schedules (replaces older snapshot model); each entry has `previous_change_id` for chain traversal, `changes_delta` (JSON) for what changed, and `operation_type` (SMART_SCHEDULE, ROLLBACK_FULL, ROLLBACK_TO_CHANGE, SPREAD_SCHEDULES, etc.)
+- `schedule_changes` – Linked-list audit trail of all changes to schedules (replaces older snapshot model); each entry has `previous_change_id` for chain traversal, `changes_delta` (JSON) for what changed
 
 Database setup SQL is in `setup/db_and_user.sql` and `setup/schema.sql`. Migration script: `setup/migrate_snapshots_to_changes.sql`. Example schedule setup for smart scheduling in `setup/create_test_tap_setup`.
 
@@ -142,7 +142,7 @@ Cicada supports two rollback mechanisms:
 
 **Change History** (`--history` flag):
 - Displays complete audit trail for a schedule via `get_schedule_history()`
-- Each entry shows operation_type, reason, timestamp, and delta (what changed)
+- Each entry shows reason, timestamp, and delta (what changed)
 
 **Migration Note**: Old snapshot/schedule_backups model supported only last 3 snapshots. New `schedule_changes` model retains unlimited history via linked-list structure.
 

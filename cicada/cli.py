@@ -19,6 +19,7 @@ from cicada.commands import ping_slack
 from cicada.commands import list_schedules
 from cicada.commands import delete_schedule
 from cicada.commands import smart_schedule
+from cicada.commands import blocklist_schedule as blocklist_schedule_cmd
 
 
 @utils.named_exception_handler("Cicada")
@@ -277,16 +278,16 @@ class Cicada:
 
     @staticmethod
     def smart_schedule():
-        """Generate smart schedules for a server using genetic algorithm, or rollback previous changes"""
+        """Generate smart schedules for a server using genetic algorithm, or rollback/manage blocklist"""
         parser = argparse.ArgumentParser(
             allow_abbrev=False,
             add_help=True,
             prog=inspect.stack()[0][3],
-            description="Generate smart schedules for a server using genetic algorithm, or rollback previous changes",
+            description="Generate smart schedules for a server using genetic algorithm, or rollback previous changes, or manage schedule blocklist",
         )
 
-        # Two subcommands; optimise for generating smart schedules and rollback for rolling back to previous schedules
-        subparsers = parser.add_subparsers(dest="action", help="Action to perform. Either optimise schedules or rollback to previous/original schedules. Default = optimise")
+        # Subcommands: optimise, rollback, blocklist
+        subparsers = parser.add_subparsers(dest="action", help="Action to perform. Options: optimise (default), rollback, or blocklist")
 
         # (Default) optimise subcommand
         optimise_parser = subparsers.add_parser(
@@ -341,18 +342,37 @@ class Cicada:
             help="ID of the server to rollback, if not specified will rollback all servers",
         )
         group.add_argument("--schedule_id", type=str, required=False, help="ID of the schedule to rollback")
-        rollback_parser.add_argument(
-            "--snapshot_id",
-            type=int,
+
+
+        # Blocklist subcommand
+        blocklist_parser = subparsers.add_parser(
+            "blocklist",
+            help="Add or remove a schedule from the blocklist (excluded from smart scheduling optimization)",
+            add_help=True,
+        )
+        blocklist_parser.add_argument(
+            "--schedule_id",
+            type=str,
+            required=True,
+            help="Id of the schedule to blocklist/unblocklist",
+        )
+        blocklist_parser.add_argument(
+            "--remove",
+            default=False,
+            action="store_true",
+            help="Remove the schedule from the blocklist instead of adding it",
+        )
+        blocklist_parser.add_argument(
+            "--reason",
+            type=str,
             required=False,
-            help="Specific snapshot ID to restore to (optional, used with --previous)",
+            help="Reason for blocklisting (optional, only used when adding)",
         )
 
         # Parse arguments and call smart_schedule.main with appropriate arguments based on subcommand
         args = parser.parse_args(sys.argv[2:])
 
         if args.action == "optimise" or args.action is None:
-            print("Initiating smart schedule optimization.")
             smart_schedule.main(
                 server_id=getattr(args, 'server_id', None),
                 ga_config={
@@ -368,14 +388,18 @@ class Cicada:
                 },
             )
         elif args.action == "rollback":
-            print("Initiating smart schedule rollback.")
             smart_schedule.main(
                 server_id=getattr(args, 'server_id', None),
                 schedule_id=getattr(args, 'schedule_id', None),
                 rollback=True,
                 full=getattr(args, 'full', False),
                 previous=getattr(args, 'previous', False),
-                snapshot_id=getattr(args, 'snapshot_id', None),
+            )
+        elif args.action == "blocklist":
+            blocklist_schedule_cmd.main(
+                schedule_id=args.schedule_id,
+                remove=getattr(args, 'remove', False),
+                reason=getattr(args, 'reason', None),
             )
 
     @staticmethod

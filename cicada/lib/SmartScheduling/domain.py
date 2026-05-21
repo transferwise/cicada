@@ -80,7 +80,7 @@ class Schedule:
         """Check if the cron expression is a regular schedule that can be optimized by the GA """
         try:
             schedule = croniter(self.interval_mask)
-            iters = [schedule.get_next(datetime.datetime) for _ in range(20)]
+            iters = [schedule.get_next(datetime.datetime) for _ in range(100)]
             freqs = [iters[i + 1] - iters[i] for i in range(len(iters) - 1)]
             if any(freq <=  datetime.timedelta(minutes=1) for freq in freqs): return False
             return all(f == freqs[0] for f in freqs)

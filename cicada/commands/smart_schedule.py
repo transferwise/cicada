@@ -3,7 +3,7 @@
 from __future__ import annotations
 import sys
 from croniter import croniter
-from typing import Optional
+from typing import Optional, Sequence
 from cicada.lib import postgres, utils
 from cicada.lib import scheduler
 from cicada.lib.SmartScheduling import pygad
@@ -24,11 +24,11 @@ def _get_schedules_per_server(server_id, db_cur=None):
 
 
 
-def _create_schedule_objects(schedule_ids, db_cur, server_id):
+def _create_schedule_objects(schedule_ids, db_cur):
     """Create Schedule objects from schedule_ids."""
     
     schedules : list[Schedule] = []
-    blocklisted_schedules = scheduler.get_blocklisted_schedule_ids(db_cur, server_id=server_id)
+    blocklisted_schedules = scheduler.get_blocklisted_schedule_ids(db_cur)
 
     # Fetch details for each schedule and convert to Schedule objects
     for schedule_id in schedule_ids:
@@ -95,7 +95,7 @@ def _update_schedule_cron(schedule : Schedule):
         
 
 
-def _assign_new_schedules(optimised_schedules: list[pygad.Schedule], server_id, db_cur):
+def _assign_new_schedules(optimised_schedules: Schedule, db_cur):
     """Assign new schedules based on the optimal schedule found."""
 
     schedule_details_list = []
@@ -131,14 +131,13 @@ def _assign_new_schedules(optimised_schedules: list[pygad.Schedule], server_id, 
             schedule_ids.append(schedule.schedule_id)
 
     scheduler.update_schedule_details_bulk(db_cur=db_cur, schedule_list=schedule_details_list, reason='Smart Schedule Optimization')
-    scheduler.snapshot_schedules(db_cur, schedule_ids, operation_type='BULK UPDATE', server_id=server_id, reason='Smart Schedule Optimization')
 
 
 @utils.named_exception_handler("smart_schedule")
-def main(server_id=None, dbname=None, ga_config=None, rollback=False, schedule_id: Optional[str] = None, full=False, previous=False, snapshot_id: Optional[int] = None):
+def main(server_id=None, dbname=None, ga_config=None, rollback=False, schedule_id: Optional[str] = None, full=False, previous=False):
     if rollback:
-        print("Initiating rollback schedules.")
-        smart_schedule_rollback.main(server_id=server_id, schedule_id=schedule_id, dbname=dbname, full=full, previous=previous, snapshot_id=snapshot_id)
+        print("Initiating rollback of schedules...")
+        smart_schedule_rollback.main(server_id=server_id, schedule_id=schedule_id, dbname=dbname, full=full, previous=previous)
         return
     
     if server_id and type(server_id) != int: raise TypeError(f"server_id should be int not {type(server_id)}")
@@ -153,13 +152,17 @@ def main(server_id=None, dbname=None, ga_config=None, rollback=False, schedule_i
             main(server_id=id[0], dbname=dbname, ga_config=ga_config)
         
     else:
+        if not scheduler.validate_server_id(db_cur, server_id=server_id): 
+            print(f"No valid server with server_id={server_id} does not exist in the database")
+            sys.exit(1)
+        
         # Get schedules for the server_id
         print("\n-----------------Schedule Setup----------------------") 
         schedule_ids = _get_schedules_per_server(server_id=server_id, db_cur=db_cur)
         print(f"Found {len(schedule_ids)} schedules for server_id {server_id}")
 
         # Build schedule objects
-        schedules = _create_schedule_objects(schedule_ids, db_cur=db_cur, server_id=server_id)
+        schedules = _create_schedule_objects(schedule_ids, db_cur=db_cur)
         if not schedules:
             print("No valid schedules found to optimize.")
             sys.exit(1)
@@ -168,7 +171,7 @@ def main(server_id=None, dbname=None, ga_config=None, rollback=False, schedule_i
 
         try:
             print("\n------------Starting Optimisation-----------------") 
-            blocklist_schedule_ids = scheduler.get_blocklisted_schedule_ids(db_cur, server_id=server_id)
+            blocklist_schedule_ids = scheduler.get_blocklisted_schedule_ids(db_cur)
             print(f"blocklisted schedule IDs that will be excluded from optimization: {blocklist_schedule_ids}")
             ga = pygad.GAPyGADScheduler(config=ga_config, blocklist_schedule_ids=blocklist_schedule_ids)
             print("Running PyGAD solver ...")
@@ -179,7 +182,9 @@ def main(server_id=None, dbname=None, ga_config=None, rollback=False, schedule_i
 
             print("\n-------------Updating Schedules------------------") 
             if peak_usage < initial_fitness:  # Only update schedules if we have found an improvement
-                _assign_new_schedules(optimised_schedules, server_id=server_id, db_cur=db_cur)
+                _assign_new_schedules(optimised_schedules, db_cur=db_cur)
+                optimised_schedule_ids = [schedule.schedule_id for schedule in optimised_schedules if schedule.shifted]
+                scheduler.snapshot_schedules(db_cur, optimised_schedule_ids, server_id=server_id, computed_usage=peak_usage, reason='Smart Schedule Optimization')
             else:
                 print(f"No improvement found for server_id {server_id}. Current peak usage: {initial_fitness}, Optimized peak usage: {peak_usage}. No schedule updates will be made.")
             print("--------------------------------------------------\n")

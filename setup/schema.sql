@@ -201,7 +201,7 @@ CREATE TABLE IF NOT EXISTS public.snapshots
   snapshot_id serial NOT NULL,
   snapshot_timestamp timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone,
   server_id integer,
-  operation_type character varying(20),
+  computed_usage character varying(255),
   reason character varying(255),
   CONSTRAINT snapshots_pkey PRIMARY KEY (snapshot_id)
 )
@@ -233,7 +233,6 @@ WITH (
 CREATE TABLE IF NOT EXISTS public.schedule_blocklist 
 (
   schedule_id character varying(255) NOT NULL,
-  server_id integer,
   timestamp timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone,
   reason character varying(255),
   CONSTRAINT schedule_blocklist_pkey PRIMARY KEY (schedule_id)
