@@ -35,24 +35,21 @@ def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbn
         server_id: Optional[int] [Mutually exclusive with schedule_id]
             Target server to roll back.
         schedule_id: Optional[str] [Mutually exclusive with server_id]
-            Target schedule to roll back.
+            Target schedule to roll back - can only be used with --full flag.
         dbname: Optional[str]
             Database name to connect to.
         full: bool
-            If True, set smart_interval_mask to NULL (revert to original interval_mask).
+            If used, sets smart_interval_mask to NULL (revert to original interval_mask).
         previous: bool
-            If True, restore to the most recent snapshot (step back one optimization).
+            If used, restores to the most recent snapshot (step back one optimization).
     """
     if type(server_id) != int and server_id is not None:
         raise TypeError(f"server_id needs to be of type int. {type(server_id)}")
     if type(schedule_id) != str and schedule_id is not None:
         raise TypeError("schedule_id needs to be of type str")
-
-    if not full and not previous:
-        raise ValueError("Either --full or --previous flag must be provided")
-
-    if full and previous:
-        raise ValueError("Cannot use both --full and --previous flags")
+    
+    if not(full or previous) or (full and previous):
+        raise ValueError("Exactly one of --full or --previous flags must be provided")
 
     db_conn = postgres.db_cicada(dbname)
     db_cur = db_conn.cursor()
