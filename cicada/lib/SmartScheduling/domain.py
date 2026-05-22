@@ -1,11 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import math
-from typing import Optional, List
-import numpy as np
+from typing import Optional
 from croniter import croniter
 import datetime
-from ..scheduler import get_median_run_time
+from cicada.lib.scheduler import get_median_run_time
 
 
 @dataclass(frozen=False)

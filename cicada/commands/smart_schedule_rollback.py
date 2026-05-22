@@ -13,17 +13,24 @@ def _rollback_to_previous_snapshot(db_cur, server_id):
     current_snapshot = snapshots[0][0] if snapshots and len(snapshots) > 0 else None
     previous_snapshot = snapshots[1][0] if snapshots and len(snapshots) > 1 else None
 
-    # Remove the current snapshot (if it exists) to prevent it from being restored in future rollbacks
-    if current_snapshot is not None:
-        scheduler.reset_schedule_backups(db_cur, snapshot_id=current_snapshot)
-        scheduler.remove_snapshot(db_cur, current_snapshot)
-        
-    # Restore the previous snapshot if it exists. If no previous snapshot exists, perform a full rollback instead
-    if previous_snapshot is not None:
-        scheduler.restore_previous_schedules(db_cur, server_id=server_id, snapshot_id=previous_snapshot)
-    else:
-        print("No previous snapshot found. Commencing full rollback instead...\n")
-        scheduler.full_rollback(db_cur, server_id=server_id)
+    db_cur.execute("BEGIN;")
+    try:
+        # Remove the current snapshot (if it exists) to prevent it from being restored in future rollbacks
+        if current_snapshot is not None:
+            scheduler.reset_schedule_backups(db_cur, snapshot_id=current_snapshot)
+            scheduler.remove_snapshot(db_cur, current_snapshot)
+            
+        # Restore the previous snapshot if it exists. If no previous snapshot exists, perform a full rollback instead
+        if previous_snapshot is not None:
+            scheduler.restore_previous_schedules(db_cur, server_id=server_id, snapshot_id=previous_snapshot)
+        else:
+            print("No previous snapshot found. Commencing full rollback instead...\n")
+            scheduler.full_rollback(db_cur, server_id=server_id)
+        db_cur.execute("COMMIT;")
+    except Exception as e:
+        db_cur.execute("ROLLBACK;")
+        print("Database changes have been rolled back due to the error.")
+        raise Exception(f"Error during rollback to previous snapshot for server_id {server_id}: {e}")
 
 
 @utils.named_exception_handler("smart_schedule_rollback")
@@ -47,9 +54,10 @@ def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbn
         raise TypeError(f"server_id needs to be of type int. {type(server_id)}")
     if type(schedule_id) != str and schedule_id is not None:
         raise TypeError("schedule_id needs to be of type str")
-    
     if not(full or previous) or (full and previous):
         raise ValueError("Exactly one of --full or --previous flags must be provided")
+    if schedule_id and not full:
+        raise ValueError("schedule_id can only be used with --full flag")
 
     db_conn = postgres.db_cicada(dbname)
     db_cur = db_conn.cursor()
@@ -57,12 +65,18 @@ def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbn
     try:
         if full:
             print("\n------------Starting Full Rollback-----------------")
-            scheduler.full_rollback(db_cur, server_id, schedule_id)
-            print("Full rollback successful\n")
-            sever_ids = [server_id] if server_id else [server[0] for server in scheduler.get_all_server_ids(db_cur)]
-            for server_id in sever_ids:
-                schedule_ids = scheduler.get_all_schedule_ids_per_server(db_cur, server_id)
-                scheduler.snapshot_schedules(db_cur, schedule_ids=schedule_ids, server_id=server_id, reason='Full Rollback')
+            db_cur.execute("BEGIN;")
+            try:
+                scheduler.full_rollback(db_cur, server_id, schedule_id)
+                print("Full rollback successful\n")
+                server_ids = [server_id] if server_id else [server[0] for server in scheduler.get_all_server_ids(db_cur)]
+                for server in server_ids:
+                    schedule_ids = [row[0] for row in scheduler.get_all_schedule_ids_per_server(db_cur, server)]
+                    scheduler.snapshot_schedules(db_cur, schedule_ids=schedule_ids, server_id=server, reason='Full Rollback')
+                db_cur.execute("COMMIT;")
+            except Exception as e:
+                db_cur.execute("ROLLBACK;")
+                raise Exception(f"Error during full rollback: {e}")
 
         elif previous:
             print("\n------------Starting Rollback to Previous Snapshot-----------------")

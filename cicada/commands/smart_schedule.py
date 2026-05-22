@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 import sys
+from typing import List
 from croniter import croniter
-from typing import Optional, Sequence
 from cicada.lib import postgres, utils
 from cicada.lib import scheduler
 from cicada.lib.SmartScheduling import pygad
 from cicada.lib.SmartScheduling.domain import Schedule
-from cicada.commands import smart_schedule_rollback
 
 def _get_schedules_per_server(server_id, db_cur=None):
     """Get all schedules for a given server_id."""
@@ -17,8 +16,7 @@ def _get_schedules_per_server(server_id, db_cur=None):
     schedule_ids = [row[0] for row in scheduler.get_all_schedule_ids_per_server(db_cur, server_id)]
 
     if not schedule_ids:
-        print(f"No schedules found for server_id {server_id}")
-        sys.exit(1)
+        raise ValueError(f"No schedules found for server_id {server_id}")
 
     return schedule_ids
 
@@ -39,7 +37,7 @@ def _create_schedule_objects(schedule_ids, db_cur):
             details['blocklisted'] = False
 
         try:
-            schedule = Schedule(details, db_cur=db_cur)
+            schedule = Schedule(details, db_cur)
             # Ignore the few schedules that have irregular cron expressions for now. 
             # There are few enough that this shouldn't impact the optimisation and is not worth the effort to try and support these in the GA
             if not schedule.is_regular_schedule():
@@ -96,7 +94,7 @@ def _update_schedule_cron(schedule : Schedule):
         
 
 
-def _assign_new_schedules(optimised_schedules: Schedule, db_cur):
+def _assign_new_schedules(optimised_schedules: List[Schedule], db_cur):
     """Assign new schedules based on the optimal schedule found."""
 
     schedule_details_list = []
@@ -141,28 +139,38 @@ def main(server_id=None, dbname=None, ga_config=None):
 
     db_conn = postgres.db_cicada(dbname)
     db_cur = db_conn.cursor()
+    optimise(db_cur=db_cur, server_id=server_id, ga_config=ga_config)
+    db_cur.close()
+    db_conn.close()
 
+
+def optimise(db_cur, server_id=None, ga_config=None):
     if not server_id:
         # Recursively call main for each server_id if no specific server_id is provided 
         server_ids = scheduler.get_all_server_ids(db_cur)
         for id in server_ids:
-            main(server_id=id[0], dbname=dbname, ga_config=ga_config)
+            optimise(db_cur=db_cur, server_id=id[0], ga_config=ga_config)
         
     else:
+
         if not scheduler.validate_server_id(db_cur, server_id=server_id): 
-            print(f"No valid server with server_id={server_id} does not exist in the database")
-            sys.exit(1)
+            raise ValueError(f"Server with server_id={server_id} does not exist in the database")
         
         # Get schedules for the server_id
         print("\n-----------------Schedule Setup----------------------") 
-        schedule_ids = _get_schedules_per_server(server_id=server_id, db_cur=db_cur)
+        # Prevents process from progressing if no schedules are found for the server_id 
+        # however allows optimisation to still run for other server_ids if running for all servers (server_id=None)
+        try:
+            schedule_ids = _get_schedules_per_server(server_id=server_id, db_cur=db_cur)
+        except ValueError as e:
+            print(e)
+            return
         print(f"Found {len(schedule_ids)} schedules for server_id {server_id}")
 
         # Build schedule objects
         schedules = _create_schedule_objects(schedule_ids, db_cur=db_cur)
         if not schedules:
-            print("No valid schedules found to optimize.")
-            sys.exit(1)
+            raise ValueError(f"No valid schedules found to optimize for server_id {server_id}")
         print("-------------------------------------------------\n")
         
 
@@ -175,10 +183,17 @@ def main(server_id=None, dbname=None, ga_config=None):
 
 
             if peak_usage < initial_fitness:  
-                print("\n-------------Updating Schedules------------------") 
-                _assign_new_schedules(optimised_schedules, db_cur=db_cur)
-                optimised_schedule_ids = [schedule.schedule_id for schedule in optimised_schedules if schedule.shifted]
-                scheduler.snapshot_schedules(db_cur, optimised_schedule_ids, server_id=server_id, computed_usage=peak_usage, reason='Smart Schedule Optimization')
+                try:
+                    print("\n-------------Updating Schedules------------------") 
+                    db_cur.execute("BEGIN;")
+                    _assign_new_schedules(optimised_schedules, db_cur=db_cur)
+                    optimised_schedule_ids = [schedule.schedule_id for schedule in optimised_schedules if schedule.shifted]
+                    scheduler.snapshot_schedules(db_cur, optimised_schedule_ids, server_id=server_id, computed_usage=peak_usage, reason='Smart Schedule Optimization')
+                    db_cur.execute("COMMIT;")
+                except Exception as e:
+                    db_cur.execute("ROLLBACK;")
+                    print("Database changes have been rolled back due to the error.")
+                    raise Exception(f"Error during schedule update for server_id {server_id}: {e}")
                 print("--------------------------------------------------\n")
             else:
                 print(f"No improvement found for server_id {server_id}. Current peak usage: {initial_fitness}, Optimized peak usage: {peak_usage}. No schedule updates will be made.")
@@ -187,6 +202,3 @@ def main(server_id=None, dbname=None, ga_config=None):
         except Exception as e:
             print(f"Error during optimization for server_id {server_id}: {e}")
             sys.exit(1)
-
-    db_cur.close()
-    db_conn.close()

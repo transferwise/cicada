@@ -24,6 +24,7 @@ def main(schedule_id: str, remove: bool = False, reason: Optional[str] = None, d
 
     db_conn = postgres.db_cicada(dbname)
     db_cur = db_conn.cursor()
+    db_cur.execute("BEGIN;")
 
     try:
         if remove:
@@ -41,12 +42,12 @@ def main(schedule_id: str, remove: bool = False, reason: Optional[str] = None, d
             print(f"Schedule {schedule_id} has been rolled back to original settings successfully.")
             scheduler.reset_schedule_backups(db_cur, schedule_id=schedule_id)
             print(f"Backups for schedule {schedule_id} have been removed successfully.")
-
-
+        db_cur.execute("COMMIT;")
 
     except Exception as e:
-        print(f"Error during blocklist operation: {e}")
-        raise
+        db_cur.execute("ROLLBACK;")
+        print("Database changes have been rolled back due to the error.")
+        raise Exception(f"Error during blocklist operation for schedule_id {schedule_id}: {e}")
 
     finally:
         db_cur.close()
