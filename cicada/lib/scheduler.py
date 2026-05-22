@@ -235,13 +235,8 @@ def update_schedule_details(db_cur, schedule_details):
     db_cur.execute(sqlquery)
 
 
-def update_schedule_details_bulk(db_cur, schedule_list, reason=None):
-    """Update multiple schedules in a single bulk query.
-
-    Args:
-        db_cur: Database cursor
-        schedule_list: List of dicts, each with schedule_id and any fields to update
-    """
+def update_schedule_details_bulk(db_cur, schedule_list):
+    """Update multiple schedules in a single bulk query."""
     if not schedule_list:
         return
 
@@ -473,12 +468,7 @@ def get_all_server_ids(db_cur):
 
 def get_all_schedule_ids_per_server(db_cur, server_id):
     """Get all possible schedule_ids for each server from the schedules table"""
-    sqlquery = """
-        SELECT DISTINCT schedule_id
-        FROM schedules
-        WHERE server_id = %s
-        ORDER BY schedule_id
-        """
+    sqlquery = """ SELECT DISTINCT schedule_id FROM schedules WHERE server_id = %s """
     db_cur.execute(sqlquery, (server_id,))
     schedule_ids = db_cur.fetchall()
 
@@ -550,7 +540,7 @@ def full_rollback(db_cur, server_id=None, schedule_id=None):
         UPDATE schedules SET smart_interval_mask = NULL WHERE schedule_id = ANY(%s::text[])
         """
     db_cur.execute(update_all_schedules_query, (schedule_ids,))
-    print(f"Schedules Updated:{chr(10).join(schedule_ids)}")
+    print(f"Schedules Updated:'{chr(10).join([f'- {sid}' for sid in schedule_ids])}")  
     
     return
 
@@ -576,7 +566,6 @@ def restore_previous_schedules(db_cur, server_id, snapshot_id):
     """
     db_cur.execute(sqlquery, (server_id, snapshot_id))
     print(f"{len(schedule_ids)} Schedules restored")
-    reset_schedule_backups(db_cur, snapshot_id=snapshot_id)
     return
 
 

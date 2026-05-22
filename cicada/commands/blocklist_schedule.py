@@ -29,10 +29,6 @@ def main(schedule_id: str, remove: bool = False, reason: Optional[str] = None, d
         if remove:
             scheduler.remove_blocklist_schedule(db_cur, schedule_id=schedule_id)
             print(f"Schedule {schedule_id} has been removed from the blocklist successfully.")
-            scheduler.full_rollback(db_cur, schedule_id=schedule_id)
-            print(f"Schedule {schedule_id} has been rolled back to original settings successfully.")
-            scheduler.reset_schedule_backups(db_cur, schedule_id=schedule_id)
-            print(f"Backups for schedule {schedule_id} have been removed successfully.")
         
         else:
             schedule_details = scheduler.get_schedule_details(db_cur, schedule_id)
@@ -41,6 +37,10 @@ def main(schedule_id: str, remove: bool = False, reason: Optional[str] = None, d
                 return
             scheduler.blocklist_schedule(db_cur, schedule_id=schedule_id, reason=reason)
             print(f"Schedule {schedule_id} has been blocklisted successfully.")
+            scheduler.full_rollback(db_cur, schedule_id=schedule_id)
+            print(f"Schedule {schedule_id} has been rolled back to original settings successfully.")
+            scheduler.reset_schedule_backups(db_cur, schedule_id=schedule_id)
+            print(f"Backups for schedule {schedule_id} have been removed successfully.")
 
 
 

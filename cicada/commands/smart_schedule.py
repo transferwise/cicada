@@ -101,6 +101,7 @@ def _assign_new_schedules(optimised_schedules: Schedule, db_cur):
 
     schedule_details_list = []
     schedule_ids = []
+    
     # For each schedule, update the schedule in the DB with the new interval_mask based on the start_time_mins calculated by the GA optimizer
     for schedule in optimised_schedules:
         _update_schedule_cron(schedule)
@@ -131,7 +132,7 @@ def _assign_new_schedules(optimised_schedules: Schedule, db_cur):
             schedule_details_list.append(schedule_details)
             schedule_ids.append(schedule.schedule_id)
 
-    scheduler.update_schedule_details_bulk(db_cur=db_cur, schedule_list=schedule_details_list, reason='Smart Schedule Optimization')
+    scheduler.update_schedule_details_bulk(db_cur=db_cur, schedule_list=schedule_details_list)
 
 
 @utils.named_exception_handler("smart_schedule")
@@ -173,7 +174,7 @@ def main(server_id=None, dbname=None, ga_config=None):
             print(f"Optimized schedule for server_id {server_id}: new peak usage {peak_usage}")
 
 
-            if peak_usage < initial_fitness:  # Only update schedules if we have found an improvement
+            if peak_usage < initial_fitness:  
                 print("\n-------------Updating Schedules------------------") 
                 _assign_new_schedules(optimised_schedules, db_cur=db_cur)
                 optimised_schedule_ids = [schedule.schedule_id for schedule in optimised_schedules if schedule.shifted]

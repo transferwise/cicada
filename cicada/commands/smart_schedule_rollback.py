@@ -8,23 +8,22 @@ def _rollback_to_previous_snapshot(db_cur, server_id):
     """
     Roll back to the previous snapshot for a given server_id. If no previous snapshot exists, perform a full rollback.
     """
-    print(f"\n [Rolling back server {server_id}]")
+    print(f"\n[Rolling back server {server_id}]")
     snapshots = scheduler.retrieve_snapshots(db_cur, server_id)
     current_snapshot = snapshots[0][0] if snapshots and len(snapshots) > 0 else None
     previous_snapshot = snapshots[1][0] if snapshots and len(snapshots) > 1 else None
 
+    # Remove the current snapshot (if it exists) to prevent it from being restored in future rollbacks
     if current_snapshot is not None:
         scheduler.reset_schedule_backups(db_cur, snapshot_id=current_snapshot)
         scheduler.remove_snapshot(db_cur, current_snapshot)
         
+    # Restore the previous snapshot if it exists. If no previous snapshot exists, perform a full rollback instead
     if previous_snapshot is not None:
         scheduler.restore_previous_schedules(db_cur, server_id=server_id, snapshot_id=previous_snapshot)
-        scheduler.reset_schedule_backups(db_cur, snapshot_id=previous_snapshot)
     else:
-        print("No previous snapshot. Commencing full rollback instead...")
+        print("No previous snapshot found. Commencing full rollback instead...\n")
         scheduler.full_rollback(db_cur, server_id)
-        schedule_ids = scheduler.get_all_schedule_ids_per_server(db_cur, server_id)
-        scheduler.snapshot_schedules(db_cur, schedule_ids=schedule_ids, server_id=server_id, reason='Full Rollback')
 
 
 @utils.named_exception_handler("smart_schedule_rollback")
