@@ -287,7 +287,10 @@ def snapshot_schedules(db_cur, schedule_ids, server_id=None, computed_usage=None
         reason: Optional reason/context for the snapshot
     """
     if not schedule_ids:
-        return
+        raise ValueError("schedule_ids list cannot be empty")
+    
+    if not server_id:
+        raise ValueError("server_id must be provided for snapshot")
 
     # Insert into snapshots table to get a new snapshot_id
     sqlquery = "INSERT INTO snapshots (reason, server_id, computed_usage) VALUES (%s, %s, %s) RETURNING snapshot_id"
@@ -302,7 +305,7 @@ def snapshot_schedules(db_cur, schedule_ids, server_id=None, computed_usage=None
     """
     db_cur.execute(sqlquery, (snapshot_id, schedule_ids))
 
-    # Clean up old snapshots (keep last 3 per schedule_id)
+    # Clean up old snapshots (keep last 5 per schedule_id)
     cleanup_backups_query = """
         DELETE FROM schedule_backups sb
         DELETE FROM snapshots s
@@ -311,11 +314,11 @@ def snapshot_schedules(db_cur, schedule_ids, server_id=None, computed_usage=None
             SELECT snapshot_id FROM schedule_backups
             WHERE schedule_id = sb.schedule_id
             ORDER BY snapshot_id DESC
-            LIMIT 3
+            LIMIT 5
         )
         AND s.snapshot_id = sb.snapshot_id
     """
-    print("Updated schedule_backups table")
+    print(f"Updated schedule_backups table for server {server_id}")
 
 
 def get_schedule_executable(db_cur, schedule_id):

@@ -117,7 +117,7 @@ def main(spread_details, dbname=None):
                 output_message += " | Forced abort_running and adhoc_execute"
 
             scheduler.update_schedule_details(db_cur, new_schedule_details)
-            scheduler.reset_schedule_backups(db_cur)
+            scheduler.reset_schedule_backups(db_cur, schedule_id=schedule_id)
             
         else:
             output_message = (

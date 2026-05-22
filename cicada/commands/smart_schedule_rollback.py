@@ -23,7 +23,7 @@ def _rollback_to_previous_snapshot(db_cur, server_id):
         scheduler.restore_previous_schedules(db_cur, server_id=server_id, snapshot_id=previous_snapshot)
     else:
         print("No previous snapshot found. Commencing full rollback instead...\n")
-        scheduler.full_rollback(db_cur, server_id)
+        scheduler.full_rollback(db_cur, server_id=server_id)
 
 
 @utils.named_exception_handler("smart_schedule_rollback")
@@ -62,7 +62,7 @@ def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbn
             print("\n------------Starting Full Rollback-----------------")
             scheduler.full_rollback(db_cur, server_id, schedule_id)
             print("Full rollback successful\n")
-            sever_ids = [server_id] if server_id else scheduler.get_all_server_ids(db_cur)
+            sever_ids = [server_id] if server_id else [server[0] for server in scheduler.get_all_server_ids(db_cur)]
             for server_id in sever_ids:
                 schedule_ids = scheduler.get_all_schedule_ids_per_server(db_cur, server_id)
                 scheduler.snapshot_schedules(db_cur, schedule_ids=schedule_ids, server_id=server_id, reason='Full Rollback')
@@ -71,11 +71,10 @@ def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbn
             print("\n------------Starting Rollback to Previous Snapshot-----------------")
             if not server_id:
                 print(f"Rolling back all servers...")
-                for server in scheduler.get_all_server_ids(db_cur):
-                    server_id = server[0]
-                    _rollback_to_previous_snapshot(db_cur, server_id)
+                for server_id in scheduler.get_all_server_ids(db_cur):
+                    _rollback_to_previous_snapshot(db_cur, server_id=server_id[0])
             else:
-                _rollback_to_previous_snapshot(db_cur, server_id)
+                _rollback_to_previous_snapshot(db_cur, server_id=server_id)
 
     except Exception as e:
         print(f"Error during rollback: {e}")

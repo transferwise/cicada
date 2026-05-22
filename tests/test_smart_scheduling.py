@@ -523,7 +523,7 @@ class TestSchedulerDatabaseFunctions:
             )
 
             # Snapshot the schedule
-            scheduler.snapshot_schedules(db_cur, ["test-sched-1"], reason="Test optimization")
+            scheduler.snapshot_schedules(db_cur, ["test-sched-1"], reason="Test optimization", server_id = 1)
 
             # Verify snapshot was created
             snapshots = query_test_db("SELECT snapshot_id FROM snapshots WHERE reason = 'Test optimization'")
@@ -613,7 +613,7 @@ class TestEndToEndSmartScheduling:
             )
 
             schedule_ids = ["sched-1", "sched-2"]
-            scheduler.snapshot_schedules(db_cur, schedule_ids, reason="Test optimization")
+            scheduler.snapshot_schedules(db_cur, schedule_ids, reason="Test optimization", server_id = 1)
 
             # Verify that snapshots were created
             snapshots = query_test_db("SELECT snapshot_id FROM snapshots WHERE reason = 'Test optimization'")
