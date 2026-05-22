@@ -40,9 +40,10 @@ def _create_schedule_objects(schedule_ids, db_cur):
 
         try:
             schedule = Schedule(details, db_cur=db_cur)
-            # Ignore the few schedules that have irregular cron expressions for now. There are few enough that this shouldn't impact the optimisation and is not worth the effort to try and support these irregular schedules in the GA
+            # Ignore the few schedules that have irregular cron expressions for now. 
+            # There are few enough that this shouldn't impact the optimisation and is not worth the effort to try and support these in the GA
             if not schedule.is_regular_schedule():
-                    print(f"Skipping irregular schedule {schedule.schedule_id} with cron expression {schedule.interval_mask}")
+                print(f"Skipping irregular schedule {schedule.schedule_id} with cron expression {schedule.interval_mask}")
             else:
                 schedules.append(schedule)
         except Exception as e:
@@ -166,20 +167,18 @@ def main(server_id=None, dbname=None, ga_config=None):
 
         try:
             print("\n------------Starting Optimisation-----------------") 
-            blocklist_schedule_ids = scheduler.get_blocklisted_schedule_ids(db_cur)
-            print(f"blocklisted schedule IDs that will be excluded from optimization: {blocklist_schedule_ids}")
-            ga = pygad.GAPyGADScheduler(config=ga_config, blocklist_schedule_ids=blocklist_schedule_ids)
             print("Running PyGAD solver ...")
+            ga = pygad.GAPyGADScheduler(config=ga_config)
             optimised_schedules, __, peak_usage, __, initial_fitness = ga.solve(schedules)
             print(f"Optimized schedule for server_id {server_id}: new peak usage {peak_usage}")
-            print("--------------------------------------------------\n")
 
 
-            print("\n-------------Updating Schedules------------------") 
             if peak_usage < initial_fitness:  # Only update schedules if we have found an improvement
+                print("\n-------------Updating Schedules------------------") 
                 _assign_new_schedules(optimised_schedules, db_cur=db_cur)
                 optimised_schedule_ids = [schedule.schedule_id for schedule in optimised_schedules if schedule.shifted]
                 scheduler.snapshot_schedules(db_cur, optimised_schedule_ids, server_id=server_id, computed_usage=peak_usage, reason='Smart Schedule Optimization')
+                print("--------------------------------------------------\n")
             else:
                 print(f"No improvement found for server_id {server_id}. Current peak usage: {initial_fitness}, Optimized peak usage: {peak_usage}. No schedule updates will be made.")
             print("--------------------------------------------------\n")

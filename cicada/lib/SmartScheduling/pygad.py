@@ -23,13 +23,12 @@ class GAPyGADScheduler:
                          We cap the max shift of a schedule to within the hour to prevent large shifts for schedules that run daily.
     """
 
-    def __init__(self, config: Optional[Mapping[str, object]] = None, blocklist_schedule_ids: Optional[List[str]] = None):
+    def __init__(self, config: Optional[Mapping[str, object]] = None):
         if config is None:
             self.cfg = GAConfig()
         else:
             filtered_config = {key: value for key, value in config.items() if value is not None}
             self.cfg = GAConfig(**filtered_config)
-        self.blocklist_schedule_ids = blocklist_schedule_ids if blocklist_schedule_ids is not None else []
 
 
     def _gene_space(self, schedules: Sequence[Schedule]) -> List[List[int]]:
@@ -76,10 +75,6 @@ class GAPyGADScheduler:
         for _ in range(self.cfg.sol_per_pop - 1):
             pop.append([gene_space[i][int(rng.integers(0, len(gene_space[i])))] for i in range(len(schedules))])
         return np.asarray(pop, dtype=int)
-    
-    def _blocklist(self):
-        self.cfg.blocklist_schedule_ids = set(self.cfg.blocklist_schedule_ids)
-        raise NotImplementedError("blocklist functionality not yet implemented")
 
     def fitness_fn(self, ga, solution, solution_idx):
         _, peak = evaluate_usage_and_peak(solution, self.schedules)

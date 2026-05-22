@@ -54,7 +54,14 @@ class Schedule:
         today = datetime.datetime.now().date()
         midnight = datetime.datetime.combine(today, datetime.time.min)
 
-        it = croniter(self.current_interval_mask, midnight)
+        # Infrequent taps aren't bounded by their frequency but instead shift within the hour
+        # Basing it on the original interval mask prevents creep over multiple optimizations
+        # and ensures the schedule doesn't shift more than an hour from the original schedule
+        if self.frequency_minutes > 60:
+            it = croniter(self.interval_mask, midnight)
+        else:
+            it = croniter(self.current_interval_mask, midnight)
+
         if croniter.match(self.current_interval_mask, midnight):
             first_iter = midnight
             self.start_time_mins = 0
