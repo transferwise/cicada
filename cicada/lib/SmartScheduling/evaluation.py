@@ -1,6 +1,6 @@
 import numpy as np 
 from typing import Sequence 
-from .domain import Schedule
+from cicada.lib.SmartScheduling.domain import Schedule
 
 
 def evaluate_usage_and_peak(start_times: Sequence[int], schedules: Sequence[Schedule]):
@@ -15,24 +15,19 @@ def evaluate_usage_and_peak(start_times: Sequence[int], schedules: Sequence[Sche
     """
 
     mins_per_day = 1440
-    freqs = [schedule.frequency_minutes for schedule in schedules]
-    run_times = [schedule.median_runtime_minutes for schedule in schedules]
-
-
     diff = np.zeros(mins_per_day + 1, dtype=float)
-    if not (len(start_times) == len(schedules) == len(freqs) == len(run_times)):
-        raise ValueError("Length of start_times, schedules, freqs, and run_times must all be the same")
-
-    for i in range(len(start_times)):
-        if schedules[i].frequency_is_supported() and start_times[i] >= freqs[i]:
-            raise ValueError(f"Start time should be the earliest it can be for unsupported schedule at index {i}")
 
     for i, schedule in enumerate(schedules):
         if not schedule.frequency_is_supported():
             continue
-        
-        freq = freqs[i]
-        run_time = run_times[i]
+
+        freq = schedule.frequency_minutes
+        if start_times[i] >= freq:
+            raise ValueError(f"Start time should be the earliest it can be for schedule: {schedule} with start time {start_times[i]} exceeds frequency {freq}")
+        if freq <= 0:
+            raise ValueError(f"Unsupported frequency {freq} for schedule {schedule} {schedule.interval_mask} should have been labelled unsupported and caught earlier.")
+
+        run_time = schedule.median_runtime_minutes
         minute = int(start_times[i])
 
         # Iterate through the day in increments of the schedule's frequency, adding the schedule's usage to the diff array for the duration of its runtime. 

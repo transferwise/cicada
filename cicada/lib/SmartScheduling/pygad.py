@@ -1,9 +1,9 @@
 from __future__ import annotations
 from typing import List, Mapping, Optional, Sequence 
 import numpy as np 
-from .config import GAConfig 
-from .domain import Schedule 
-from .evaluation import evaluate_usage_and_peak
+from cicada.lib.SmartScheduling.config import GAConfig 
+from cicada.lib.SmartScheduling.domain import Schedule 
+from cicada.lib.SmartScheduling.evaluation import evaluate_usage_and_peak
 import pygad
 
 

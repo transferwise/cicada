@@ -308,7 +308,7 @@ class Cicada:
         ga_config.add_argument("--crossover_type",type=str,required=False, help="Crossover type for the genetic algorithm. Allowed values: ['single_point', 'two_point', 'uniform']. Default: uniform")
         ga_config.add_argument("--mutation_type",type=str,required=False, help="Mutation type for the genetic algorithm. Allowed values: ['random', 'swap', 'inversion', 'scramble']. Default: random")
         ga_config.add_argument("--keep_elitism",type=int,required=False, help="Number of elite solutions to keep for the next generation. Default: 2")
-        ga_config.add_argument("--random-seed",type=int,required=False, help="Set a random seed to get repeatable results. Default: None")
+        ga_config.add_argument("--random_seed",type=int,required=False, help="Set a random seed to get repeatable results. Default: None")
 
         # Rollback subcommand
         rollback_parser = subparsers.add_parser(
@@ -377,15 +377,15 @@ class Cicada:
             smart_schedule.main(
                 server_id=getattr(args, 'server_id', None),
                 ga_config={
-                    "num_generations": getattr(args, 'num_generations', None),
-                    "sol_per_pop": getattr(args, 'sol_per_pop', None),
-                    "num_parents_mating": getattr(args, 'num_parents_mating', None),
-                    "mutation_percent_genes": getattr(args, 'mutation_percent_genes', None),
-                    "parent_selection_type": getattr(args, 'parent_selection_type', None),
-                    "crossover_type": getattr(args, 'crossover_type', None),
-                    "mutation_type": getattr(args, 'mutation_type', None),
-                    "keep_elitism": getattr(args, 'keep_elitism', None),
-                    "random_seed": getattr(args, 'random_seed', None),
+                    "num_generations": args.num_generations,
+                    "sol_per_pop": args.sol_per_pop,
+                    "num_parents_mating": args.num_parents_mating,
+                    "mutation_percent_genes": args.mutation_percent_genes,
+                    "parent_selection_type": args.parent_selection_type,
+                    "crossover_type": args.crossover_type,
+                    "mutation_type": args.mutation_type,
+                    "keep_elitism": args.keep_elitism,
+                    "random_seed": args.random_seed,
                 },
             )
         elif args.action == "rollback":

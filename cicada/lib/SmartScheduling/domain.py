@@ -50,8 +50,8 @@ class Schedule:
     def _determine_start_time_mins(self):
         """Determine the start time in minutes from midnight from the interval_mask"""
 
-        today = datetime.datetime.now().date()
-        midnight = datetime.datetime.combine(today, datetime.time.min)
+        today = datetime.datetime.now(datetime.timezone.utc).date()
+        midnight = datetime.datetime.combine(today, datetime.time.min, tzinfo=datetime.timezone.utc)
 
         # Infrequent taps aren't bounded by their frequency but instead shift within the hour
         # Basing it on the original interval mask prevents creep over multiple optimizations

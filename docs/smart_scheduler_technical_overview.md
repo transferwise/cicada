@@ -26,17 +26,21 @@ The GA evolves shift offsets for each schedule over multiple generations to find
 
 6. **Rollback System** (`smart_schedule_rollback.py`) — Recovery mechanism
 
+7. **Blocklisting** (`blocklist.py`) - Adding/Removing taps from Blocklist
+
 ### Database Schema Changes
 
 **New Tables:**
 
-- **`schedule_backups`** — Audit trail of schedule modifications
-  - `schedule_id` (PK): unique identifier
-  - `original_interval_mask`: pristine cron expression (before any optimization)
-  - `previous_interval_mask`: cron before this optimization run
-  - `interval_mask`: current cron after optimization
-  - `snapshot_at`: timestamp of last update (auto-set on INSERT/UPDATE)
-  - Indexes on `schedule_id` and `server_id` for fast lookups
+- **`schedule_backups`** — Interval mask of schedules at different points in time to allow for rolling back
+  - `schedule_id`: schedule snapshotted
+  - `snapshot_id`: snapshot identifier
+  - `server_id`: server_id of the snapshot at that point in time (used to prevent rollback to a previous version which was on a different server)
+  - `interval_mask`: original interval mask (used to prevent rollback to a previous version which had a different interval_mask)
+  - `smart_interval_mask`: smart interval mask at that point in time
+
+- **`snapshot_table`** - Snapshot metadata
+   -`snapshot_timestamp`
 
 - **`schedule_blocklist`** — Excludes schedules from optimization
   - `schedule_id` (PK): schedule to exclude
@@ -89,7 +93,7 @@ Rollback command triggered with server_id or schedule_id
 ## Genetic Algorithm Details
 
 <p align="center">
-  <img src="genetic-algorithm-process-cycle.png" />
+  <img src="genetic_algorithm_process_cycle.png" />
 </p>
 
 
@@ -114,7 +118,7 @@ Inverse of the peak_usage since it's a minimisation problem. Peak_usage is calcu
 ### Crossover & Mutation
 
 <p align="center">
-  <img src="offspring-ga.png" />
+  <img src="offspring_ga.png" />
 </p>
 
 
@@ -123,7 +127,7 @@ Inverse of the peak_usage since it's a minimisation problem. Peak_usage is calcu
 - **Mutation Type**: Random (randomly select genes and replace with random value from gene space)
 - **Elitism**: Keep the best solution across generations (default: 1)
 
-The creation of the offsprings uses different methods to change the solutions, however they must remain within the gene limits. For more information checkout the official [PyGAD documentation](https://pypi.org/project/pygad/5.3.0/) as it will be infinitely better than anything I can produce
+The creation of the offsprings uses different methods to change the solutions, however they must remain within the gene limits. For more information checkout the official [PyGAD documentation](https://pypi.org/project/pygad) as it will be infinitely better than anything I can produce
 
 ### Population Seeding
 

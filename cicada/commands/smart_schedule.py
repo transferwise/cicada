@@ -11,12 +11,10 @@ from cicada.lib.SmartScheduling.domain import Schedule
 
 def _get_schedules_per_server(server_id, db_cur=None):
     """Get all schedules for a given server_id."""
-    existing_servers = [server[0] for server in scheduler.get_all_server_ids(db_cur)]
-    if server_id not in existing_servers: raise ValueError(f"server_id not in list of existing servers. Existing servers: {existing_servers}")
     schedule_ids = [row[0] for row in scheduler.get_all_schedule_ids_per_server(db_cur, server_id)]
 
     if not schedule_ids:
-        raise ValueError(f"No schedules found for server_id {server_id}")
+        raise ValueError(f"No schedules found for server_id {server_id}. Check if server_id exists and has schedules assigned.")
 
     return schedule_ids
 

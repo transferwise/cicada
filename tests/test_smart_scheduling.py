@@ -27,12 +27,11 @@ def get_env_vars():
     pytest.db_user = os.environ.get("DB_POSTGRES_USER")
     pytest.db_pass = os.environ.get("DB_POSTGRES_PASS")
 
-    pytest.db_test = f"pytest_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
-
 
 @pytest.fixture()
 def db_setup(get_env_vars):
     """db_setup"""
+    pytest.db_test = f"pytest_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
 
     # Create the test_db
     pg_conn = psycopg2.connect(
@@ -274,6 +273,42 @@ class TestScheduleDomain:
             assert test_schedule.schedule_id == "test-id-1"
             assert test_schedule.server_id == 5
             assert test_schedule.interval_mask == "0 * * * *"
+        finally:
+            db_cur.close()
+            db_conn.close()
+
+    def test_schedule_dataclass_fields_initialized(self, db_setup):
+        """Test that all dataclass fields are properly initialized, including defaults"""
+        db_conn, db_cur = get_db_cursor()
+        try:
+            schedule_details = {
+                "schedule_id": "test-id-1",
+                "server_id": 5,
+                "interval_mask": "0 * * * *",
+            }
+            test_schedule = Schedule(schedule_details, db_cur)
+
+            # Verify all fields exist and have correct default values
+            assert hasattr(test_schedule, 'shifted')
+            assert hasattr(test_schedule, 'median_runtime_minutes')
+            assert hasattr(test_schedule, 'start_time_mins')
+            assert hasattr(test_schedule, 'blocklisted')
+            assert hasattr(test_schedule, 'frequency_minutes')
+
+            # Verify default values
+            assert test_schedule.shifted is False
+            assert test_schedule.median_runtime_minutes == 5  # Will be updated by _get_average_runtime
+            assert test_schedule.start_time_mins == 0
+            assert test_schedule.blocklisted is False
+
+            # Accessing any of these should NOT raise AttributeError
+            try:
+                _ = test_schedule.shifted
+                _ = test_schedule.median_runtime_minutes
+                _ = test_schedule.start_time_mins
+                _ = test_schedule.blocklisted
+            except AttributeError as e:
+                pytest.fail(f"AttributeError raised when accessing dataclass field: {e}")
         finally:
             db_cur.close()
             db_conn.close()
@@ -753,7 +788,7 @@ class TestSmartSchedulingCommand:
             ga_scheduler = GAPyGADScheduler()
 
             schedule_details = {
-                "schedule_id": "test-schedule-4",
+                "schedule_id": "test-schedule-1",
                 "server_id": 1,
                 "interval_mask": "*/30 * * * *",
             }
@@ -811,6 +846,61 @@ class TestSmartSchedulingCommand:
         finally:
             db_cur.close()
             db_conn.close()
+
+    def test_get_schedules_per_server_no_schedules_single_server(self, db_setup):
+        """Test that _get_schedules_per_server raises ValueError when no schedules exist for a server"""
+        try:
+            # Create two servers (omit server_id to use auto-increment)
+            query_test_db(
+                """INSERT INTO servers (hostname, fqdn, ip4_address)
+                   VALUES ('test-server-1', 'test-server-1.local', '127.0.0.1'),
+                          ('test-server-2', 'test-server-2.local', '127.0.0.2')"""
+            )
+
+            # Add a schedule only to server 1
+            query_test_db(
+                """INSERT INTO schedules
+                   (schedule_id, server_id, interval_mask, exec_command)
+                   VALUES ('schedule-1', 1, '0 * * * *', 'echo test')"""
+            )
+
+            # Get a fresh cursor after data insertion
+            db_conn, db_cur = get_db_cursor()
+
+            # Attempt to get schedules for server 2 without any schedules
+            with pytest.raises(ValueError, match="No schedules found for server_id 2"):
+                smart_schedule._get_schedules_per_server(server_id=2, db_cur=db_cur)
+
+            db_cur.close()
+            db_conn.close()
+        except Exception as e:
+            raise e
+
+    def test_main_no_schedules_single_server(self, db_setup, capsys):
+        """Test that main() handles servers without schedules gracefully (single server)"""
+        try:
+            # Create two servers
+            query_test_db(
+                """INSERT INTO servers (server_id, hostname, fqdn, ip4_address)
+                   VALUES (1, 'test-server-1', 'test-server-1.local', '127.0.0.1'),
+                          (2, 'test-server-2', 'test-server-2.local', '127.0.0.2')"""
+            )
+
+            # Add a schedule only to server 1
+            query_test_db(
+                """INSERT INTO schedules
+                   (schedule_id, server_id, interval_mask, exec_command)
+                   VALUES ('schedule-1', 1, '0 * * * *', 'echo test')"""
+            )
+
+            # Call main with server_id 2 (should return early without error)
+            smart_schedule.main(server_id=2, dbname=pytest.db_test)
+
+            # Verify that ValueError message was printed
+            captured = capsys.readouterr()
+            assert "No schedules found for server_id 2" in captured.out
+        except Exception as e:
+            raise e
 
 
 class TestScheduleSnapshots:

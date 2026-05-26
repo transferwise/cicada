@@ -273,7 +273,6 @@ def update_schedule_details_bulk(db_cur, schedule_list):
     sqlquery = f"UPDATE schedules SET {', '.join(case_clauses)} WHERE schedule_id = ANY(%s)"
     db_cur.execute(sqlquery, tuple(params))
 
-    return
 
 
 def snapshot_schedules(db_cur, schedule_ids, server_id=None, computed_usage=None, reason=None):
