@@ -558,7 +558,7 @@ class TestSchedulerDatabaseFunctions:
             )
 
             # Snapshot the schedule
-            scheduler.snapshot_schedules(db_cur, ["test-sched-1"], reason="Test optimization", server_id = 1)
+            scheduler.snapshot_schedules(db_cur, server_id=1, reason="Test optimization")
 
             # Verify snapshot was created
             snapshots = query_test_db("SELECT snapshot_id FROM snapshots WHERE reason = 'Test optimization'")
@@ -647,8 +647,7 @@ class TestEndToEndSmartScheduling:
                    VALUES ('sched-2', 1, '*/30 * * * *', '*/30 * * * *', 'echo test')"""
             )
 
-            schedule_ids = ["sched-1", "sched-2"]
-            scheduler.snapshot_schedules(db_cur, schedule_ids, reason="Test optimization", server_id = 1)
+            scheduler.snapshot_schedules(db_cur, server_id=1, reason="Test optimization")
 
             # Verify that snapshots were created
             snapshots = query_test_db("SELECT snapshot_id FROM snapshots WHERE reason = 'Test optimization'")
@@ -917,7 +916,7 @@ class TestScheduleSnapshots:
                 )
 
             # Snapshot the schedules
-            scheduler.snapshot_schedules(db_cur, schedule_ids, server_id = 1, reason="Test optimization")
+            scheduler.snapshot_schedules(db_cur, server_id = 1, reason="Test optimization")
 
             # Verify snapshot was created
             snapshot_result = query_test_db("SELECT snapshot_id, server_id FROM snapshots WHERE reason = 'Test optimization'")
@@ -997,13 +996,13 @@ class TestScheduleSnapshots:
                 """INSERT INTO schedules (schedule_id, server_id, interval_mask, smart_interval_mask, exec_command)
                    VALUES ('test-schedule-1', 1, '0 * * * *', '30 * * * *', 'echo test')"""
             )
-            scheduler.snapshot_schedules(db_cur, ["test-schedule-1"], reason="Test optimization", server_id=1)
+            scheduler.snapshot_schedules(db_cur, server_id=1, reason="Test optimization")
             assert query_test_db("SELECT smart_interval_mask FROM schedule_backups WHERE schedule_id = 'test-schedule-1'")[0][0] == "30 * * * *"
             assert query_test_db("SELECT COUNT(*) FROM schedule_backups WHERE schedule_id = 'test-schedule-1'")[0][0] == 1
 
             query_test_db("UPDATE schedules SET smart_interval_mask = '45 * * * *' WHERE schedule_id = 'test-schedule-1'")
 
-            scheduler.snapshot_schedules(db_cur, ["test-schedule-1"], reason="Test optimization", server_id=1)
+            scheduler.snapshot_schedules(db_cur, server_id=1, reason="Test optimization")
             assert query_test_db("SELECT server_id FROM snapshots ORDER BY snapshot_id DESC LIMIT 1")[0][0] == 1
             assert query_test_db("SELECT smart_interval_mask FROM schedule_backups WHERE schedule_id = 'test-schedule-1' ORDER BY snapshot_id DESC LIMIT 1")[0][0] == "45 * * * *"
             assert query_test_db("SELECT COUNT(*) FROM schedule_backups WHERE schedule_id = 'test-schedule-1'")[0][0] == 2
@@ -1032,7 +1031,7 @@ class TestScheduleSnapshots:
             )
             # Create more than 5 snapshots to trigger deletion of old snapshots
             for i in range(7):
-                scheduler.snapshot_schedules(db_cur, ["test-schedule-1"], server_id=1)
+                scheduler.snapshot_schedules(db_cur, server_id=1)
 
             # Verify that only the 5 most recent snapshots remain
             snapshot_count = query_test_db("SELECT COUNT(*) FROM snapshots WHERE server_id = 1")[0][0]

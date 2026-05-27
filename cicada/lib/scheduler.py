@@ -263,9 +263,10 @@ def update_schedule_details_bulk(db_cur, schedule_list):
 
     sqlquery = "; ".join(statements)
     db_cur.execute(sqlquery, tuple(params))
+    print(f"\nBulk updated {len(statements)} schedules")
 
 
-def snapshot_schedules(db_cur, schedule_ids, server_id=None, computed_usage=None, reason=None):
+def snapshot_schedules(db_cur, server_id=None, computed_usage=None, reason=None):
     """Create a snapshot of specific schedules with the same snapshot_id.
 
     Args:
@@ -275,8 +276,6 @@ def snapshot_schedules(db_cur, schedule_ids, server_id=None, computed_usage=None
         computed_usage: Computed usage for the snapshot
         reason: Optional reason/context for the snapshot
     """
-    if not schedule_ids:
-        raise ValueError("schedule_ids list cannot be empty")
     
     if not server_id:
         raise ValueError("server_id must be provided for snapshot")
@@ -290,9 +289,10 @@ def snapshot_schedules(db_cur, schedule_ids, server_id=None, computed_usage=None
     sqlquery = """
         INSERT INTO schedule_backups (schedule_id, server_id, interval_mask, smart_interval_mask, snapshot_id)
         SELECT schedule_id, server_id, interval_mask, smart_interval_mask, %s
-        FROM schedules WHERE schedule_id = ANY(%s)
+        FROM schedules WHERE server_id = %s
     """
-    db_cur.execute(sqlquery, (snapshot_id, schedule_ids))
+    db_cur.execute(sqlquery, (snapshot_id, server_id))
+    
     # Clean up old snapshots (keep last 5)
     min_snapshot_query = """
             SELECT snapshot_id FROM snapshots
@@ -555,9 +555,8 @@ def restore_previous_schedules(db_cur, server_id, snapshot_id):
         raise ValueError("snapshot_id is required to restore previous schedules")
     
     schedule_ids = get_all_schedule_ids_per_server(db_cur, server_id)
-
-    print(f"Restoring schedules for server_id {server_id} from snapshot_id {snapshot_id}")
-    print("Skipping any schedules that aren't in the snapshot or have a different interval mask...")
+    print(f"{len(schedule_ids)} schedules found for server_id {server_id}")
+    print("Restoring schedules from snapshot...")
     sqlquery = """
         UPDATE schedules
         SET smart_interval_mask = schedule_backups.smart_interval_mask
@@ -567,9 +566,9 @@ def restore_previous_schedules(db_cur, server_id, snapshot_id):
         AND schedule_backups.snapshot_id = %s
         AND schedules.interval_mask = schedule_backups.interval_mask
     """
-    db_cur.execute(sqlquery, (server_id, snapshot_id))
-    print(f"{len(schedule_ids)} Schedules restored")
-    return
+    db_cur.execute(sqlquery, (server_id, snapshot_id))  
+    rows_updated = db_cur.rowcount
+    print(f"{rows_updated} Schedules restored")
 
 
 def get_blocklisted_schedule_ids(db_cur):
@@ -582,20 +581,20 @@ def get_blocklisted_schedule_ids(db_cur):
 
 def reset_schedule_backups(db_cur, snapshot_id=None, schedule_id=None):
     """Reset schedule_backups table by deleting all entries"""
-    sqlquery_backups = "DELETE FROM schedule_backups WHERE 1=1"
-    sqlquery_snapshots = "DELETE FROM snapshots WHERE 1=1"
+    if not snapshot_id and not schedule_id:
+        raise ValueError("Either snapshot_id or schedule_id must be provided to reset schedule_backups")
+    if snapshot_id and schedule_id:
+        raise ValueError("Cannot specify both snapshot_id and schedule_id to reset schedule_backups")
+    
     if schedule_id:
-        sqlquery_backups += " AND schedule_id = %s"
+        sqlquery_backups = "DELETE FROM schedule_backups WHERE schedule_id = %s"
         db_cur.execute(sqlquery_backups, (schedule_id,))
-    elif snapshot_id:
-        sqlquery_backups += " AND snapshot_id = %s"
-        sqlquery_snapshots += " AND snapshot_id = %s"
+    if snapshot_id:
+        sqlquery_backups = " DELETE FROM schedule_backups WHERE snapshot_id = %s"
+        sqlquery_snapshots = " DELETE FROM snapshots WHERE snapshot_id = %s"
         db_cur.execute(sqlquery_backups, (snapshot_id,))
         db_cur.execute(sqlquery_snapshots, (snapshot_id,))
-    else: 
-        db_cur.execute(sqlquery_backups)
-        db_cur.execute(sqlquery_snapshots)
-    return 
+     
 
 def blocklist_schedule(db_cur, schedule_id, reason=None):
     """Add a schedule_id to the blocklist"""

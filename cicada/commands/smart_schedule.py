@@ -185,8 +185,7 @@ def optimise(db_cur, server_id=None, ga_config=None):
                     print("\n-------------Updating Schedules------------------") 
                     db_cur.execute("BEGIN;")
                     _assign_new_schedules(optimised_schedules, db_cur=db_cur)
-                    optimised_schedule_ids = [schedule.schedule_id for schedule in optimised_schedules if schedule.shifted]
-                    scheduler.snapshot_schedules(db_cur, optimised_schedule_ids, server_id=server_id, computed_usage=peak_usage, reason='Smart Schedule Optimization')
+                    scheduler.snapshot_schedules(db_cur, server_id=server_id, computed_usage=peak_usage, reason='Smart Schedule Optimization')
                     db_cur.execute("COMMIT;")
                 except Exception as e:
                     db_cur.execute("ROLLBACK;")
