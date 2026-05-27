@@ -32,34 +32,29 @@ class GAPyGADScheduler:
             self.cfg = GAConfig(**filtered_config)
 
 
-    def _gene_space(self, schedules: Sequence[Schedule]) -> List[List[int]]:
-        # Build gene_space per schedule: each gene space is limited by it's frequency
-        # Unless the schedule is unsupported (either blocklisted, irregular or has frequency greater than 60 mins) in which case we set the gene space to be just 0 
-        # so they remain unchanged in the GA but are still included in the fitness evaluation. Also constrain schedules with frequency > 60 mins to an hour to prevent
-        # large shifts and huge gene spaces.
+    def _gene_space(self, schedules: Sequence[Schedule]) -> List[dict]:
+        # Build gene_space per schedule: each gene space is limited by its frequency
+        # Unless the schedule is unsupported (either blocklisted, irregular or has frequency greater than 60 mins),
+        # in which case we fix the gene space so it remains unchanged in the GA but is still included in fitness evaluation.
+        # Constrain schedules with frequency > 60 mins to an hour to prevent large shifts.
 
-        min_start_times = [0] * len(schedules)
-        max_start_times = [1] * len(schedules)
+        gene_space = []
         mins_per_day = 1440
 
-        for i, schedule in enumerate(schedules):
-            # Fix the gene space so they're still included in the fitness eval but remain unshifted
+        for schedule in schedules:
             if schedule.is_unsupported():
-                min_start_times[i] = schedule.start_time_mins
-                max_start_times[i] = schedule.start_time_mins + 1
-
-            # Limit gene space to only shift within the hour for the schedules which run less frequently
+                # Fix gene space to current start time (no shift allowed)
+                gene_space.append({"low": schedule.start_time_mins, "high": schedule.start_time_mins})
             elif schedule.frequency_minutes > 60:
-                # Prevent any max_start_time from going beyond the day limit 
-                max_start_times[i] = min(schedule.start_time_mins + 60, mins_per_day)
-                min_start_times[i] = max_start_times[i] - 60
-
-            # Gene space for the rest is just the frequency 
+                # Shift within the hour, clamped to day limit
+                high = min(schedule.start_time_mins + 59, mins_per_day)
+                low = max(high - 59, 0)
+                gene_space.append({"low": low, "high": high})
             else:
-                max_start_times[i] = schedule.frequency_minutes
+                # Shift within frequency range
+                gene_space.append({"low": 0, "high": schedule.frequency_minutes - 1})
 
-        return [list(range(min_start_time, max_start_time)) for min_start_time, max_start_time in zip(min_start_times, max_start_times)]
-
+        return gene_space
 
     def _initial_population(self, schedules: Sequence[Schedule], gene_space: List[List[int]]) -> np.ndarray:
         rng = np.random.default_rng(self.cfg.random_seed)
@@ -69,12 +64,12 @@ class GAPyGADScheduler:
         for i, schedule in enumerate(schedules):
             gs = gene_space[i]
             s = int(schedule.start_time_mins)
-            seed.append(max(min(s, gs[-1]), gs[0]))
+            seed.append(max(min(s, gs["high"]), gs["low"]))
         pop = [seed]
 
         # Populate the rest of the initial population randomly within the gene space limits for each schedule
         for _ in range(self.cfg.sol_per_pop - 1):
-            pop.append([gene_space[i][int(rng.integers(0, len(gene_space[i])))] for i in range(len(schedules))])
+            pop.append([int(rng.integers(gene_space[i]["low"], gene_space[i]["high"] + 1)) for i in range(len(schedules))])
         return np.asarray(pop, dtype=int)
 
     def fitness_fn(self, ga, solution, solution_idx):
@@ -123,7 +118,7 @@ class GAPyGADScheduler:
 
         # Update schedule objects start_time_mins attribute based on GA solution
         for i, schedule in enumerate(schedules):
-            if not (start_times[i] >= gene_space[i][0] and start_times[i] <= gene_space[i][-1]):
+            if not (start_times[i] >= gene_space[i]["low"] and start_times[i] <= gene_space[i]["high"]):
                 raise RuntimeError(f"Start time for schedule {schedule.schedule_id} is out of gene space bounds. Start time: {start_times[i]}, Gene space: {gene_space[i]}")
             if schedule.is_unsupported() and start_times[i] != schedule.start_time_mins:
                 raise RuntimeError(f"Unsupported schedule {schedule.schedule_id} should not have been shifted in the GA solution. {schedule.start_time_mins} != {start_times[i]}")

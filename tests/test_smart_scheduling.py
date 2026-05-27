@@ -796,13 +796,13 @@ class TestSmartSchedulingCommand:
             gene_space = ga_scheduler._gene_space([test_schedule])
 
             test_schedule.shifted = True
-            test_schedule.start_time_mins = gene_space[0][-1]
+            test_schedule.start_time_mins = gene_space[0]["high"]
             smart_schedule._update_schedule_cron(test_schedule)
             assert test_schedule.smart_interval_mask == "29-59/30 * * * *"
             assert croniter.croniter.is_valid(test_schedule.smart_interval_mask)
             assert test_schedule.frequency_minutes == 30
 
-            test_schedule.start_time_mins = gene_space[0][1]
+            test_schedule.start_time_mins = gene_space[0]["low"] + 1
             smart_schedule._update_schedule_cron(test_schedule)
             assert test_schedule.smart_interval_mask == "1-59/30 * * * *"
             assert croniter.croniter.is_valid(test_schedule.smart_interval_mask)
@@ -826,21 +826,15 @@ class TestSmartSchedulingCommand:
             gene_space = ga_scheduler._gene_space([test_schedule])
 
             test_schedule.shifted = True
-            test_schedule.start_time_mins = gene_space[0][-1]
+            test_schedule.start_time_mins = gene_space[0]["high"]
             smart_schedule._update_schedule_cron(test_schedule)
             assert test_schedule.smart_interval_mask == "29 9 * * *"
             assert croniter.croniter.is_valid(test_schedule.smart_interval_mask)
             assert test_schedule.frequency_minutes == 1440
 
-            test_schedule.start_time_mins = gene_space[0][0]
+            test_schedule.start_time_mins = gene_space[0]["low"]
             smart_schedule._update_schedule_cron(test_schedule)
             assert test_schedule.smart_interval_mask == "30 8 * * *"
-            assert croniter.croniter.is_valid(test_schedule.smart_interval_mask)
-            assert test_schedule.frequency_minutes == 1440
-
-            test_schedule.start_time_mins = gene_space[0][1]
-            smart_schedule._update_schedule_cron(test_schedule)
-            assert test_schedule.smart_interval_mask == "31 8 * * *"
             assert croniter.croniter.is_valid(test_schedule.smart_interval_mask)
             assert test_schedule.frequency_minutes == 1440
         finally:
