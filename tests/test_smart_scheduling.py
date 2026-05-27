@@ -12,7 +12,7 @@ from cicada.lib.SmartScheduling.domain import Schedule
 from cicada.lib.SmartScheduling.config import GAConfig
 from cicada.lib.SmartScheduling.evaluation import evaluate_usage_and_peak
 import cicada.commands.smart_schedule as smart_schedule
-from cicada.lib.SmartScheduling.pygad import GAPyGADScheduler
+from cicada.lib.SmartScheduling.GAPyGAD import GAPyGADScheduler
 from cicada.lib import scheduler
 
 

@@ -6,7 +6,7 @@ from typing import List
 from croniter import croniter
 from cicada.lib import postgres, utils
 from cicada.lib import scheduler
-from cicada.lib.SmartScheduling import pygad
+from cicada.lib.SmartScheduling.GAPyGAD import GAPyGADScheduler
 from cicada.lib.SmartScheduling.domain import Schedule
 
 def _get_schedules_per_server(server_id, db_cur=None):
@@ -175,7 +175,7 @@ def optimise(db_cur, server_id=None, ga_config=None):
         try:
             print("\n------------Starting Optimisation-----------------") 
             print("Running PyGAD solver ...")
-            ga = pygad.GAPyGADScheduler(config=ga_config)
+            ga = GAPyGADScheduler(config=ga_config)
             optimised_schedules, __, peak_usage, __, initial_fitness = ga.solve(schedules)
             print(f"Optimized schedule for server_id {server_id}: new peak usage {peak_usage}")
 

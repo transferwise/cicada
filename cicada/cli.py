@@ -374,31 +374,34 @@ class Cicada:
         args = parser.parse_args(sys.argv[2:])
 
         if args.action == "optimise" or args.action is None:
+            optimise_args = optimise_parser.parse_args(sys.argv[3:])
             smart_schedule.main(
-                server_id=getattr(args, 'server_id', None),
+                server_id=optimise_args.server_id,
                 ga_config={
-                    "num_generations": args.num_generations,
-                    "sol_per_pop": args.sol_per_pop,
-                    "num_parents_mating": args.num_parents_mating,
-                    "mutation_percent_genes": args.mutation_percent_genes,
-                    "parent_selection_type": args.parent_selection_type,
-                    "crossover_type": args.crossover_type,
-                    "mutation_type": args.mutation_type,
-                    "keep_elitism": args.keep_elitism,
-                    "random_seed": args.random_seed,
+                    "num_generations": optimise_args.num_generations,
+                    "sol_per_pop": optimise_args.sol_per_pop,
+                    "num_parents_mating": optimise_args.num_parents_mating,
+                    "mutation_percent_genes": optimise_args.mutation_percent_genes,
+                    "parent_selection_type": optimise_args.parent_selection_type,
+                    "crossover_type": optimise_args.crossover_type,
+                    "mutation_type": optimise_args.mutation_type,
+                    "keep_elitism": optimise_args.keep_elitism,
+                    "random_seed": optimise_args.random_seed,
                 },
             )
         elif args.action == "rollback":
+            rollback_args = rollback_parser.parse_args(sys.argv[3:])
             smart_schedule_rollback.main(
-                server_id=getattr(args, 'server_id', None), 
-                schedule_id=getattr(args, 'schedule_id', None), 
-                full=getattr(args, 'full', False), 
-                previous=getattr(args, 'previous', False))
+                server_id=rollback_args.server_id,
+                schedule_id=rollback_args.schedule_id,
+                full=rollback_args.full,
+                previous=rollback_args.previous)
         elif args.action == "blocklist":
+            blocklist_args = blocklist_parser.parse_args(sys.argv[3:])
             blocklist_schedule_cmd.main(
-                schedule_id=args.schedule_id,
-                remove=getattr(args, 'remove', False),
-                reason=getattr(args, 'reason', None),
+                schedule_id=blocklist_args.schedule_id,
+                remove=blocklist_args.remove,
+                reason=blocklist_args.reason,
             )
 
     @staticmethod

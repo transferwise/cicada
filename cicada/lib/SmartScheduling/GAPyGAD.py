@@ -1,10 +1,11 @@
 from __future__ import annotations
 from typing import List, Mapping, Optional, Sequence 
 import numpy as np 
+import pygad
+
 from cicada.lib.SmartScheduling.config import GAConfig 
 from cicada.lib.SmartScheduling.domain import Schedule 
 from cicada.lib.SmartScheduling.evaluation import evaluate_usage_and_peak
-import pygad
 
 
 class GAPyGADScheduler:
@@ -58,7 +59,7 @@ class GAPyGADScheduler:
                 max_start_times[i] = schedule.frequency_minutes
 
         return [list(range(min_start_time, max_start_time)) for min_start_time, max_start_time in zip(min_start_times, max_start_times)]
-    
+
 
     def _initial_population(self, schedules: Sequence[Schedule], gene_space: List[List[int]]) -> np.ndarray:
         rng = np.random.default_rng(self.cfg.random_seed)
