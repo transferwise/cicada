@@ -236,43 +236,33 @@ def update_schedule_details(db_cur, schedule_details):
 
 
 def update_schedule_details_bulk(db_cur, schedule_list):
-    """Update multiple schedules in a single bulk query."""
+    """Update multiple schedules with individual UPDATE statements in a single execute call."""
     if not schedule_list:
         return
 
-    columns_to_update = set()
-    for schedule in schedule_list:
-        columns_to_update.update(k for k, v in schedule.items() if k != "schedule_id" and v is not None)
+    statements = []
+    params = []
 
-    if not columns_to_update:
+    for schedule in schedule_list:
+        updates = {k: v for k, v in schedule.items() if k != "schedule_id" and v is not None}
+
+        if not updates:
+            continue
+
+        set_clause = ", ".join([f"{col} = %s" for col in sorted(updates.keys())])
+        statement = f"UPDATE schedules SET {set_clause} WHERE schedule_id = %s"
+        statements.append(statement)
+
+        for col in sorted(updates.keys()):
+            params.append(updates[col])
+        params.append(schedule['schedule_id'])
+
+    if not statements:
         print("No fields to update for any schedules. Bulk update skipped.")
         return
 
-    case_clauses = []
-    params = []
-
-    # Construct CASE statements for each column to update
-    for col in sorted(columns_to_update):
-        case_parts = []
-        for schedule in schedule_list:
-            if col in schedule and schedule[col] is not None:
-                params.append(schedule['schedule_id'])
-                params.append(schedule[col])
-                case_parts.append("WHEN schedule_id = %s THEN %s")
-
-        if case_parts:
-            case_clauses.append(f"{col} = CASE {' '.join(case_parts)} ELSE {col} END")
-
-    if not case_clauses:
-        return
-
-    # Add schedule_ids to params
-    schedule_ids = [s['schedule_id'] for s in schedule_list]
-    params.append(schedule_ids)
-
-    sqlquery = f"UPDATE schedules SET {', '.join(case_clauses)} WHERE schedule_id = ANY(%s)"
+    sqlquery = "; ".join(statements)
     db_cur.execute(sqlquery, tuple(params))
-
 
 
 def snapshot_schedules(db_cur, schedule_ids, server_id=None, computed_usage=None, reason=None):
