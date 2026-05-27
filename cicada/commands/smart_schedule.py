@@ -195,7 +195,7 @@ def optimise(db_cur, server_id=None, ga_config=None):
                 print("--------------------------------------------------\n")
             else:
                 print(f"No improvement found for server_id {server_id}. Current peak usage: {initial_fitness}, Optimized peak usage: {peak_usage}. No schedule updates will be made.")
-            print("--------------------------------------------------\n")
+                print("--------------------------------------------------\n")
 
         except Exception as e:
             print(f"Error during optimization for server_id {server_id}: {e}")

@@ -293,21 +293,32 @@ def snapshot_schedules(db_cur, schedule_ids, server_id=None, computed_usage=None
         FROM schedules WHERE schedule_id = ANY(%s)
     """
     db_cur.execute(sqlquery, (snapshot_id, schedule_ids))
-
-    # Clean up old snapshots (keep last 5 per schedule_id)
-    cleanup_backups_query = """
-        DELETE FROM schedule_backups sb
-        DELETE FROM snapshots s
-        WHERE sb.schedule_id = ANY(%s)
-        AND sb.snapshot_id NOT IN (
-            SELECT snapshot_id FROM schedule_backups
-            WHERE schedule_id = sb.schedule_id
+    # Clean up old snapshots (keep last 5)
+    min_snapshot_query = """
+            SELECT snapshot_id FROM snapshots
+            WHERE server_id = %s
             ORDER BY snapshot_id DESC
-            LIMIT 5
-        )
-        AND s.snapshot_id = sb.snapshot_id
-    """
-    print(f"Updated schedule_backups table for server {server_id}")
+            LIMIT 1 OFFSET 4
+            """
+
+    db_cur.execute(min_snapshot_query, (server_id,))
+    result = db_cur.fetchone()
+    min_snapshot_to_keep = result[0] if result else 0
+
+    cleanup_backups_query = """
+        DELETE FROM schedule_backups
+        WHERE snapshot_id < %s
+        AND server_id = %s
+        """
+    db_cur.execute(cleanup_backups_query, (min_snapshot_to_keep, server_id))
+    print(f"\nCleaned up old schedule_backups for server_id {server_id} in schedule_backups table")
+    cleanup_snapshots_query = """
+        DELETE FROM snapshots
+        WHERE snapshot_id < %s
+        AND server_id = %s
+        """
+    db_cur.execute(cleanup_snapshots_query, (min_snapshot_to_keep, server_id))
+    print(f"Cleaned up old snapshots for server_id {server_id} in snapshots table")
 
 
 def get_schedule_executable(db_cur, schedule_id):

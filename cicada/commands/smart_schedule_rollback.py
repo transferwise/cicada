@@ -86,6 +86,7 @@ def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbn
                     _rollback_to_previous_snapshot(db_cur, server_id=server_id[0])
             else:
                 _rollback_to_previous_snapshot(db_cur, server_id=server_id)
+        print("--------------------------------------------------\n")
 
     except Exception as e:
         print(f"Error during rollback: {e}")

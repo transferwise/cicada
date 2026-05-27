@@ -1016,3 +1016,32 @@ class TestScheduleSnapshots:
         finally:
             db_cur.close()
             db_conn.close()
+
+
+    def test_snapshot_cleanup(self, db_setup):
+        """Test that snapshot limits are enforced and old snapshots are deleted"""
+        db_conn, db_cur = get_db_cursor()
+        try:
+            query_test_db(
+                """INSERT INTO servers (server_id, hostname, fqdn, ip4_address)
+                   VALUES (1, 'test-server', 'test-server.local', 'H')"""
+            )
+            query_test_db(
+                """INSERT INTO schedules (schedule_id, server_id, interval_mask, smart_interval_mask, exec_command)
+                   VALUES ('test-schedule-1', 1, '0 * * * *', '30 * * * *', 'echo test')"""
+            )
+            # Create more than 5 snapshots to trigger deletion of old snapshots
+            for i in range(7):
+                scheduler.snapshot_schedules(db_cur, ["test-schedule-1"], server_id=1)
+
+            # Verify that only the 5 most recent snapshots remain
+            snapshot_count = query_test_db("SELECT COUNT(*) FROM snapshots WHERE server_id = 1")[0][0]
+            assert snapshot_count == 5
+            oldest_snapshot_id = query_test_db("SELECT snapshot_id FROM snapshots WHERE server_id = 1 ORDER BY snapshot_timestamp ASC LIMIT 1")[0][0]
+            assert oldest_snapshot_id == 3
+            oldest_snapshot_id = query_test_db("SELECT snapshot_id FROM schedule_backups WHERE server_id = 1 ORDER BY snapshot_id ASC LIMIT 1")[0][0]
+            assert oldest_snapshot_id == 3
+
+        finally:
+            db_cur.close()
+            db_conn.close()
