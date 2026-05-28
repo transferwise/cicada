@@ -1,5 +1,4 @@
 from __future__ import annotations
-from dataclasses import dataclass
 import math
 from typing import Optional
 from croniter import croniter
@@ -7,29 +6,34 @@ import datetime
 from cicada.lib.scheduler import get_median_run_time
 
 
-@dataclass(frozen=False)
 class Schedule:
     schedule_id: str
     server_id: int
-    interval_mask: str 
+    interval_mask: str
     frequency_minutes: int
-    median_runtime_minutes: int = 5
-    shifted: bool = False
-    start_time_mins: Optional[int] = 0
-    blocklisted: bool = False
+    median_runtime_minutes: int
+    shifted: bool
+    start_time_mins: Optional[int]
+    blocklisted: bool
     
 
-    def __init__(self, details, db_cur):
-        self.schedule_id = details['schedule_id']
-        self.server_id = details['server_id']
-        self.interval_mask = details['interval_mask']
-        self.current_interval_mask = details.get('smart_interval_mask') if details.get('smart_interval_mask') is not None else self.interval_mask
+    def __init__(self, schedule_id: str, server_id: int, interval_mask: str, smart_interval_mask: Optional[str] = None, blocklisted: bool = False, db_cur=None):
+        self.schedule_id = schedule_id
+        self.server_id = server_id
+        self.interval_mask = interval_mask
+        self.smart_interval_mask = smart_interval_mask
+        self.blocklisted = blocklisted
         self.determine_attributes(db_cur)
-        if details.get('blocklisted') is not None:
-            self.blocklisted = details.get('blocklisted')
 
     def determine_attributes(self, db_cur):
         """Determine frequency and average runtime from interval_mask and scheduler module"""
+
+        self.shifted = False
+        self.current_interval_mask = (
+            self.smart_interval_mask
+            if self.smart_interval_mask is not None
+            else self.interval_mask
+        )
         self._determine_frequency()
         self._determine_start_time_mins()
         self._get_average_runtime(db_cur)

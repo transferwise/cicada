@@ -79,6 +79,7 @@ def main(schedule_details, dbname=None):
             new_schedule_details["schedule_group_id"] = schedule_details["schedule_group_id"]
 
         scheduler.update_schedule_details(db_cur, new_schedule_details)
+
     print(tabulate(new_schedule_details.items(), ["Detail", "Value"], tablefmt="psql"))
     db_cur.close()
     db_conn.close()

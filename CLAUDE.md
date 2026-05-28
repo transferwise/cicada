@@ -84,7 +84,6 @@ Located in `cicada/lib/SmartScheduling/`
 **`config.py`**
 - `GAConfig` dataclass: hyperparameters for the genetic algorithm
   - `num_generations`, `sol_per_pop`, `mutation_percent_genes`, etc.
-  - `blocklist_schedule_ids`: list of schedule IDs to exclude from optimization
 
 **`pygad.py`**
 - Wraps the external `pygad` library (genetic algorithm)

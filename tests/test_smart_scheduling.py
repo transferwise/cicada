@@ -151,8 +151,17 @@ class TestEvaluateUsageAndPeak:
                 "schedule_id": 1,
                 "server_id": 1,
                 "interval_mask": "0 * * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
 
             start_blocks = [0]
             usage, peak = evaluate_usage_and_peak(start_blocks, [test_schedule])
@@ -175,8 +184,17 @@ class TestEvaluateUsageAndPeak:
                 "schedule_id": 1,
                 "server_id": 1,
                 "interval_mask": "0 * * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            schedule1 = Schedule(schedule1_details, db_cur)
+            schedule1 = Schedule(
+                schedule_id=schedule1_details['schedule_id'],
+                server_id=schedule1_details['server_id'],
+                interval_mask=schedule1_details['interval_mask'],
+                smart_interval_mask=schedule1_details.get('smart_interval_mask'),
+                blocklisted=schedule1_details.get('blocklisted'),
+                db_cur=db_cur
+            )
             schedule1.frequency_minutes = 60
             schedule1.median_runtime_minutes = 5
 
@@ -184,8 +202,17 @@ class TestEvaluateUsageAndPeak:
                 "schedule_id": 2,
                 "server_id": 1,
                 "interval_mask": "30 * * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            schedule2 = Schedule(schedule2_details, db_cur)
+            schedule2 = Schedule(
+                schedule_id=schedule2_details['schedule_id'],
+                server_id=schedule2_details['server_id'],
+                interval_mask=schedule2_details['interval_mask'],
+                smart_interval_mask=schedule2_details.get('smart_interval_mask'),
+                blocklisted=schedule2_details.get('blocklisted'),
+                db_cur=db_cur
+            )
             schedule2.frequency_minutes = 60
             schedule2.median_runtime_minutes = 5
 
@@ -209,8 +236,17 @@ class TestEvaluateUsageAndPeak:
                 "schedule_id": 1,
                 "server_id": 1,
                 "interval_mask": "0 * * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            schedule1 = Schedule(schedule1_details, db_cur)
+            schedule1 = Schedule(
+                schedule_id=schedule1_details['schedule_id'],
+                server_id=schedule1_details['server_id'],
+                interval_mask=schedule1_details['interval_mask'],
+                smart_interval_mask=schedule1_details.get('smart_interval_mask'),
+                blocklisted=schedule1_details.get('blocklisted'),
+                db_cur=db_cur
+            )
             schedule1.frequency_minutes = 60
             schedule1.median_runtime_minutes = 10
 
@@ -218,8 +254,17 @@ class TestEvaluateUsageAndPeak:
                 "schedule_id": 2,
                 "server_id": 1,
                 "interval_mask": "0 * * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            schedule2 = Schedule(schedule2_details, db_cur)
+            schedule2 = Schedule(
+                schedule_id=schedule2_details['schedule_id'],
+                server_id=schedule2_details['server_id'],
+                interval_mask=schedule2_details['interval_mask'],
+                smart_interval_mask=schedule2_details.get('smart_interval_mask'),
+                blocklisted=schedule2_details.get('blocklisted'),
+                db_cur=db_cur
+            )
             schedule2.frequency_minutes = 60
             schedule2.median_runtime_minutes = 5
 
@@ -241,8 +286,17 @@ class TestEvaluateUsageAndPeak:
                 "schedule_id": 1,
                 "server_id": 1,
                 "interval_mask": "0 0 * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
             test_schedule.frequency_minutes = 60
             test_schedule.median_runtime_minutes = 5
             start_blocks = [1430]  # (1430 mins = 23:50)
@@ -267,15 +321,27 @@ class TestScheduleDomain:
                 "schedule_id": "test-id-1",
                 "server_id": 5,
                 "interval_mask": "0 * * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
 
             assert test_schedule.schedule_id == "test-id-1"
             assert test_schedule.server_id == 5
             assert test_schedule.interval_mask == "0 * * * *"
+            assert test_schedule.shifted == False
+            assert test_schedule.start_time_mins == 0
         finally:
             db_cur.close()
             db_conn.close()
+
 
     def test_schedule_dataclass_fields_initialized(self, db_setup):
         """Test that all dataclass fields are properly initialized, including defaults"""
@@ -285,8 +351,17 @@ class TestScheduleDomain:
                 "schedule_id": "test-id-1",
                 "server_id": 5,
                 "interval_mask": "0 * * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
 
             # Verify all fields exist and have correct default values
             assert hasattr(test_schedule, 'shifted')
@@ -321,8 +396,17 @@ class TestScheduleDomain:
                 "schedule_id": "test-id-1",
                 "server_id": 1,
                 "interval_mask": "0 * * * *",  # Every hour
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
 
             assert test_schedule.frequency_minutes == 60
         finally:
@@ -337,8 +421,17 @@ class TestScheduleDomain:
                 "schedule_id": "test-id-1",
                 "server_id": 1,
                 "interval_mask": "0 0 * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
 
             assert test_schedule.frequency_minutes == 1440
         finally:
@@ -353,8 +446,17 @@ class TestScheduleDomain:
                 "schedule_id": "test-id-1",
                 "server_id": 1,
                 "interval_mask": "0-15 */9 * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
 
             assert test_schedule.is_unsupported()
             assert not test_schedule.frequency_is_supported()
@@ -371,8 +473,17 @@ class TestScheduleDomain:
                 "schedule_id": "test-id-1",
                 "server_id": 1,
                 "interval_mask": "0 0 * * 0",  # Weekly
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
 
             assert test_schedule.is_unsupported()
         finally:
@@ -387,8 +498,17 @@ class TestScheduleDomain:
                 "schedule_id": "test-id-1",
                 "server_id": 1,
                 "interval_mask": "0 * * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
 
             assert test_schedule.is_regular_schedule()
         finally:
@@ -403,8 +523,17 @@ class TestScheduleDomain:
                 "schedule_id": "test-id-1",
                 "server_id": 1,
                 "interval_mask": "*/15 * * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
 
             assert test_schedule.is_regular_schedule()
         finally:
@@ -419,8 +548,17 @@ class TestScheduleDomain:
                 "schedule_id": "test-id-1",
                 "server_id": 1,
                 "interval_mask": "0 0 * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
 
             assert test_schedule.is_regular_schedule()
         finally:
@@ -435,8 +573,17 @@ class TestScheduleDomain:
                 "schedule_id": "test-id-1",
                 "server_id": 1,
                 "interval_mask": "*/45 * * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
 
             assert not test_schedule.is_unsupported()
             # Fails due to cronitor issue -> means any */45 gets missed out of the smart scheduling
@@ -452,8 +599,17 @@ class TestScheduleDomain:
                 "schedule_id": "test-id-1",
                 "server_id": 1,
                 "interval_mask": "0 9 * * 1-5",  # Weekdays only
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
 
             assert not test_schedule.is_regular_schedule()
         finally:
@@ -479,7 +635,6 @@ class TestGAPyGADScheduler:
         assert config.parent_selection_type == "rank"
         assert config.crossover_type == "uniform"
         assert config.mutation_type == "random"
-        assert config.blocklist_schedule_ids == []
 
     def test_scheduler_uses_default_config_when_optional_config_is_missing(self):
         ga_scheduler = GAPyGADScheduler()
@@ -613,15 +768,26 @@ class TestEndToEndSmartScheduling:
                     "schedule_id": "sched-1",
                     "server_id": 1,
                     "interval_mask": "0 * * * *",
+                    "smart_interval_mask": None,
+                    "blocklisted": False
                 },
                 {
                     "schedule_id": "sched-2",
                     "server_id": 1,
                     "interval_mask": "*/30 * * * *",
+                    "smart_interval_mask": None,
+                    "blocklisted": False
                 },
             ]
 
-            schedules = [Schedule(data, db_cur) for data in schedules_data]
+            schedules = [Schedule(
+                schedule_id=data['schedule_id'],
+                server_id=data['server_id'],
+                interval_mask=data['interval_mask'],
+                smart_interval_mask=data.get('smart_interval_mask'),
+                blocklisted=data.get('blocklisted'),
+                db_cur=db_cur
+            ) for data in schedules_data]
 
             assert len(schedules) == 2
             assert schedules[0].schedule_id == "sched-1"
@@ -691,8 +857,17 @@ class TestEndToEndSmartScheduling:
                     "schedule_id": f"sched-{i}",
                     "server_id": 1,
                     "interval_mask": "0 * * * *" if i == 0 else f"*/{15 * (i + 1)} * * * *",
+                    "smart_interval_mask": None,
+                    "blocklisted": False
                 }
-                test_schedule = Schedule(schedule_data, db_cur)
+                test_schedule = Schedule(
+                    schedule_id=schedule_data['schedule_id'],
+                    server_id=schedule_data['server_id'],
+                    interval_mask=schedule_data['interval_mask'],
+                    smart_interval_mask=schedule_data.get('smart_interval_mask'),
+                    blocklisted=schedule_data.get('blocklisted'),
+                    db_cur=db_cur
+                )
                 test_schedule.frequency_minutes = 60
                 test_schedule.median_runtime_minutes = 5
                 schedules.append(test_schedule)
@@ -719,8 +894,17 @@ class TestSmartSchedulingCommand:
                 "schedule_id": "test-schedule-1",
                 "server_id": 1,
                 "interval_mask": "0 * * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            hourly_schedule = Schedule(hourly_schedule_details, db_cur)
+            hourly_schedule = Schedule(
+                schedule_id=hourly_schedule_details['schedule_id'],
+                server_id=hourly_schedule_details['server_id'],
+                interval_mask=hourly_schedule_details['interval_mask'],
+                smart_interval_mask=hourly_schedule_details.get('smart_interval_mask'),
+                blocklisted=hourly_schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
             hourly_schedule.shifted = True
             hourly_schedule.start_time_mins = 15
 
@@ -744,8 +928,17 @@ class TestSmartSchedulingCommand:
                 "schedule_id": "test-schedule-2",
                 "server_id": 1,
                 "interval_mask": "*/15 * * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            fifteen_min_schedule = Schedule(fifteen_min_schedule_details, db_cur)
+            fifteen_min_schedule = Schedule(
+                schedule_id=fifteen_min_schedule_details['schedule_id'],
+                server_id=fifteen_min_schedule_details['server_id'],
+                interval_mask=fifteen_min_schedule_details['interval_mask'],
+                smart_interval_mask=fifteen_min_schedule_details.get('smart_interval_mask'),
+                blocklisted=fifteen_min_schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
             fifteen_min_schedule.shifted = True
             fifteen_min_schedule.start_time_mins = 3
 
@@ -768,8 +961,17 @@ class TestSmartSchedulingCommand:
                 "schedule_id": "test-schedule-3",
                 "server_id": 1,
                 "interval_mask": "*/45 * * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
             test_schedule.frequency_minutes = 45
             test_schedule.shifted = True
             test_schedule.start_time_mins = 50  # Shift greater than frequency
@@ -790,8 +992,17 @@ class TestSmartSchedulingCommand:
                 "schedule_id": "test-schedule-1",
                 "server_id": 1,
                 "interval_mask": "*/30 * * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
             gene_space = ga_scheduler._gene_space([test_schedule])
 
             test_schedule.shifted = True
@@ -820,8 +1031,17 @@ class TestSmartSchedulingCommand:
                 "schedule_id": "test-schedule-4",
                 "server_id": 1,
                 "interval_mask": "30 8 * * *",
+                "smart_interval_mask": None,
+                "blocklisted": False
             }
-            test_schedule = Schedule(schedule_details, db_cur)
+            test_schedule = Schedule(
+                schedule_id=schedule_details['schedule_id'],
+                server_id=schedule_details['server_id'],
+                interval_mask=schedule_details['interval_mask'],
+                smart_interval_mask=schedule_details.get('smart_interval_mask'),
+                blocklisted=schedule_details.get('blocklisted'),
+                db_cur=db_cur
+            )
             gene_space = ga_scheduler._gene_space([test_schedule])
 
             test_schedule.shifted = True
@@ -1041,6 +1261,142 @@ class TestScheduleSnapshots:
             oldest_snapshot_id = query_test_db("SELECT snapshot_id FROM schedule_backups WHERE server_id = 1 ORDER BY snapshot_id ASC LIMIT 1")[0][0]
             assert oldest_snapshot_id == 3
 
+        finally:
+            db_cur.close()
+            db_conn.close()
+
+
+class TestOptimiseWithCustomDbConnection:
+    """Tests for optimise() function with custom db connection"""
+
+    def test_optimise_with_custom_db_connection_single_server(self, db_setup):
+        """Test optimise() function using a custom db connection for a single server"""
+        db_conn, db_cur = get_db_cursor()
+        try:
+            # Setup: Create server and schedules
+            query_test_db(
+                """INSERT INTO servers (server_id, hostname, fqdn, ip4_address)
+                   VALUES (1, 'test-server', 'test-server.local', '192.168.1.1')"""
+            )
+            query_test_db(
+                """INSERT INTO schedules (schedule_id, server_id, interval_mask, exec_command)
+                   VALUES ('sched-1', 1, '*/10 * * * *', 'echo test1'),
+                          ('sched-2', 1, '0 * * * *', 'echo test2'),
+                          ('sched-3', 1, '0 * * * *', 'echo test3'),
+                          ('sched-4', 1, '0 * * * *', 'echo test4'),
+                          ('sched-5', 1, '0 * * * *', 'echo test5')"""
+            )
+
+            # Call optimise with custom db_cur
+            ga_config = {"random_seed": 1, "mutation_type": None, "num_generations": 2, "sol_per_pop": 5,  "num_parents_mating": 2}
+            smart_schedule.optimise(db_cur=db_cur, server_id=1, ga_config=ga_config)
+
+            # Verify that the schedules were processed (no errors should occur)
+            schedules = query_test_db("SELECT schedule_id FROM schedules WHERE server_id = 1")
+            smart_interval_masks = query_test_db("SELECT smart_interval_mask FROM schedules WHERE server_id = 1")
+            snapshots = query_test_db("SELECT snapshot_id FROM snapshots WHERE server_id = 1")
+            schedule_backups = query_test_db("SELECT schedule_id, interval_mask, smart_interval_mask FROM schedule_backups WHERE server_id = 1")
+            assert all(mask is not None for mask in smart_interval_masks)
+            assert query_test_db("""SELECT count(*) FROM schedules 
+                                 LEFT JOIN schedule_backups ON schedules.schedule_id = schedule_backups.schedule_id 
+                                 WHERE schedules.interval_mask != schedule_backups.interval_mask
+                                 OR schedules.smart_interval_mask != schedule_backups.smart_interval_mask""")[0][0]  == 0
+
+
+            assert len(schedules) == 5
+            assert len(snapshots) == 1
+            assert len(schedule_backups) == 5
+        finally:
+            db_cur.close()
+            db_conn.close()
+            
+
+    def test_optimise_with_custom_db_connection_multiple_servers(self, db_setup):
+        """Test optimise() function with custom db connection for multiple servers"""
+        db_conn, db_cur = get_db_cursor()
+        try:
+            # Setup: Create multiple servers and schedules
+            query_test_db(
+                """INSERT INTO servers (server_id, hostname, fqdn, ip4_address)
+                   VALUES (1, 'server-1', 'server-1.local', '192.168.1.1'),
+                          (2, 'server-2', 'server-2.local', '192.168.1.2')"""
+            )
+            query_test_db(
+                """INSERT INTO schedules (schedule_id, server_id, interval_mask, exec_command)
+                   VALUES ('sched-1a', 1, '*/10 * * * *', 'echo test1'),
+                          ('sched-2a', 1, '0 * * * *', 'echo test2'),
+                          ('sched-3a', 1, '0 * * * *', 'echo test3'),
+                          ('sched-4a', 1, '0 * * * *', 'echo test4'),
+                          ('sched-5a', 1, '0 * * * *', 'echo test5'),
+                          ('sched-1b', 2, '*/10 * * * *', 'echo test1'),
+                          ('sched-2b', 2, '0 * * * *', 'echo test2'),
+                          ('sched-3b', 2, '0 * * * *', 'echo test3'),
+                          ('sched-4b', 2, '0 * * * *', 'echo test4'),
+                          ('sched-5b', 2, '0 * * * *', 'echo test5')
+                          """
+            )
+
+            # Call optimise with custom db_cur
+            ga_config = {"random_seed": 1, "mutation_type": None, "num_generations": 2, "sol_per_pop": 5,  "num_parents_mating": 2}
+
+            results_1 = query_test_db("SELECT schedule_id, smart_interval_mask FROM schedules WHERE server_id = 1")
+            results_2 = query_test_db("SELECT schedule_id, smart_interval_mask FROM schedules WHERE server_id = 2")
+            if results_1:
+                schedules_1, smart_interval_masks_1 = zip(*results_1)
+            if results_2:
+                schedules_2, smart_interval_masks_2 = zip(*results_2)
+            smart_schedule.optimise(db_cur=db_cur, ga_config=ga_config)
+
+            results_1 = query_test_db("SELECT schedule_id, smart_interval_mask FROM schedules WHERE server_id = 1")
+            results_2 = query_test_db("SELECT schedule_id, smart_interval_mask FROM schedules WHERE server_id = 2")
+            if results_1:
+                schedules_1, smart_interval_masks_1 = zip(*results_1)
+            if results_2:
+                schedules_2, smart_interval_masks_2 = zip(*results_2)
+            snapshots_1 = query_test_db("SELECT snapshot_id FROM snapshots WHERE server_id = 1")
+            snapshots_2 = query_test_db("SELECT snapshot_id FROM snapshots WHERE server_id = 2")
+            assert len(schedules_1) == 5 and len(schedules_2) == 5
+            assert len(snapshots_1) == 1 and len(snapshots_2) == 1
+            assert query_test_db("SELECT count(*) FROM schedule_backups WHERE server_id = 1")[0][0] == 5
+            assert query_test_db("SELECT count(*) FROM schedule_backups WHERE server_id = 2")[0][0] == 5
+            assert all(mask is not None for mask in smart_interval_masks_1)
+            assert all(mask is not None for mask in smart_interval_masks_2)
+            
+            assert query_test_db("""SELECT count(*) FROM schedules 
+                                 LEFT JOIN schedule_backups ON schedules.schedule_id = schedule_backups.schedule_id 
+                                 WHERE schedules.interval_mask != schedule_backups.interval_mask
+                                 OR schedules.smart_interval_mask != schedule_backups.smart_interval_mask""")[0][0]  == 0
+        finally:
+            db_cur.close()
+            db_conn.close()
+
+    def test_optimise_invalid_server_id_with_custom_connection(self, db_setup):
+        """Test optimise() raises error for invalid server_id with custom db connection"""
+        db_conn, db_cur = get_db_cursor()
+        try:
+            # Attempt to optimize for non-existent server
+            with pytest.raises(ValueError, match="Server with server_id=999 does not exist"):
+                smart_schedule.optimise(db_cur=db_cur, server_id=999, ga_config=None)
+        finally:
+            db_cur.close()
+            db_conn.close()
+
+    def test_optimise_no_schedules_with_custom_connection(self, db_setup, capsys):
+        """Test optimise() handles server with no schedules gracefully using custom db connection"""
+        db_conn, db_cur = get_db_cursor()
+        try:
+            # Setup: Create server with no schedules
+            query_test_db(
+                """INSERT INTO servers (server_id, hostname, fqdn, ip4_address)
+                   VALUES (1, 'test-server', 'test-server.local', '192.168.1.1')"""
+            )
+
+            # Call optimise - should return early with message
+            smart_schedule.optimise(db_cur=db_cur, server_id=1, ga_config=None)
+
+            # Verify error message was printed
+            captured = capsys.readouterr()
+            assert "No schedules found for server_id 1" in captured.out
         finally:
             db_cur.close()
             db_conn.close()

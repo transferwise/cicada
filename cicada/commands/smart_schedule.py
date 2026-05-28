@@ -35,7 +35,14 @@ def _create_schedule_objects(schedule_ids, db_cur):
             details['blocklisted'] = False
 
         try:
-            schedule = Schedule(details, db_cur)
+            schedule = Schedule(
+                schedule_id = details['schedule_id'],
+                server_id = details['server_id'],
+                interval_mask = details['interval_mask'],
+                smart_interval_mask = details.get('smart_interval_mask'),
+                blocklisted = details.get('blocklisted', False),
+                db_cur = db_cur
+            )
             # Ignore the few schedules that have irregular cron expressions for now. 
             # There are few enough that this shouldn't impact the optimisation and is not worth the effort to try and support these in the GA
             if not schedule.is_regular_schedule():
