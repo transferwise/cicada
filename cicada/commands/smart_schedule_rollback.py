@@ -69,9 +69,10 @@ def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbn
             try:
                 scheduler.full_rollback(db_cur, server_id, schedule_id)
                 print("Full rollback successful\n")
-                server_ids = [server_id] if server_id else [server[0] for server in scheduler.get_all_server_ids(db_cur)]
-                for server in server_ids:
-                    scheduler.snapshot_schedules(db_cur, server_id=server, reason='Full Rollback')
+                if not schedule_id:
+                    server_ids = [server_id] if server_id else [server[0] for server in scheduler.get_all_server_ids(db_cur)]
+                    for server in server_ids:
+                        scheduler.snapshot_schedules(db_cur, server_id=server, reason='Full Rollback')
                 db_cur.execute("COMMIT;")
             except Exception as e:
                 db_cur.execute("ROLLBACK;")
