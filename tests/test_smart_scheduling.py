@@ -8,11 +8,11 @@ from unittest.mock import Mock, MagicMock, patch, call
 import numpy as np
 import psycopg2
 
-from cicada.lib.SmartScheduling.domain import Schedule
-from cicada.lib.SmartScheduling.config import GAConfig
-from cicada.lib.SmartScheduling.evaluation import evaluate_usage_and_peak
+from cicada.lib.smart_scheduling.domain import Schedule
+from cicada.lib.smart_scheduling.config import GAConfig
+from cicada.lib.smart_scheduling.evaluation import evaluate_usage_and_peak
 import cicada.commands.smart_schedule as smart_schedule
-from cicada.lib.SmartScheduling.GAPyGAD import GAPyGADScheduler
+from cicada.lib.smart_scheduling.GAPyGAD import GAPyGADScheduler
 from cicada.lib import scheduler
 
 

@@ -3,9 +3,9 @@ from typing import List, Mapping, Optional, Sequence
 import numpy as np 
 import pygad
 
-from cicada.lib.SmartScheduling.config import GAConfig 
-from cicada.lib.SmartScheduling.domain import Schedule 
-from cicada.lib.SmartScheduling.evaluation import evaluate_usage_and_peak
+from cicada.lib.smart_scheduling.config import GAConfig 
+from cicada.lib.smart_scheduling.domain import Schedule 
+from cicada.lib.smart_scheduling.evaluation import evaluate_usage_and_peak
 
 
 class GAPyGADScheduler:

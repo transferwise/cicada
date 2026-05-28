@@ -1,6 +1,6 @@
 import numpy as np 
 from typing import Sequence 
-from cicada.lib.SmartScheduling.domain import Schedule
+from cicada.lib.smart_scheduling.domain import Schedule
 
 
 def evaluate_usage_and_peak(start_times: Sequence[int], schedules: Sequence[Schedule]):
