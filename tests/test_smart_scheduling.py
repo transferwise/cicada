@@ -338,6 +338,7 @@ class TestScheduleDomain:
             assert test_schedule.interval_mask == "0 * * * *"
             assert test_schedule.shifted == False
             assert test_schedule.start_time_mins == 0
+            assert test_schedule.median_runtime_minutes == 5
         finally:
             db_cur.close()
             db_conn.close()
@@ -1397,6 +1398,163 @@ class TestOptimiseWithCustomDbConnection:
             # Verify error message was printed
             captured = capsys.readouterr()
             assert "No schedules found for server_id 1" in captured.out
+        finally:
+            db_cur.close()
+            db_conn.close()
+
+
+class TestUpdateScheduleDetailsBulk:
+    """Tests for update_schedule_details_bulk function"""
+
+    def test_update_schedule_details_bulk_single_schedule(self, db_setup):
+        """Test bulk update of a single schedule"""
+        db_conn, db_cur = get_db_cursor()
+        try:
+            # Setup: Create server and schedule
+            query_test_db(
+                """INSERT INTO servers (server_id, hostname, fqdn, ip4_address)
+                   VALUES (1, 'test-server', 'test-server.local', '192.168.1.1')"""
+            )
+            query_test_db(
+                """INSERT INTO schedules (schedule_id, server_id, interval_mask, smart_interval_mask, exec_command)
+                   VALUES ('sched-1', 1, '0 * * * *', NULL, 'echo test')"""
+            )
+
+            # Bulk update: set smart_interval_mask
+            schedule_list = [
+                {
+                    "schedule_id": "sched-1",
+                    "smart_interval_mask": "30 * * * *",
+                }
+            ]
+            scheduler.update_schedule_details_bulk(db_cur=db_cur, schedule_list=schedule_list)
+
+            # Verify update
+            result = query_test_db("SELECT smart_interval_mask FROM schedules WHERE schedule_id = 'sched-1'")
+            assert result[0][0] == "30 * * * *"
+        finally:
+            db_cur.close()
+            db_conn.close()
+
+    def test_update_schedule_details_bulk_multiple_schedules(self, db_setup):
+        """Test bulk update of multiple schedules"""
+        db_conn, db_cur = get_db_cursor()
+        try:
+            # Setup: Create server and schedules
+            query_test_db(
+                """INSERT INTO servers (server_id, hostname, fqdn, ip4_address)
+                   VALUES (1, 'test-server', 'test-server.local', '192.168.1.1')"""
+            )
+            query_test_db(
+                """INSERT INTO schedules (schedule_id, server_id, interval_mask, smart_interval_mask, exec_command)
+                   VALUES ('sched-1', 1, '0 * * * *', NULL, 'echo test1'),
+                          ('sched-2', 1, '15 * * * *', NULL, 'echo test2'),
+                          ('sched-3', 1, '30 * * * *', NULL, 'echo test3')"""
+            )
+
+            # Bulk update: set smart_interval_mask for all schedules
+            schedule_list = [
+                {"schedule_id": "sched-1", "smart_interval_mask": "10 * * * *"},
+                {"schedule_id": "sched-2", "smart_interval_mask": "25 * * * *"},
+                {"schedule_id": "sched-3", "smart_interval_mask": "40 * * * *"},
+            ]
+            scheduler.update_schedule_details_bulk(db_cur=db_cur, schedule_list=schedule_list)
+
+            # Verify updates
+            result = query_test_db(
+                "SELECT schedule_id, smart_interval_mask FROM schedules WHERE server_id = 1 ORDER BY schedule_id"
+            )
+            assert len(result) == 3
+            assert result[0] == ("sched-1", "10 * * * *")
+            assert result[1] == ("sched-2", "25 * * * *")
+            assert result[2] == ("sched-3", "40 * * * *")
+        finally:
+            db_cur.close()
+            db_conn.close()
+
+    def test_update_schedule_details_bulk_with_null_values(self, db_setup):
+        """Test that NULL values in schedule_list are skipped"""
+        db_conn, db_cur = get_db_cursor()
+        try:
+            # Setup: Create server and schedule
+            query_test_db(
+                """INSERT INTO servers (server_id, hostname, fqdn, ip4_address)
+                   VALUES (1, 'test-server', 'test-server.local', '192.168.1.1')"""
+            )
+            query_test_db(
+                """INSERT INTO schedules (schedule_id, server_id, interval_mask, smart_interval_mask, exec_command)
+                   VALUES ('sched-1', 1, '0 * * * *', '30 * * * *', 'echo test')"""
+            )
+
+            # Bulk update: set smart_interval_mask to something new, but include None values
+            schedule_list = [
+                {
+                    "schedule_id": "sched-1",
+                    "smart_interval_mask": "45 * * * *",
+                    "parameters": None,  # This should be ignored
+                }
+            ]
+            scheduler.update_schedule_details_bulk(db_cur=db_cur, schedule_list=schedule_list)
+
+            # Verify that only smart_interval_mask was updated
+            result = query_test_db("SELECT smart_interval_mask FROM schedules WHERE schedule_id = 'sched-1'")
+            assert result[0][0] == "45 * * * *"
+        finally:
+            db_cur.close()
+            db_conn.close()
+
+    def test_update_schedule_details_bulk_empty_list(self, db_setup):
+        """Test bulk update with empty schedule list"""
+        db_conn, db_cur = get_db_cursor()
+        try:
+            # Should return early without error
+            scheduler.update_schedule_details_bulk(db_cur=db_cur, schedule_list=[])
+            # No assertion needed - test passes if no exception is raised
+        finally:
+            db_cur.close()
+            db_conn.close()
+
+
+    def test_update_schedule_details_bulk_multiple_fields(self, db_setup):
+        """Test bulk update of multiple fields for each schedule"""
+        db_conn, db_cur = get_db_cursor()
+        try:
+            # Setup: Create server and schedule
+            query_test_db(
+                """INSERT INTO servers (server_id, hostname, fqdn, ip4_address)
+                   VALUES (1, 'test-server', 'test-server.local', '192.168.1.1')"""
+            )
+            query_test_db(
+                """INSERT INTO schedules (schedule_id, server_id, interval_mask, smart_interval_mask, exec_command)
+                   VALUES ('sched-1', 1, '0 * * * *', NULL, 'echo test'), ('sched-2', 1, '15 * * * *', NULL, 'echo test')"""
+            )
+
+            # Bulk update: update multiple fields
+            schedule_list = [
+                {
+                    "schedule_id": "sched-1",
+                    "smart_interval_mask": "15 * * * *",
+                    "interval_mask": "15 * * * *",
+                },
+                {
+                    "schedule_id": "sched-2",
+                    "smart_interval_mask": "5 * * * *",
+                    "interval_mask": "5 * * * *"
+                }
+            ]
+            scheduler.update_schedule_details_bulk(db_cur=db_cur, schedule_list=schedule_list)
+
+            # Verify updates
+            result = query_test_db(
+                "SELECT smart_interval_mask, interval_mask FROM schedules WHERE schedule_id = 'sched-1'"
+            )
+            assert result[0][0] == "15 * * * *"
+            assert result[0][1] == "15 * * * *"
+            result = query_test_db(
+                "SELECT smart_interval_mask, interval_mask, is_enabled FROM schedules WHERE schedule_id = 'sched-2'"
+            )
+            assert result[0][0] == "5 * * * *"
+            assert result[0][1] == "5 * * * *"
         finally:
             db_cur.close()
             db_conn.close()
