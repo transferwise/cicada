@@ -50,9 +50,9 @@ def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbn
         previous: bool
             If used, restores to the most recent snapshot (step back one optimization).
     """
-    if type(server_id) != int and server_id is not None:
+    if server_id is not None and not isinstance(server_id, int):
         raise TypeError(f"server_id needs to be of type int. {type(server_id)}")
-    if type(schedule_id) != str and schedule_id is not None:
+    if schedule_id is not None and not isinstance(schedule_id, str):
         raise TypeError("schedule_id needs to be of type str")
     if not(full or previous) or (full and previous):
         raise ValueError("Exactly one of --full or --previous flags must be provided")
@@ -82,8 +82,8 @@ def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbn
             print("\n------------Starting Rollback to Previous Snapshot-----------------")
             if not server_id:
                 print(f"Rolling back all servers...")
-                for server_id in scheduler.get_all_server_ids(db_cur):
-                    _rollback_to_previous_snapshot(db_cur, server_id=server_id[0])
+                for server in scheduler.get_all_server_ids(db_cur):
+                    _rollback_to_previous_snapshot(db_cur, server_id=server[0])
             else:
                 _rollback_to_previous_snapshot(db_cur, server_id=server_id)
         print("--------------------------------------------------\n")
