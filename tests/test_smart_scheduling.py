@@ -12,7 +12,7 @@ from cicada.lib.smart_scheduling.domain import Schedule
 from cicada.lib.smart_scheduling.config import GAConfig
 from cicada.lib.smart_scheduling.evaluation import evaluate_usage_and_peak
 import cicada.commands.smart_schedule as smart_schedule
-from cicada.lib.smart_scheduling.GAPyGAD import GAPyGADScheduler
+from cicada.lib.smart_scheduling.ga_pygad import GAPyGADScheduler
 from cicada.lib import scheduler
 
 
@@ -302,7 +302,7 @@ class TestEvaluateUsageAndPeak:
             start_blocks = [1430]  # (1430 mins = 23:50)
 
             # Should throw an assertion error that the start block is too late for the frequency of the schedule
-            with pytest.raises(ValueError):
+            with pytest.raises(ValueError, match=r"Start time should be the earliest it can be for schedule: .* with start time 1430 exceeds frequency 60"):
                 evaluate_usage_and_peak(start_blocks, [test_schedule])
         finally:
             db_cur.close()
@@ -665,7 +665,7 @@ class TestSchedulerDatabaseFunctions:
         """Test retrieving blocklisted schedule IDs when none exist"""
         db_conn, db_cur = get_db_cursor()
         try:
-            # Initially should have the 10 admin schedules
+            # Initially should have the 18 admin schedules
             result = scheduler.get_blocklisted_schedule_ids(db_cur)
             assert len(result) == 18
         finally:

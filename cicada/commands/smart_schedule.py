@@ -6,7 +6,7 @@ from typing import List
 from croniter import croniter
 from cicada.lib import postgres, utils
 from cicada.lib import scheduler
-from cicada.lib.smart_scheduling.GAPyGAD import GAPyGADScheduler
+from cicada.lib.smart_scheduling.ga_pygad import GAPyGADScheduler
 from cicada.lib.smart_scheduling.domain import Schedule
 
 def _get_schedules_per_server(server_id, db_cur=None):
