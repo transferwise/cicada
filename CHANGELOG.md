@@ -1,3 +1,8 @@
+0.10.0 
+-----
+- Add smart_schedule command with optimise and rollback options (as well as blocklist functionality)
+- Adds new column to existing table and new tables connected to smart_schedule command
+
 0.9.0
 -----
 - Verify compatibility with Ubuntu 22.04
