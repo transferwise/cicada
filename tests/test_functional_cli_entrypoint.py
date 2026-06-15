@@ -21,9 +21,9 @@ def test_cicada_help():
 
 positional arguments:
   command     register_server , list_server_schedules , exec_server_schedules
-              , show_schedule , upsert_schedule , exec_schedule ,
-              spread_schedules , archive_schedule_log , ping_slack ,
-              list_schedule_ids , delete_schedule , version
+              , smart_schedule , show_schedule , upsert_schedule ,
+              exec_schedule , spread_schedules , archive_schedule_log ,
+              ping_slack , list_schedule_ids , delete_schedule , version
 
 optional arguments:
   -h, --help  show this help message and exit
@@ -41,9 +41,9 @@ usage: cicada [-h] command
 
 positional arguments:
   command     register_server , list_server_schedules , exec_server_schedules
-              , show_schedule , upsert_schedule , exec_schedule ,
-              spread_schedules , archive_schedule_log , ping_slack ,
-              list_schedule_ids , delete_schedule , version
+              , smart_schedule , show_schedule , upsert_schedule ,
+              exec_schedule , spread_schedules , archive_schedule_log ,
+              ping_slack , list_schedule_ids , delete_schedule , version
 
 optional arguments:
   -h, --help  show this help message and exit
@@ -331,3 +331,70 @@ optional arguments:
   -h, --help  show this help message and exit
 """
     assert actual == expected
+
+
+
+def test_smart_schedule_help():
+    """test_smart_schedule_help"""
+    actual = subprocess.run(["cicada", "smart_schedule", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode("utf-8")
+
+    assert "optimise" in actual.lower()
+    assert "rollback" in actual.lower()
+    assert "blocklist" in actual.lower()
+
+
+def test_smart_schedule_optimise_help():
+    """test_smart_schedule optimise subcommand help"""
+    actual = subprocess.run(["cicada", "smart_schedule", "optimise", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode("utf-8")
+    expected_snippet = """usage: smart_schedule optimise [-h] [--server_id SERVER_ID]"""
+
+    assert expected_snippet in actual
+
+
+def test_smart_schedule_rollback_help():
+    """test_smart_schedule rollback subcommand help"""
+    actual = subprocess.run(["cicada", "smart_schedule", "rollback", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode(
+        "utf-8"
+    )
+
+    expected_snippet = """usage: smart_schedule [-h] (--full | --previous)"""
+    assert expected_snippet in actual
+
+def test_smart_schedule_rollback_missing_flags():
+    """test_smart_schedule rollback requires either --full or --previous"""
+    actual = subprocess.run(["cicada", "smart_schedule", "rollback"], check=False, stderr=subprocess.PIPE).stderr.decode("utf-8")
+    expected_snippet = """error: one of the arguments --full --previous is required"""
+
+    assert expected_snippet in actual
+
+
+def test_smart_schedule_rollback_mutually_exclusive():
+    """test_smart_schedule rollback --full and --previous are mutually exclusive"""
+    actual = subprocess.run(
+        ["cicada", "smart_schedule", "rollback", "--full", "--previous", "--server_id", "1"],
+        check=False,
+        stderr=subprocess.PIPE
+    ).stderr.decode("utf-8")
+    expected_snippet = "smart_schedule: error: argument --previous: not allowed with argument --full"
+
+    assert expected_snippet in actual
+
+
+def test_smart_schedule_blocklist_help():
+    """test_smart_schedule blocklist subcommand help"""
+    actual = subprocess.run(["cicada", "smart_schedule", "blocklist", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode(
+        "utf-8"
+    )
+
+    assert "--schedule_id SCHEDULE_ID" in actual
+    assert "--remove" in actual
+
+
+def test_smart_schedule_blocklist_missing_schedule_id():
+    """test_smart_schedule blocklist requires --schedule_id"""
+    actual = subprocess.run(["cicada", "smart_schedule", "blocklist"], check=False, stderr=subprocess.PIPE).stderr.decode("utf-8")
+
+    expected_snippet = """error: the following arguments are required: --schedule_id"""
+    assert expected_snippet in actual
+
+    

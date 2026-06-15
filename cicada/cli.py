@@ -8,6 +8,7 @@ from pkg_resources import get_distribution
 from cicada.lib import utils
 
 from cicada.commands import register_server
+from cicada.commands import smart_schedule_rollback
 from cicada.commands import list_server_schedules
 from cicada.commands import exec_server_schedules
 from cicada.commands import upsert_schedule
@@ -18,6 +19,8 @@ from cicada.commands import archive_schedule_log
 from cicada.commands import ping_slack
 from cicada.commands import list_schedules
 from cicada.commands import delete_schedule
+from cicada.commands import smart_schedule
+from cicada.commands import blocklist_schedule as blocklist_schedule_cmd
 
 
 @utils.named_exception_handler("Cicada")
@@ -29,6 +32,7 @@ class Cicada:
             "register_server",
             "list_server_schedules",
             "exec_server_schedules",
+            "smart_schedule",
             "show_schedule",
             "upsert_schedule",
             "exec_schedule",
@@ -272,6 +276,133 @@ class Cicada:
         # now that we're inside a subcommand, ignore the first TWO args
         args = parser.parse_args(sys.argv[2:])
         delete_schedule.main(args.schedule_id)
+
+    @staticmethod
+    def smart_schedule():
+        """Generate smart schedules for a server using genetic algorithm, or rollback/manage blocklist"""
+        parser = argparse.ArgumentParser(
+            allow_abbrev=False,
+            add_help=True,
+            prog=inspect.stack()[0][3],
+            description="Generate smart schedules for a server using genetic algorithm, or rollback previous changes, or manage schedule blocklist",
+        )
+
+        # Subcommands: optimise, rollback, blocklist
+        subparsers = parser.add_subparsers(dest="action", help="Action to perform. Options: optimise (default), rollback, or blocklist")
+
+        # (Default) optimise subcommand
+        optimise_parser = subparsers.add_parser(
+            "optimise",
+            help="optimise schedules using genetic algorithm",
+            add_help=True,
+        )
+        optimise_parser.add_argument("--server_id", type=int, required=False, help="ID of the server")
+
+        # Optional GA Configurations
+        ga_config = optimise_parser.add_argument_group("ga_config", "Optional configurations for the genetic algorithm optimiser")
+        ga_config.add_argument("--num_generations",type=int,required=False, help="Number of generations for the genetic algorithm. Default: 20")
+        ga_config.add_argument("--sol_per_pop",type=int,required=False, help="Number of solutions per population for the genetic algorithm. Default: 40")
+        ga_config.add_argument("--num_parents_mating",type=int,required=False, help="Number of parents mating for the genetic algorithm. Default: 10")
+        ga_config.add_argument("--mutation_percent_genes",type=int,required=False, help="Mutation percentage of genes for the genetic algorithm. Default: 20")
+        ga_config.add_argument("--parent_selection_type",type=str,required=False, help="Parent selection type for the genetic algorithm. Allowed values: ['sss', 'rws', 'sus', 'tournament', 'rank', 'random']. Default: rank")
+        ga_config.add_argument("--crossover_type",type=str,required=False, help="Crossover type for the genetic algorithm. Allowed values: ['single_point', 'two_point', 'uniform']. Default: uniform")
+        ga_config.add_argument("--mutation_type",type=str,required=False, help="Mutation type for the genetic algorithm. Allowed values: ['random', 'swap', 'inversion', 'scramble']. Default: random")
+        ga_config.add_argument("--keep_elitism",type=int,required=False, help="Number of elite solutions to keep for the next generation. Default: 2")
+        ga_config.add_argument("--random_seed",type=int,required=False, help="Set a random seed to get repeatable results. Default: None")
+
+        # Rollback subcommand
+        rollback_parser = subparsers.add_parser(
+            "rollback",
+            help="Rollback to original or previous cron schedules",
+            add_help=True,
+            prog=inspect.stack()[0][3],
+            description="Rollback for smart scheduling, it resets the schedule to its original cron in case of any issues",
+        )
+
+        # Mutually exclusive flags for rollback mode
+        rollback_mode = rollback_parser.add_mutually_exclusive_group(required=True)
+        rollback_mode.add_argument(
+            "--full",
+            default=False,
+            action="store_true",
+            help="Rollback to original schedule (set smart_interval_mask to NULL)",
+        )
+        rollback_mode.add_argument(
+            "--previous",
+            default=False,
+            action="store_true",
+            help="Rollback to most recent snapshot (step back one optimization)",
+        )
+
+        # Add mutually exclusive arguments for rollback subcommand to specify either server_id or schedule_id for targeted rollback
+        group = rollback_parser.add_mutually_exclusive_group()
+        group.add_argument(
+            "--server_id",
+            type=int,
+            required=False,
+            help="ID of the server to rollback, if not specified will rollback all servers",
+        )
+        group.add_argument("--schedule_id", type=str, required=False, help="ID of the schedule to rollback")
+
+
+        # Blocklist subcommand
+        blocklist_parser = subparsers.add_parser(
+            "blocklist",
+            help="Add or remove a schedule from the blocklist (excluded from smart scheduling optimization)",
+            add_help=True,
+        )
+        blocklist_parser.add_argument(
+            "--schedule_id",
+            type=str,
+            required=True,
+            help="Id of the schedule to blocklist/unblocklist",
+        )
+        blocklist_parser.add_argument(
+            "--remove",
+            default=False,
+            action="store_true",
+            help="Remove the schedule from the blocklist instead of adding it",
+        )
+        blocklist_parser.add_argument(
+            "--reason",
+            type=str,
+            required=False,
+            help="Reason for blocklisting (optional, only used when adding)",
+        )
+
+        # Parse arguments and call smart_schedule.main with appropriate arguments based on subcommand
+        args = parser.parse_args(sys.argv[2:])
+
+        if args.action == "optimise" or args.action is None:
+            optimise_args = optimise_parser.parse_args(sys.argv[3:])
+            smart_schedule.main(
+                server_id=optimise_args.server_id,
+                ga_config={
+                    "num_generations": optimise_args.num_generations,
+                    "sol_per_pop": optimise_args.sol_per_pop,
+                    "num_parents_mating": optimise_args.num_parents_mating,
+                    "mutation_percent_genes": optimise_args.mutation_percent_genes,
+                    "parent_selection_type": optimise_args.parent_selection_type,
+                    "crossover_type": optimise_args.crossover_type,
+                    "mutation_type": optimise_args.mutation_type,
+                    "keep_elitism": optimise_args.keep_elitism,
+                    "random_seed": optimise_args.random_seed,
+                },
+            )
+        elif args.action == "rollback":
+            rollback_args = rollback_parser.parse_args(sys.argv[3:])
+            smart_schedule_rollback.main(
+                server_id=rollback_args.server_id,
+                schedule_id=rollback_args.schedule_id,
+                full=rollback_args.full,
+                previous=rollback_args.previous)
+        elif args.action == "blocklist":
+            blocklist_args = blocklist_parser.parse_args(sys.argv[3:])
+            blocklist_schedule_cmd.main(
+                schedule_id=blocklist_args.schedule_id,
+                remove=blocklist_args.remove,
+                reason=blocklist_args.reason,
+            )
 
     @staticmethod
     def version():

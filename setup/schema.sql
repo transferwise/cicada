@@ -19,6 +19,7 @@ BEGIN
 END;
 $BODY$;
 
+
 -- Table: servers
 CREATE TABLE IF NOT EXISTS public.servers
 (
@@ -60,6 +61,7 @@ CREATE TABLE IF NOT EXISTS public.schedules
   is_running smallint NOT NULL DEFAULT 0,
   abort_running smallint NOT NULL DEFAULT 0,
   interval_mask character varying(32) NOT NULL,
+  smart_interval_mask character varying(32),
   first_run_date timestamp(3) without time zone NOT NULL DEFAULT '1000-01-01 00:00:00.000'::timestamp without time zone,
   last_run_date timestamp(3) without time zone NOT NULL DEFAULT '9999-12-31 23:59:59.999'::timestamp without time zone,
   exec_command character varying NOT NULL,
@@ -90,6 +92,10 @@ COMMENT ON COLUMN schedules.exec_command IS 'Command to execute';
 COMMENT ON COLUMN schedules.parameters IS 'Exact string of parameters for command';
 COMMENT ON COLUMN schedules.adhoc_parameters IS 'If specified, will overwrite parameters for next run';
 COMMENT ON COLUMN schedules.schedule_group_id IS 'Optional field to help group schedules';
+
+-- Add smart_interval_mask column if not  exists (for existing installations upgrading to a version with smart scheduling)
+ALTER TABLE public.schedules
+ADD COLUMN IF NOT EXISTS smart_interval_mask character varying(32);
 
 -- Index: schedules_adhoc_execute_idx
 CREATE INDEX IF NOT EXISTS schedules_adhoc_execute_idx
@@ -187,5 +193,77 @@ WITH (
     OIDS = FALSE
 )
 ;
+
+
+-- Snapshots table stores metadata about each snapshot (timestamp, operation type)
+CREATE TABLE IF NOT EXISTS public.snapshots
+(
+  snapshot_id serial NOT NULL,
+  snapshot_timestamp timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone,
+  server_id integer,
+  computed_usage character varying(255),
+  reason character varying(255),
+  CONSTRAINT snapshots_pkey PRIMARY KEY (snapshot_id)
+)
+WITH (
+  OIDS=FALSE
+);
+
+-- Table to store schedule snapshots for rollback
+-- Keeps last 3 snapshots per schedule_id for rollback and audit trail
+CREATE TABLE IF NOT EXISTS public.schedule_backups
+(
+  schedule_id character varying(255) NOT NULL,
+  server_id integer NOT NULL,
+  interval_mask character varying(32) NOT NULL,
+  smart_interval_mask character varying(32),
+  snapshot_id integer NOT NULL,
+  CONSTRAINT schedule_backups_pkey PRIMARY KEY (schedule_id, snapshot_id),
+  CONSTRAINT schedule_backups_snapshot_fkey FOREIGN KEY (snapshot_id)
+      REFERENCES snapshots (snapshot_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE
+)
+WITH (
+  OIDS=FALSE
+);
+
+
+
+
+CREATE TABLE IF NOT EXISTS public.schedule_blocklist 
+(
+  schedule_id character varying(255) NOT NULL,
+  timestamp timestamp without time zone NOT NULL DEFAULT (now())::timestamp without time zone,
+  reason character varying(255),
+  CONSTRAINT schedule_blocklist_pkey PRIMARY KEY (schedule_id)
+)
+WITH (
+  OIDS=FALSE
+);
+
+-- Add in cicada schedules used for running (admin schedules)
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('source_obf_views_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('source_obf_views', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_snowflake_static_objects_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_snowflake_static_objects', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_schema_roles', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_snowflake_service_accounts_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_snowflake_service_accounts', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_roles', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('create_roles_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('import_pipelinewise_config_force', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('import_pipelinewise_config', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('archive_ap_tools_logs', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('archive_cicada_schedule_log', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('archive_pipelinewise_logs', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('expose_iceberg_tables', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('terminate_mixpanel_taps', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('backup_states', 'Admin Schedules') ON CONFLICT DO NOTHING;
+INSERT INTO public.schedule_blocklist (SCHEDULE_ID, REASON) VALUES ('purge_elt_cluster_tmp', 'Admin Schedules') ON CONFLICT DO NOTHING;
+
+
+
+
+
 
 COMMIT TRANSACTION;
