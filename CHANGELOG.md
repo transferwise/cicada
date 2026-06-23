@@ -1,3 +1,7 @@
+0.10.1
+-----
+- Fix bug in delete_schedule introduced in 0.10.0
+
 0.10.0 
 -----
 - Add smart_schedule command with optimise and rollback options (as well as blocklist functionality)
