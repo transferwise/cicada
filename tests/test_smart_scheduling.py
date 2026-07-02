@@ -883,6 +883,39 @@ class TestEndToEndSmartScheduling:
             db_cur.close()
             db_conn.close()
 
+    def test_create_schedule_objects_skips_disabled_schedules(self, db_setup):
+        """Test that _create_schedule_objects skips disabled schedules"""
+        db_conn, db_cur = get_db_cursor()
+        try:
+            # Setup: Create server and schedules
+            query_test_db(
+                """INSERT INTO servers (server_id, hostname, fqdn, ip4_address)
+                   VALUES (1, 'test-server', 'test-server.local', '192.168.1.1')"""
+            )
+            query_test_db(
+                """INSERT INTO schedules (schedule_id, server_id, interval_mask, exec_command, is_enabled)
+                   VALUES ('sched-1', 1, '0 * * * *', 'echo test1', 1),
+                          ('sched-2', 1, '*/30 * * * *', 'echo test2', 0),
+                          ('sched-3', 1, '*/15 * * * *', 'echo test3', 1),
+                          ('sched-4', 1, '0 0 * * *', 'echo test4', 0)"""
+            )
+
+            # Get schedule IDs and create Schedule objects
+            schedule_ids = ['sched-1', 'sched-2', 'sched-3', 'sched-4']
+            schedules = smart_schedule._create_schedule_objects(schedule_ids, db_cur)
+
+            # Verify that disabled schedules were skipped
+            assert len(schedules) == 2, f"Expected 2 enabled schedules, got {len(schedules)}"
+            
+            enabled_schedule_ids = [s.schedule_id for s in schedules]
+            assert 'sched-1' in enabled_schedule_ids, "Enabled schedule 'sched-1' should be included"
+            assert 'sched-3' in enabled_schedule_ids, "Enabled schedule 'sched-3' should be included"
+            assert 'sched-2' not in enabled_schedule_ids, "Disabled schedule 'sched-2' should be skipped"
+            assert 'sched-4' not in enabled_schedule_ids, "Disabled schedule 'sched-4' should be skipped"
+        finally:
+            db_cur.close()
+            db_conn.close()
+
 
 class TestSmartSchedulingCommand:
     """Tests for the smart scheduling command"""
@@ -1280,12 +1313,12 @@ class TestOptimiseWithCustomDbConnection:
                    VALUES (1, 'test-server', 'test-server.local', '192.168.1.1')"""
             )
             query_test_db(
-                """INSERT INTO schedules (schedule_id, server_id, interval_mask, exec_command)
-                   VALUES ('sched-1', 1, '*/10 * * * *', 'echo test1'),
-                          ('sched-2', 1, '0 * * * *', 'echo test2'),
-                          ('sched-3', 1, '0 * * * *', 'echo test3'),
-                          ('sched-4', 1, '0 * * * *', 'echo test4'),
-                          ('sched-5', 1, '0 * * * *', 'echo test5')"""
+                """INSERT INTO schedules (schedule_id, server_id, interval_mask, exec_command, is_enabled)
+                   VALUES ('sched-1', 1, '*/10 * * * *', 'echo test1', 1),
+                          ('sched-2', 1, '0 * * * *', 'echo test2', 1),
+                          ('sched-3', 1, '0 * * * *', 'echo test3', 1),
+                          ('sched-4', 1, '0 * * * *', 'echo test4', 1),
+                          ('sched-5', 1, '0 * * * *', 'echo test5', 1)"""
             )
 
             # Call optimise with custom db_cur
@@ -1323,17 +1356,17 @@ class TestOptimiseWithCustomDbConnection:
                           (2, 'server-2', 'server-2.local', '192.168.1.2')"""
             )
             query_test_db(
-                """INSERT INTO schedules (schedule_id, server_id, interval_mask, exec_command)
-                   VALUES ('sched-1a', 1, '*/10 * * * *', 'echo test1'),
-                          ('sched-2a', 1, '0 * * * *', 'echo test2'),
-                          ('sched-3a', 1, '0 * * * *', 'echo test3'),
-                          ('sched-4a', 1, '0 * * * *', 'echo test4'),
-                          ('sched-5a', 1, '0 * * * *', 'echo test5'),
-                          ('sched-1b', 2, '*/10 * * * *', 'echo test1'),
-                          ('sched-2b', 2, '0 * * * *', 'echo test2'),
-                          ('sched-3b', 2, '0 * * * *', 'echo test3'),
-                          ('sched-4b', 2, '0 * * * *', 'echo test4'),
-                          ('sched-5b', 2, '0 * * * *', 'echo test5')
+                """INSERT INTO schedules (schedule_id, server_id, interval_mask, exec_command, is_enabled)
+                   VALUES ('sched-1a', 1, '*/10 * * * *', 'echo test1', 1),
+                          ('sched-2a', 1, '0 * * * *', 'echo test2', 1),
+                          ('sched-3a', 1, '0 * * * *', 'echo test3', 1),
+                          ('sched-4a', 1, '0 * * * *', 'echo test4', 1),
+                          ('sched-5a', 1, '0 * * * *', 'echo test5', 1),
+                          ('sched-1b', 2, '*/10 * * * *', 'echo test1', 1),
+                          ('sched-2b', 2, '0 * * * *', 'echo test2', 1),
+                          ('sched-3b', 2, '0 * * * *', 'echo test3', 1),
+                          ('sched-4b', 2, '0 * * * *', 'echo test4', 1),
+                          ('sched-5b', 2, '0 * * * *', 'echo test5', 1)
                           """
             )
 
