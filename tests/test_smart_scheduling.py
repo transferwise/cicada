@@ -167,10 +167,11 @@ class TestEvaluateUsageAndPeak:
             usage, peak = evaluate_usage_and_peak(start_blocks, [test_schedule])
 
             assert usage.shape == (1440,)
-            assert peak == 1
+            assert peak == 2
             for i in range(24):
                 mins = i * 60
-                assert (usage[mins : mins + 5] == 1).all()
+                assert (usage[mins] == 2)
+                assert (usage[mins + 1 : mins + 5] == 1).all()
                 assert (usage[mins + 5 : (i + 1) * 60] == 0).all()
         finally:
             db_cur.close()
@@ -219,11 +220,13 @@ class TestEvaluateUsageAndPeak:
             start_blocks = [0, 30]
             usage, peak = evaluate_usage_and_peak(start_blocks, [schedule1, schedule2])
 
-            assert (usage[0:5] == 1).all()
+            assert (usage[0] == 2)
+            assert (usage[1:5] == 1).all()
             assert (usage[6:30] == 0.0).all()
-            assert (usage[30:35] == 1).all()
+            assert (usage[30] == 2)
+            assert (usage[31:35] == 1).all()
             assert (usage[35:60] == 0.0).all()
-            assert peak == 1
+            assert peak == 2
         finally:
             db_cur.close()
             db_conn.close()
@@ -271,8 +274,8 @@ class TestEvaluateUsageAndPeak:
             start_blocks = [0, 0]
             usage, peak = evaluate_usage_and_peak(start_blocks, [schedule1, schedule2])
 
-            assert peak == 2
-            assert usage[0] == 2
+            assert peak == 4
+            assert usage[0] == 4
             assert usage[5] == 1
         finally:
             db_cur.close()

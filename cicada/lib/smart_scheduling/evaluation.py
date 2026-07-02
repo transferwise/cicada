@@ -35,7 +35,8 @@ def evaluate_usage_and_peak(start_times: Sequence[int], schedules: Sequence[Sche
         # schedule runs in, we add the usage at the starting minute and subtract it at the end minute.
         while minute < mins_per_day:
             end = min(minute + run_time, mins_per_day)
-            diff[minute] += 1
+            diff[minute] += 2
+            diff[minute+1] -= 1
             diff[end] -= 1
             minute += freq
         

@@ -2,6 +2,7 @@
 -----
 - Prevent disabled taps from being included in smart scheduling calculations
 - Reset the smart_interval_mask when running spread_schedules
+- Modify evaluation criteria to disincentivise overlaps for the first minute of the run
 
 0.10.1
 -----
