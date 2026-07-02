@@ -96,6 +96,7 @@ def main(spread_details, dbname=None):
         current_schedule_details = scheduler.get_schedule_details(db_cur, schedule_id)
         new_schedule_details = current_schedule_details.copy()
         new_schedule_details["server_id"] = valid_target_servers[next_enabled_server]
+        new_schedule_details["smart_interval_mask"] = None  # Reset smart_interval_mask to None when spreading schedules
 
         next_enabled_server += 1
         if next_enabled_server == valid_server_count:

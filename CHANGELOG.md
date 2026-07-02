@@ -1,3 +1,8 @@
+0.10.2
+-----
+- Prevent disabled taps from being included in smart scheduling calculations
+- Reset the smart_interval_mask when running spread_schedules
+
 0.10.1
 -----
 - Fix bug in delete_schedule introduced in 0.10.0

@@ -29,7 +29,10 @@ def _create_schedule_objects(schedule_ids, db_cur):
     # Fetch details for each schedule and convert to Schedule objects
     for schedule_id in schedule_ids:
         details = scheduler.get_schedule_details(db_cur, schedule_id)
-        if schedule_id in blocklisted_schedules:
+        if details['is_enabled'] == 0:
+            print(f"Skipping disabled schedule {schedule_id}")
+            continue 
+        if schedule_id in blocklisted_schedules :
             details['blocklisted'] = True
         else:
             details['blocklisted'] = False
