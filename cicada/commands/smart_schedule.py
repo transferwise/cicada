@@ -32,10 +32,7 @@ def _create_schedule_objects(schedule_ids, db_cur):
         if details['is_enabled'] == 0:
             print(f"Skipping disabled schedule {schedule_id}")
             continue 
-        if schedule_id in blocklisted_schedules :
-            details['blocklisted'] = True
-        else:
-            details['blocklisted'] = False
+        details['blocklisted'] = schedule_id in blocklisted_schedules
 
         try:
             schedule = Schedule(
@@ -43,7 +40,7 @@ def _create_schedule_objects(schedule_ids, db_cur):
                 server_id = details['server_id'],
                 interval_mask = details['interval_mask'],
                 smart_interval_mask = details.get('smart_interval_mask'),
-                blocklisted = details.get('blocklisted', False),
+                blocklisted = details['blocklisted'],
                 db_cur = db_cur
             )
             # Ignore the few schedules that have irregular cron expressions for now. 
