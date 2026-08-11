@@ -1,0 +1,398 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "cicada-erd",
+  "elements": [
+    {
+      "id": "title",
+      "type": "text",
+      "x": 40,
+      "y": 20,
+      "width": 520,
+      "height": 32,
+      "fontSize": 26,
+      "fontFamily": 3,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "text": "Cicada public schema"
+    },
+    {
+      "id": "scope-note",
+      "type": "text",
+      "x": 40,
+      "y": 55,
+      "width": 1220,
+      "height": 20,
+      "fontSize": 13,
+      "fontFamily": 3,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "strokeColor": "#495057",
+      "text": "Source: setup/schema.sql • Connectors show declared foreign keys only; matching IDs without FK labels are application-managed."
+    },
+    {
+      "id": "servers-box",
+      "type": "rectangle",
+      "x": 40,
+      "y": 120,
+      "width": 390,
+      "height": 210,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "#e7f5ff",
+      "fillStyle": "solid",
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "servers-text",
+      "type": "text",
+      "x": 55,
+      "y": 132,
+      "width": 360,
+      "height": 185,
+      "fontSize": 13,
+      "fontFamily": 3,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "text": "servers\n\"Scheduler nodes\"\n────────────────────────────────────\nPK  server_id          SERIAL\n    auto_update_time   TIMESTAMP\nUQ  hostname           VARCHAR(255)\n    fqdn               VARCHAR(255)\nUQ  ip4_address        VARCHAR(255)\n    is_enabled         SMALLINT"
+    },
+    {
+      "id": "schedules-box",
+      "type": "rectangle",
+      "x": 560,
+      "y": 90,
+      "width": 480,
+      "height": 460,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "#fff3bf",
+      "fillStyle": "solid",
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "schedules-text",
+      "type": "text",
+      "x": 575,
+      "y": 102,
+      "width": 450,
+      "height": 435,
+      "fontSize": 13,
+      "fontFamily": 3,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "text": "schedules\n\"Executable schedule definitions and state\"\n────────────────────────────────────────────\nPK  schedule_id          VARCHAR(255)\n    auto_update_time     TIMESTAMP\n    schedule_description VARCHAR(1024) NULL\nFK  server_id            INTEGER → servers\n    schedule_order       INTEGER\n    is_async             SMALLINT\n    is_enabled           SMALLINT\n    adhoc_execute        SMALLINT\n    is_running           SMALLINT\n    abort_running        SMALLINT\n    interval_mask        VARCHAR(32)\n    smart_interval_mask  VARCHAR(32) NULL\n    first_run_date       TIMESTAMP(3)\n    last_run_date        TIMESTAMP(3)\n    exec_command         VARCHAR\n    parameters           VARCHAR NULL\n    adhoc_parameters     VARCHAR NULL\n    schedule_group_id    INTEGER NULL"
+    },
+    {
+      "id": "schedule-log-box",
+      "type": "rectangle",
+      "x": 1170,
+      "y": 90,
+      "width": 440,
+      "height": 300,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "#d3f9d8",
+      "fillStyle": "solid",
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "schedule-log-text",
+      "type": "text",
+      "x": 1185,
+      "y": 102,
+      "width": 410,
+      "height": 275,
+      "fontSize": 13,
+      "fontFamily": 3,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "text": "schedule_log\n\"Active execution history\"\n────────────────────────────────────────\nPK  schedule_log_id   VARCHAR(64)\n    auto_update_time  TIMESTAMP\nFK  server_id         INTEGER → servers\n    schedule_id       VARCHAR(255)\n    full_command      VARCHAR(1280)\n    start_time        TIMESTAMP(3)\n    end_time          TIMESTAMP(3) NULL\n    returncode        INTEGER NULL\n    error_detail      VARCHAR(255) NULL"
+    },
+    {
+      "id": "schedule-blocklist-box",
+      "type": "rectangle",
+      "x": 1740,
+      "y": 90,
+      "width": 400,
+      "height": 180,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "#ffe3e3",
+      "fillStyle": "solid",
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "schedule-blocklist-text",
+      "type": "text",
+      "x": 1755,
+      "y": 102,
+      "width": 370,
+      "height": 155,
+      "fontSize": 13,
+      "fontFamily": 3,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "text": "schedule_blocklist\n\"Smart-scheduling exclusions\"\n────────────────────────────────────\nPK  schedule_id  VARCHAR(255)\n    timestamp    TIMESTAMP\n    reason       VARCHAR(255) NULL"
+    },
+    {
+      "id": "snapshots-box",
+      "type": "rectangle",
+      "x": 40,
+      "y": 650,
+      "width": 390,
+      "height": 210,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "#e5dbff",
+      "fillStyle": "solid",
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "snapshots-text",
+      "type": "text",
+      "x": 55,
+      "y": 662,
+      "width": 360,
+      "height": 185,
+      "fontSize": 13,
+      "fontFamily": 3,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "text": "snapshots\n\"Smart-scheduling snapshot metadata\"\n────────────────────────────────────\nPK  snapshot_id        SERIAL\n    snapshot_timestamp TIMESTAMP\n    server_id          INTEGER NULL\n    computed_usage     VARCHAR(255) NULL\n    reason             VARCHAR(255) NULL"
+    },
+    {
+      "id": "schedule-backups-box",
+      "type": "rectangle",
+      "x": 560,
+      "y": 620,
+      "width": 480,
+      "height": 250,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "#e5dbff",
+      "fillStyle": "solid",
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "schedule-backups-text",
+      "type": "text",
+      "x": 575,
+      "y": 632,
+      "width": 450,
+      "height": 225,
+      "fontSize": 13,
+      "fontFamily": 3,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "text": "schedule_backups\n\"Schedule values retained per snapshot\"\n────────────────────────────────────────────\n    schedule_id        VARCHAR(255)\n    server_id          INTEGER\n    interval_mask      VARCHAR(32)\n    smart_interval_mask VARCHAR(32) NULL\nFK  snapshot_id        INTEGER → snapshots CASCADE\nPK  (schedule_id, snapshot_id)"
+    },
+    {
+      "id": "schedule-log-historical-box",
+      "type": "rectangle",
+      "x": 1170,
+      "y": 570,
+      "width": 440,
+      "height": 300,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "#e6fcf5",
+      "fillStyle": "solid",
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "schedule-log-historical-text",
+      "type": "text",
+      "x": 1185,
+      "y": 582,
+      "width": 410,
+      "height": 275,
+      "fontSize": 13,
+      "fontFamily": 3,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "text": "schedule_log_historical\n\"Archived execution history; no FKs\"\n────────────────────────────────────────\nPK  schedule_log_id   VARCHAR(64)\n    auto_update_time  TIMESTAMP\n    server_id         INTEGER\n    schedule_id       VARCHAR(255)\n    full_command      VARCHAR(1280)\n    start_time        TIMESTAMP(3)\n    end_time          TIMESTAMP(3) NULL\n    returncode        INTEGER NULL\n    error_detail      VARCHAR(255) NULL"
+    },
+    {
+      "id": "legend-box",
+      "type": "rectangle",
+      "x": 1740,
+      "y": 580,
+      "width": 400,
+      "height": 230,
+      "strokeColor": "#868e96",
+      "backgroundColor": "#f8f9fa",
+      "fillStyle": "solid",
+      "strokeStyle": "dashed",
+      "roundness": {
+        "type": 3
+      }
+    },
+    {
+      "id": "legend-text",
+      "type": "text",
+      "x": 1755,
+      "y": 592,
+      "width": 370,
+      "height": 205,
+      "fontSize": 13,
+      "fontFamily": 3,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "strokeColor": "#495057",
+      "text": "Legend / scope\n────────────────────────────────────\nPK    primary key\nFK    declared foreign key\nUQ    unique constraint\nNULL  nullable column\n\nDefaults, indexes and triggers are omitted.\nApplication-level relationships are omitted.\nAll declared FK columns are required, so\nrelationship lines are solid."
+    },
+    {
+      "id": "fk-schedules-servers",
+      "type": "arrow",
+      "x": 560,
+      "y": 205,
+      "width": 130,
+      "height": 0,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -130,
+          0
+        ]
+      ],
+      "startArrowhead": null,
+      "endArrowhead": "triangle",
+      "strokeColor": "#1e1e1e",
+      "strokeStyle": "solid"
+    },
+    {
+      "id": "fk-schedules-many",
+      "type": "text",
+      "x": 535,
+      "y": 185,
+      "width": 12,
+      "height": 18,
+      "fontSize": 14,
+      "fontFamily": 3,
+      "text": "*"
+    },
+    {
+      "id": "fk-schedules-one",
+      "type": "text",
+      "x": 440,
+      "y": 185,
+      "width": 12,
+      "height": 18,
+      "fontSize": 14,
+      "fontFamily": 3,
+      "text": "1"
+    },
+    {
+      "id": "fk-log-servers",
+      "type": "arrow",
+      "x": 1170,
+      "y": 160,
+      "width": 935,
+      "height": 85,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          -85
+        ],
+        [
+          -935,
+          -85
+        ],
+        [
+          -935,
+          -40
+        ]
+      ],
+      "startArrowhead": null,
+      "endArrowhead": "triangle",
+      "strokeColor": "#1e1e1e",
+      "strokeStyle": "solid",
+      "roundness": null
+    },
+    {
+      "id": "fk-log-many",
+      "type": "text",
+      "x": 1145,
+      "y": 138,
+      "width": 12,
+      "height": 18,
+      "fontSize": 14,
+      "fontFamily": 3,
+      "text": "*"
+    },
+    {
+      "id": "fk-log-one",
+      "type": "text",
+      "x": 242,
+      "y": 94,
+      "width": 12,
+      "height": 18,
+      "fontSize": 14,
+      "fontFamily": 3,
+      "text": "1"
+    },
+    {
+      "id": "fk-backups-snapshots",
+      "type": "arrow",
+      "x": 560,
+      "y": 735,
+      "width": 130,
+      "height": 0,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -130,
+          0
+        ]
+      ],
+      "startArrowhead": null,
+      "endArrowhead": "triangle",
+      "strokeColor": "#1e1e1e",
+      "strokeStyle": "solid"
+    },
+    {
+      "id": "fk-backups-many",
+      "type": "text",
+      "x": 535,
+      "y": 715,
+      "width": 12,
+      "height": 18,
+      "fontSize": 14,
+      "fontFamily": 3,
+      "text": "*"
+    },
+    {
+      "id": "fk-backups-one",
+      "type": "text",
+      "x": 440,
+      "y": 715,
+      "width": 12,
+      "height": 18,
+      "fontSize": 14,
+      "fontFamily": 3,
+      "text": "1"
+    }
+  ],
+  "appState": {
+    "viewBackgroundColor": "#ffffff",
+    "gridSize": 10
+  },
+  "files": {}
+}

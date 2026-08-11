@@ -1,12 +1,12 @@
-import numpy as np 
-from typing import Sequence 
+import numpy as np
+from typing import Sequence
 from cicada.lib.smart_scheduling.domain import Schedule
 
 
 def evaluate_usage_and_peak(start_times: Sequence[int], schedules: Sequence[Schedule]):
-    """ 
-    Returns the usage time series and peak usage for a given schedule solution 
-    Args: 
+    """
+    Returns the usage time series and peak usage for a given schedule solution
+    Args:
         start_times: Sequence[int] : start time in minutes for each schedule
         schedules: Sequence[Schedule] : list of Schedule objects
     Returns:
@@ -23,24 +23,28 @@ def evaluate_usage_and_peak(start_times: Sequence[int], schedules: Sequence[Sche
 
         freq = schedule.frequency_minutes
         if start_times[i] >= freq:
-            raise ValueError(f"Start time should be the earliest it can be for schedule: {schedule} with start time {start_times[i]} exceeds frequency {freq}")
+            raise ValueError(
+                f"Start time should be the earliest it can be for schedule: {schedule} with start time {start_times[i]} exceeds frequency {freq}"
+            )
         if freq <= 0:
-            raise ValueError(f"Unsupported frequency {freq} for schedule {schedule} {schedule.interval_mask} should have been labelled unsupported and caught earlier.")
+            raise ValueError(
+                f"Unsupported frequency {freq} for schedule {schedule} {schedule.interval_mask} should have been labelled unsupported and caught earlier."
+            )
 
         run_time = schedule.median_runtime_minutes
         minute = int(start_times[i])
 
-        # Iterate through the day in increments of the schedule's frequency, adding the schedule's usage to the diff array for the duration of its runtime. 
-        # We use a diff array to efficiently calculate the cumulative usage at each minute. Instead of appending the usage for each minute the 
+        # Iterate through the day in increments of the schedule's frequency, adding the schedule's usage to the diff array for the duration of its runtime.
+        # We use a diff array to efficiently calculate the cumulative usage at each minute. Instead of appending the usage for each minute the
         # schedule runs in, we add the usage at the starting minute and subtract it at the end minute.
         while minute < mins_per_day:
             end = min(minute + run_time, mins_per_day)
             diff[minute] += 2
-            diff[minute+1] -= 1
+            diff[minute + 1] -= 1
             diff[end] -= 1
             minute += freq
-        
-    # Sums up everything in the diff array to get the total usage at each minute, and finds the peak usage. 
+
+    # Sums up everything in the diff array to get the total usage at each minute, and finds the peak usage.
     # Ignore the last element of the diff array since it's just a placeholder to handle the end minute subtraction for schedules that run until the end of the day.
     usage = np.cumsum(diff[:-1])
     peak = float(np.max(usage)) if usage.size else 0.0

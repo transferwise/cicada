@@ -1,182 +1,98 @@
-# CLAUDE.md
+# Repository Guidance
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Scope
 
-## Project Overview
+Cicada is a Python 3.8, PostgreSQL-backed distributed job scheduler. Keep changes small, preserve command-line and
+database compatibility, and treat the implementation and `setup/schema.sql` as authoritative when documentation is
+stale. Explicit user instructions override this file.
 
-**Cicada** is a centralized, distributed job scheduler for Pipelinewise schedules. It acts as a lightweight management layer between Linux CRON and executables, allowing jobs to be scheduled across multiple nodes via a central database rather than local cron.
+`CLAUDE.md` is the authoritative repository guidance; update it directly.
 
-Key architectural concepts:
-- **Nodes/Servers**: Machines that register with Cicada and pull scheduling information from the central database. They execute `cicada exec_server_schedules` via cron.
-- **Schedules**: Jobs defined in the database with cron expressions, parameters, and target servers.
-- **SmartScheduling**: A Genetic Algorithm (GA) optimization module that shifts job start times to distribute load across a 24-hour period, avoiding resource conflicts.
+## Architecture
 
-## Development Setup
+- `cicada/cli.py` owns argparse and dispatches commands to `cicada/commands/`.
+- `cicada/lib/scheduler.py` owns schedule selection, cron evaluation, database queries, snapshots, and rollback helpers.
+- `cicada/commands/exec_server_schedules.py` is the cron entry point. It starts asynchronous schedules with `Popen`,
+  then runs synchronous schedules sequentially.
+- `cicada/commands/exec_schedule.py` owns one execution's state, log, subprocess, abort, and cleanup lifecycle.
+- `cicada/lib/smart_scheduling/` contains the optimizer domain, configuration, evaluation, and PyGAD adapter.
+- `setup/schema.sql` defines fresh databases; `setup/`, `reports/`, `docs/`, and `local-dev/` contain operational SQL,
+  reports, documentation, and the supported development stack.
 
-### Install and Build
+## Execution Invariants
+
+- The database coordinates execution through `is_running`, `abort_running`, `adhoc_execute`, and `adhoc_parameters`.
+  Preserve their one-shot behavior and update related state atomically where races are possible.
+- Normal schedules require enabled schedule and server records and valid date bounds. Ad hoc execution bypasses the
+  schedule's enabled/date filters but still requires an enabled server and `is_running = 0`.
+- Never clear `is_running` while a launched child may still be alive. An abort or handled supervisor shutdown sends
+  `SIGTERM` only to the direct child, waits for it to exit, and consumes repeated abort requests while waiting. Cicada
+  does not manage descendants or escalate signals; launchers must remain foreground and `exec` or correctly forward
+  signals and wait for their work.
+- Commands are converted to argv with `shlex.split` and launched without a shell. Preserve quoting behavior and do not
+  introduce `shell=True`. Child stdout and stderr are discarded; `schedule_log` stores metadata and status, not output.
+- PostgreSQL connections require SSL and use autocommit. Wrap multi-statement mutations in explicit
+  `BEGIN`/`COMMIT`/`ROLLBACK`, and prefer parameterized SQL for new or changed queries.
+- The effective cron is `COALESCE(smart_interval_mask, interval_mask)`. Smart scheduling must leave disabled,
+  irregular, and blocklisted schedules unchanged, preserve the original interval, and retain five snapshots per server.
+
+## Environment and Validation
+
+Use the Make targets as the canonical commands:
+
 ```bash
-make dev          # Create venv with dev dependencies (black, flake8, pytest)
-make              # Create venv with only production dependencies
+make dev
+make flake8
+make black
+make pytest
 ```
 
-The project uses a standard Python venv setup. The `Makefile` is the single source of truth for build commands.
+- `make flake8` checks fatal rules in `cicada/`; `make black` checks `cicada/` and `tests/` at 120 columns.
+- `make pytest` runs `tests/` with coverage and requires at least 78%.
+- Prefer the `local-dev` Docker stack for verification, tests, and linting; it supplies Python 3.8, PostgreSQL, TLS,
+  schema, and the supported environment. Reuse a ready `cicada_dev` container when one is already running:
 
-### Run Tests
 ```bash
-make pytest       # Run all tests with coverage (must be ≥80%)
+docker compose -f local-dev/docker-compose.yml up -d --build  # when the stack is not ready
+docker logs cicada_dev  # wait for "Cicada Dev environment is ready"
+docker exec cicada_dev make flake8
+docker exec cicada_dev make black
+docker exec cicada_dev make pytest
 ```
 
-To run a single test file or specific test:
-```bash
-. venv/bin/activate
-pytest tests/test_lib_scheduler.py -v
-pytest tests/test_lib_scheduler.py::test_function_name -v
-```
+- The first container start is slow because it installs system and Python dependencies. Do not confuse startup with a
+  test failure.
+- Leave the local development containers running after verification. Stop them only when explicitly requested or when
+  a clean rebuild is required.
+- Do not share `venv/` between the host and container; rebuild it in the environment that will execute the checks.
+- Database-backed test modules create and drop databases through ordered tests. Run the files serially; do not reorder
+  them, use `-x`, or run a later test without its module's setup test.
+- Never run `local-dev/refresh-local-dev.sh` without explicit approval; it performs a global Docker prune and removes
+  the development virtual environment with elevated privileges.
+- Add focused tests for changed behavior, then run the broadest relevant Make target. Report exact pass, fail, and skip
+  counts; an unavailable or skipped check is not a pass.
 
-### Code Quality
-```bash
-make flake8       # Lint (checks E9, F63, F7, F82 only, max line length 120)
-make black        # Format check (line length 120)
-```
+## Schema, Configuration, and Releases
 
-Black is used for code style; run it with `black --line-length 120 cicada/ tests/ --diff` to preview changes before committing.
+- For schema changes, update `setup/schema.sql` for fresh installs and add an idempotent, transactional migration for
+  existing databases when required. There is no migration runner or version ledger, so deploy and verify upgrade SQL
+  explicitly. Update fixtures and query code together.
+- Treat `setup/schema.sql` as the source of truth for `docs/erd.excalidraw`. After every schema change, update the
+  editable scene and export `docs/erd.png` for README and GitHub rendering. Show all tables and declared PKs/FKs; use
+  right-angled FK lines labelled `*`, `1`, `1:1`, or `0..1`, dashed when nullable and solid when required.
+- Runtime configuration is loaded from ignored `config/definitions.yml`; `config/example.yml` documents its shape.
+  Do not print, commit, or overwrite populated credentials or environment files.
+- Add CLI commands in `cicada/commands/`, wire them through `cicada/cli.py`, and cover dispatch plus command behavior.
+- Update `README.md` or `docs/` for user-visible behavior and `CHANGELOG.md` for release-visible changes. Change the
+  package version in `setup.py` only as part of a release, keeping it aligned with the changelog and release tag.
+- Keep CHANGELOG entries concise and atomic: one independently reviewable change per bullet. Use headings to preserve
+  test categories instead of combining multiple changes in one bullet.
+- Write documentation in a concise, authoritative, pragmatic, mildly operations-first engineering tone. Avoid
+  repetition except where it prevents operational mistakes.
 
-## Codebase Structure
+## Working Discipline
 
-### Core Modules
-
-**`cicada/lib/scheduler.py`**
-- Central scheduling logic: retrieving schedules, managing execution state, cron parsing
-- Functions like `get_schedule_details()`, `get_all_schedule_ids_per_server()`, `get_server_id()`
-- Uses `croniter` for cron expression parsing
-- Contains SQL queries for the main `schedules` and `servers` tables
-
-**`cicada/lib/postgres.py`**
-- Database connection management and helpers
-- Connection pooling and statement execution
-
-**`cicada/lib/utils.py`**
-- Utility functions and decorators for exception handling and logging
-
-**`cicada/cli.py`**
-- Command dispatcher using argparse
-- Routes subcommands to handlers in `cicada/commands/`
-
-### Commands
-Commands are located in `cicada/commands/` and implement specific operations:
-- `exec_server_schedules.py` – Main loop executed by cron on each node; fetches and runs scheduled jobs
-- `upsert_schedule.py`, `show_schedule.py`, `delete_schedule.py` – CRUD operations on schedules
-- `smart_schedule.py` – Invokes GA optimization (see SmartScheduling below)
-- `spread_schedules.py` – Distributes schedules across servers
-- `rollback.py` – Reverts SmartScheduling changes using checkpoint history
-- `register_server.py`, `archive_schedule_log.py`, `ping_slack.py` – Administrative operations
-
-### SmartScheduling Module
-Located in `cicada/lib/SmartScheduling/`
-
-**`domain.py`**
-- `Schedule` dataclass: represents a schedule as a "schedule" (job) with properties:
-  - `schedule_id`, `server_id`, `interval_mask` (cron expression)
-  - `frequency_minutes`, `median_runtime_minutes`
-  - `shift`: offset in minutes applied to shift job start time
-  - `blocklisted`: flag to exclude from GA optimization
-
-**`config.py`**
-- `GAConfig` dataclass: hyperparameters for the genetic algorithm
-  - `num_generations`, `sol_per_pop`, `mutation_percent_genes`, etc.
-
-**`pygad.py`**
-- Wraps the external `pygad` library (genetic algorithm)
-- Fitness function: evaluates how well a shift assignment distributes load
-- Implements crossover and mutation operations on shifts
-
-**`evaluation.py`**
-- Scoring logic: calculates resource contention, overlap penalties, and fitness metrics
-
-### Database Schema
-Key tables:
-- `servers` – Registered nodes with hostname, FQDN, IP address
-- `schedules` – Job definitions with cron expressions, parameters, execution state
-- `schedule_logs` – Historical execution records with runtime, status, output
-- `snapshots` – Metadata about optimization/rollback events (reason, timestamp, server_id)
-- `schedule_backups` – Schedule state snapshots: stores `interval_mask` and `smart_interval_mask` at each snapshot for potential rollback
-- `schedule_changes` – Linked-list audit trail of all changes to schedules (replaces older snapshot model); each entry has `previous_change_id` for chain traversal, `changes_delta` (JSON) for what changed
-
-Database setup SQL is in `setup/db_and_user.sql` and `setup/schema.sql`. Migration script: `setup/migrate_snapshots_to_changes.sql`. Example schedule setup for smart scheduling in `setup/create_test_tap_setup`.
-
-## Key Architectural Patterns
-
-### Cron Expression Handling
-- All scheduling uses standard cron format (5 fields: minute hour dom month dow)
-- `croniter` library parses expressions and calculates next/previous execution times
-
-### Command Execution
-- Jobs are executed as shell commands by `exec_server_schedules`
-- Commands can include parameters via template substitution
-- Outputs and exit codes are logged to `schedule_logs` table
-
-### Configuration
-- Database connection details from `config/definitions.yml` (user must create from `config/example.yml`)
-- Each command may accept CLI flags (e.g., `--schedule_id`, `--adhoc_execute`)
-
-### SmartScheduling Workflow
-1. **Load schedules**: Fetch all schedules for a server via `get_schedules_per_server()`
-2. **Create Schedule objects**: Convert schedule details to Schedule instances; filter unsupported schedules (irregular cron, too frequent, blocklisted)
-3. **Run GA optimization**: PyGAD evolves shifts over N generations to minimize resource conflicts
-4. **Apply and checkpoint**: Save optimized shifts back to DB; record change entry via `record_schedule_change()` for audit trail and rollback
-
-### Rollback System
-Cicada supports two rollback mechanisms:
-
-**Full Rollback** (`--full` flag):
-- Sets `smart_interval_mask = NULL` for affected schedules, reverting to original `interval_mask`
-- Works per-schedule or per-server
-- Records a `ROLLBACK_FULL` change entry in `schedule_changes`
-
-**Rollback to Specific Change** (`--change-id` flag):
-- Uses linked-list traversal via `compute_schedule_state_at_change()` to reconstruct schedule state at any historical change
-- Requires `schedule_id` and `change_id`
-- Records a `ROLLBACK_TO_CHANGE` entry documenting what was restored
-- Marks the target change as reverted
-
-**Change History** (`--history` flag):
-- Displays complete audit trail for a schedule via `get_schedule_history()`
-- Each entry shows reason, timestamp, and delta (what changed)
-
-**Migration Note**: Old snapshot/schedule_backups model supported only last 3 snapshots. New `schedule_changes` model retains unlimited history via linked-list structure.
-
-## Testing
-
-Tests are in `tests/` and use `pytest` with fixtures:
-- `test_functional_main.py` – Integration tests for the main execution loop
-- `test_functional_cli_entrypoint.py` – CLI command tests
-- `test_functional_spread_schedules.py` – SmartScheduling and load distribution tests
-- `test_lib_scheduler.py` – Unit tests for scheduler utility functions
-- `test_lib_postgres.py` – Database connection tests
-
-Mock fixtures often include a test PostgreSQL database or in-memory alternatives. Freezegun is used for time-based testing.
-
-## Common Development Tasks
-
-### Adding a New CLI Command
-- Create a new file in `cicada/commands/` with a `main()` function
-- Import and add an entry point in `cicada/cli.py`
-- Add tests in `tests/test_functional_cli_entrypoint.py`
-
-### Modifying Schedule Logic
-- Edit `cicada/lib/scheduler.py` for core logic changes (e.g., new state transitions)
-- Update `cicada/lib/SmartScheduling/domain.py` if Schedule validation rules change
-- Update tests in `test_lib_scheduler.py` to cover new behavior
-
-### Database Schema Changes
-- Modify SQL in `setup/schema.sql` (note: existing deployments require migration scripts)
-- Update query strings in `scheduler.py` and corresponding test fixtures
-
-## Important Notes
-
-- **PostgreSQL only**: Only PostgreSQL is supported (versions 12.9–15.14 verified)
-- **No external APIs**: Uses only core Python and database; runs offline
-- **Cron safety**: Jobs execute only when registered server node is running; they respect cron expressions and database state
-- **Rollback support**: SmartScheduling changes can be rolled back via checkpoints stored in the database
-- **Line length**: Maximum 120 characters (enforced by Black and Flake8)
-- **Code coverage**: Must maintain ≥80% test coverage for commits
+- Preserve unrelated working-tree changes and avoid broad formatting or opportunistic refactors.
+- Keep comments focused on non-obvious constraints or consequences; do not narrate the code.
+- Before completion, run applicable tests and lint, run `git diff --check`, and verify `git status` contains only
+  intended files.

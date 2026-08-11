@@ -2,6 +2,8 @@
 
 import subprocess
 
+from cicada import cli
+
 
 def test_cicada():
     """test_cicada"""
@@ -49,6 +51,26 @@ optional arguments:
   -h, --help  show this help message and exit
 """
     assert actual == expected
+
+
+def test_list_server_schedules_dispatch(mocker, monkeypatch):
+    """The top-level CLI dispatches commands without passing a class instance."""
+    list_server_schedules = mocker.patch.object(cli.list_server_schedules, "main")
+    monkeypatch.setattr(cli.sys, "argv", ["cicada", "list_server_schedules"])
+
+    cli.Cicada()
+
+    list_server_schedules.assert_called_once_with()
+
+
+def test_register_server_dispatch(mocker, monkeypatch):
+    """The top-level CLI dispatches register_server without passing a class instance."""
+    register_server = mocker.patch.object(cli.register_server, "main")
+    monkeypatch.setattr(cli.sys, "argv", ["cicada", "register_server"])
+
+    cli.Cicada()
+
+    register_server.assert_called_once_with()
 
 
 def test_show_schedule():
@@ -333,10 +355,11 @@ optional arguments:
     assert actual == expected
 
 
-
 def test_smart_schedule_help():
     """test_smart_schedule_help"""
-    actual = subprocess.run(["cicada", "smart_schedule", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode("utf-8")
+    actual = subprocess.run(["cicada", "smart_schedule", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode(
+        "utf-8"
+    )
 
     assert "optimise" in actual.lower()
     assert "rollback" in actual.lower()
@@ -345,7 +368,9 @@ def test_smart_schedule_help():
 
 def test_smart_schedule_optimise_help():
     """test_smart_schedule optimise subcommand help"""
-    actual = subprocess.run(["cicada", "smart_schedule", "optimise", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode("utf-8")
+    actual = subprocess.run(
+        ["cicada", "smart_schedule", "optimise", "-h"], check=True, stdout=subprocess.PIPE
+    ).stdout.decode("utf-8")
     expected_snippet = """usage: smart_schedule optimise [-h] [--server_id SERVER_ID]"""
 
     assert expected_snippet in actual
@@ -353,16 +378,19 @@ def test_smart_schedule_optimise_help():
 
 def test_smart_schedule_rollback_help():
     """test_smart_schedule rollback subcommand help"""
-    actual = subprocess.run(["cicada", "smart_schedule", "rollback", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode(
-        "utf-8"
-    )
+    actual = subprocess.run(
+        ["cicada", "smart_schedule", "rollback", "-h"], check=True, stdout=subprocess.PIPE
+    ).stdout.decode("utf-8")
 
     expected_snippet = """usage: smart_schedule [-h] (--full | --previous)"""
     assert expected_snippet in actual
 
+
 def test_smart_schedule_rollback_missing_flags():
     """test_smart_schedule rollback requires either --full or --previous"""
-    actual = subprocess.run(["cicada", "smart_schedule", "rollback"], check=False, stderr=subprocess.PIPE).stderr.decode("utf-8")
+    actual = subprocess.run(
+        ["cicada", "smart_schedule", "rollback"], check=False, stderr=subprocess.PIPE
+    ).stderr.decode("utf-8")
     expected_snippet = """error: one of the arguments --full --previous is required"""
 
     assert expected_snippet in actual
@@ -373,7 +401,7 @@ def test_smart_schedule_rollback_mutually_exclusive():
     actual = subprocess.run(
         ["cicada", "smart_schedule", "rollback", "--full", "--previous", "--server_id", "1"],
         check=False,
-        stderr=subprocess.PIPE
+        stderr=subprocess.PIPE,
     ).stderr.decode("utf-8")
     expected_snippet = "smart_schedule: error: argument --previous: not allowed with argument --full"
 
@@ -382,9 +410,9 @@ def test_smart_schedule_rollback_mutually_exclusive():
 
 def test_smart_schedule_blocklist_help():
     """test_smart_schedule blocklist subcommand help"""
-    actual = subprocess.run(["cicada", "smart_schedule", "blocklist", "-h"], check=True, stdout=subprocess.PIPE).stdout.decode(
-        "utf-8"
-    )
+    actual = subprocess.run(
+        ["cicada", "smart_schedule", "blocklist", "-h"], check=True, stdout=subprocess.PIPE
+    ).stdout.decode("utf-8")
 
     assert "--schedule_id SCHEDULE_ID" in actual
     assert "--remove" in actual
@@ -392,9 +420,9 @@ def test_smart_schedule_blocklist_help():
 
 def test_smart_schedule_blocklist_missing_schedule_id():
     """test_smart_schedule blocklist requires --schedule_id"""
-    actual = subprocess.run(["cicada", "smart_schedule", "blocklist"], check=False, stderr=subprocess.PIPE).stderr.decode("utf-8")
+    actual = subprocess.run(
+        ["cicada", "smart_schedule", "blocklist"], check=False, stderr=subprocess.PIPE
+    ).stderr.decode("utf-8")
 
     expected_snippet = """error: the following arguments are required: --schedule_id"""
     assert expected_snippet in actual
-
-    

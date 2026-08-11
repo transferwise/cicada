@@ -2,36 +2,60 @@ name: Pytest
 
 on:
   push:
-    branches:
-    - main
+    branches: [main]
   pull_request:
-    branches:
-    - main
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   coverage:
-    timeout-minutes: 10
-    runs-on: ubuntu-20.04
+    timeout-minutes: 25
+    runs-on: ubuntu-22.04
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v1
+      - name: Checkout
+        uses: actions/checkout@v6
 
-    - name: Start containers
-      run: docker compose -f "local-dev/docker-compose.yml" up -d --build
+      - name: Start containers
+        run: docker compose -f local-dev/docker-compose.yml up -d --build
 
-    - name: Build dev environment
-      run: docker exec cicada_dev make dev
+      - name: Wait for development environment
+        shell: bash
+        run: |
+          for attempt in {1..180}; do
+            if docker logs cicada_dev 2>&1 | grep -q "Cicada Dev environment is ready"; then
+              echo "Cicada development environment is ready"
+              exit 0
+            fi
 
-    - name: Run tests
-      run: docker exec cicada_dev make pytest
+            if ! docker inspect --format '{{.State.Running}}' cicada_dev 2>/dev/null | grep -q true; then
+              echo "Cicada development container exited before becoming ready"
+              exit 1
+            fi
 
-    - name: Build coverage file
-      run: docker exec cicada_dev /bin/bash -c "source /opt/cicada/venv/bin/activate; pytest --cache-clear --cov=cicada --cov-fail-under=70" > pytest-coverage.txt
+            if ((attempt % 6 == 0)); then
+              echo "Waiting for Cicada development environment ($((attempt * 5))s elapsed)"
+            fi
+            sleep 5
+          done
 
-    - name: Comment coverage
-      uses: coroo/pytest-coverage-commentator@v1.0.2
+          echo "Cicada development environment was not ready after 900s"
+          exit 1
 
-    - name: Stop containers
-      if: always()
-      run: docker compose -f "local-dev/docker-compose.yml" down
+      - name: Run tests and coverage
+        run: docker exec cicada_dev make pytest
+
+      - name: Show container logs after failure
+        if: failure()
+        run: docker compose -f local-dev/docker-compose.yml logs --tail=200
+
+      - name: Stop containers
+        if: always()
+        run: docker compose -f local-dev/docker-compose.yml down

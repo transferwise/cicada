@@ -5,46 +5,37 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-
   workflow_dispatch:
 
 concurrency:
-  group: linter-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   check:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: ["3.8"]
 
     steps:
-      - name: Checking out repo
-        uses: actions/checkout@v2
-
-      - name: Check if python changes are present
-        id: check
-        env:
-          GITHUB_REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        continue-on-error: true
-        run: ./scripts/ci_check_no_file_changes.sh python
+      - name: Checkout
+        uses: actions/checkout@v6
 
       - name: Set up Python ${{ matrix.python-version }}
-        if: steps.check.outcome == 'failure'
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dev environment
-        if: steps.check.outcome == 'failure'
         run: make dev
 
       - name: Flake8
-        if: steps.check.outcome == 'failure'
         run: make flake8
 
       - name: Black
-        if: steps.check.outcome == 'failure'
         run: make black

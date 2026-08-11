@@ -288,7 +288,9 @@ class Cicada:
         )
 
         # Subcommands: optimise, rollback, blocklist
-        subparsers = parser.add_subparsers(dest="action", help="Action to perform. Options: optimise (default), rollback, or blocklist")
+        subparsers = parser.add_subparsers(
+            dest="action", help="Action to perform. Options: optimise (default), rollback, or blocklist"
+        )
 
         # (Default) optimise subcommand
         optimise_parser = subparsers.add_parser(
@@ -299,16 +301,60 @@ class Cicada:
         optimise_parser.add_argument("--server_id", type=int, required=False, help="ID of the server")
 
         # Optional GA Configurations
-        ga_config = optimise_parser.add_argument_group("ga_config", "Optional configurations for the genetic algorithm optimiser")
-        ga_config.add_argument("--num_generations",type=int,required=False, help="Number of generations for the genetic algorithm. Default: 20")
-        ga_config.add_argument("--sol_per_pop",type=int,required=False, help="Number of solutions per population for the genetic algorithm. Default: 40")
-        ga_config.add_argument("--num_parents_mating",type=int,required=False, help="Number of parents mating for the genetic algorithm. Default: 10")
-        ga_config.add_argument("--mutation_percent_genes",type=int,required=False, help="Mutation percentage of genes for the genetic algorithm. Default: 20")
-        ga_config.add_argument("--parent_selection_type",type=str,required=False, help="Parent selection type for the genetic algorithm. Allowed values: ['sss', 'rws', 'sus', 'tournament', 'rank', 'random']. Default: rank")
-        ga_config.add_argument("--crossover_type",type=str,required=False, help="Crossover type for the genetic algorithm. Allowed values: ['single_point', 'two_point', 'uniform']. Default: uniform")
-        ga_config.add_argument("--mutation_type",type=str,required=False, help="Mutation type for the genetic algorithm. Allowed values: ['random', 'swap', 'inversion', 'scramble']. Default: random")
-        ga_config.add_argument("--keep_elitism",type=int,required=False, help="Number of elite solutions to keep for the next generation. Default: 2")
-        ga_config.add_argument("--random_seed",type=int,required=False, help="Set a random seed to get repeatable results. Default: None")
+        ga_config = optimise_parser.add_argument_group(
+            "ga_config", "Optional configurations for the genetic algorithm optimiser"
+        )
+        ga_config.add_argument(
+            "--num_generations",
+            type=int,
+            required=False,
+            help="Number of generations for the genetic algorithm. Default: 20",
+        )
+        ga_config.add_argument(
+            "--sol_per_pop",
+            type=int,
+            required=False,
+            help="Number of solutions per population for the genetic algorithm. Default: 40",
+        )
+        ga_config.add_argument(
+            "--num_parents_mating",
+            type=int,
+            required=False,
+            help="Number of parents mating for the genetic algorithm. Default: 10",
+        )
+        ga_config.add_argument(
+            "--mutation_percent_genes",
+            type=int,
+            required=False,
+            help="Mutation percentage of genes for the genetic algorithm. Default: 20",
+        )
+        ga_config.add_argument(
+            "--parent_selection_type",
+            type=str,
+            required=False,
+            help="Parent selection type for the genetic algorithm. Allowed values: ['sss', 'rws', 'sus', 'tournament', 'rank', 'random']. Default: rank",
+        )
+        ga_config.add_argument(
+            "--crossover_type",
+            type=str,
+            required=False,
+            help="Crossover type for the genetic algorithm. Allowed values: ['single_point', 'two_point', 'uniform']. Default: uniform",
+        )
+        ga_config.add_argument(
+            "--mutation_type",
+            type=str,
+            required=False,
+            help="Mutation type for the genetic algorithm. Allowed values: ['random', 'swap', 'inversion', 'scramble']. Default: random",
+        )
+        ga_config.add_argument(
+            "--keep_elitism",
+            type=int,
+            required=False,
+            help="Number of elite solutions to keep for the next generation. Default: 2",
+        )
+        ga_config.add_argument(
+            "--random_seed", type=int, required=False, help="Set a random seed to get repeatable results. Default: None"
+        )
 
         # Rollback subcommand
         rollback_parser = subparsers.add_parser(
@@ -343,7 +389,6 @@ class Cicada:
             help="ID of the server to rollback, if not specified will rollback all servers",
         )
         group.add_argument("--schedule_id", type=str, required=False, help="ID of the schedule to rollback")
-
 
         # Blocklist subcommand
         blocklist_parser = subparsers.add_parser(
@@ -395,7 +440,8 @@ class Cicada:
                 server_id=rollback_args.server_id,
                 schedule_id=rollback_args.schedule_id,
                 full=rollback_args.full,
-                previous=rollback_args.previous)
+                previous=rollback_args.previous,
+            )
         elif args.action == "blocklist":
             blocklist_args = blocklist_parser.parse_args(sys.argv[3:])
             blocklist_schedule_cmd.main(
