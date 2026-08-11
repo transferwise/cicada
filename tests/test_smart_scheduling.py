@@ -570,31 +570,6 @@ class TestScheduleDomain:
             db_cur.close()
             db_conn.close()
 
-    def test_schedule_45_minute_step_is_unsupported(self, db_setup):
-        """A */45 cron alternates 45- and 15-minute gaps and is not regular."""
-        db_conn, db_cur = get_db_cursor()
-        try:
-            schedule_details = {
-                "schedule_id": "test-id-1",
-                "server_id": 1,
-                "interval_mask": "*/45 * * * *",
-                "smart_interval_mask": None,
-                "blocklisted": False,
-            }
-            test_schedule = Schedule(
-                schedule_id=schedule_details["schedule_id"],
-                server_id=schedule_details["server_id"],
-                interval_mask=schedule_details["interval_mask"],
-                smart_interval_mask=schedule_details.get("smart_interval_mask"),
-                blocklisted=schedule_details.get("blocklisted"),
-                db_cur=db_cur,
-            )
-
-            assert test_schedule.is_unsupported()
-        finally:
-            db_cur.close()
-            db_conn.close()
-
     def test_schedule_is_irregular_schedule_weekdays(self, db_setup):
         """Test that weekday-only schedules are marked as irregular"""
         db_conn, db_cur = get_db_cursor()

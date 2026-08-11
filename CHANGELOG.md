@@ -7,7 +7,6 @@ Documentation
 
 Tests and CI
 ~~~~~~~~~~~~
-- Correct the `*/45` smart scheduling test to treat its alternating 45- and 15-minute intervals as unsupported
 - Format the existing Python codebase with Black so the formatting check passes
 - Run Flake8 and Black for every pull request and push to `main`
 - Wait for Docker readiness and report container logs when the pytest workflow fails
