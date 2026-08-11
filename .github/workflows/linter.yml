@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   check:
-    runs-on: ubuntu-22.04
+    runs-on: gha-production-medium
     timeout-minutes: 10
     strategy:
       matrix:
