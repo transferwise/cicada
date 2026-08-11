@@ -17,7 +17,7 @@ permissions:
 jobs:
   coverage:
     timeout-minutes: 25
-    runs-on: ubuntu-22.04
+    runs-on: gha-production-medium
 
     steps:
       - name: Checkout
