@@ -71,6 +71,9 @@ docker exec cicada_dev make pytest
   the development virtual environment with elevated privileges.
 - Add focused tests for changed behavior, then run the broadest relevant Make target. Report exact pass, fail, and skip
   counts; an unavailable or skipped check is not a pass.
+- Summarize test changes as **Existing**, **New**, **Updated**, and **Deleted** test cases. Separate coverage of the
+  changed behavior from broader regression or supporting coverage, and briefly explain what each updated case now
+  verifies. Report test cases, not test-function counts.
 
 ## Schema, Configuration, and Releases
 
