@@ -85,8 +85,9 @@ docker exec cicada_dev make pytest
 - Add CLI commands in `cicada/commands/`, wire them through `cicada/cli.py`, and cover dispatch plus command behavior.
 - Update `README.md` or `docs/` for user-visible behavior and `CHANGELOG.md` for release-visible changes. Change the
   package version in `setup.py` only as part of a release, keeping it aligned with the changelog and release tag.
-- Keep CHANGELOG entries concise and atomic: one independently reviewable change per bullet. Use headings to preserve
-  test categories instead of combining multiple changes in one bullet.
+- Keep CHANGELOG entries concise and atomic: one independently reviewable change per bullet. Use plain operational
+  language that says what users or operators will observe and why it matters; avoid implementation jargon unless it
+  helps them act or diagnose a problem. Use headings to keep categories separate.
 - Write documentation in a concise, authoritative, pragmatic, mildly operations-first engineering tone. Avoid
   repetition except where it prevents operational mistakes.
 
