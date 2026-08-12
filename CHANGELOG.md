@@ -3,16 +3,16 @@
 
 Runtime
 ~~~~~~~
-- After `abort_running`, keep the schedule marked as `is_running` until the launched child process exits
-- Clear repeated `abort_running` requests while waiting so they cannot affect the next run
-- Keep supervising through transient child wait failures instead of finalizing a live schedule
-- Terminate and supervise the launched child when Cicada receives a handled shutdown signal
-- Consume `abort_running` with one atomic parameterized database statement
-- Consolidate database outage alerts and close connections when cursor creation fails
+- After an `abort_running` request, keep the schedule marked as running until its process has stopped
+- Clear additional abort requests while the process is stopping so they do not stop the next run
+- If Cicada temporarily cannot check the process, keep waiting instead of reporting the schedule as complete
+- When Cicada is asked to shut down, stop the launched process and wait for it to exit
+- Check and clear `abort_running` in one database operation
+- Use consistent database outage alerts and close database connections after errors
 
 Tests
 ~~~~~
-- Add regression tests for delayed child exit, repeated abort requests, shutdown signals, and transient wait failures
+- Add tests for slow process shutdown, repeated abort requests, stopping Cicada, and temporary process-check failures
 
 
 0.10.3
