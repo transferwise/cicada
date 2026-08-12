@@ -1,4 +1,4 @@
-0.10.3
+0.10.4
 ------
 
 Runtime
@@ -10,13 +10,20 @@ Runtime
 - Consume `abort_running` with one atomic parameterized database statement
 - Consolidate database outage alerts and close connections when cursor creation fails
 
+Tests
+~~~~~
+- Add regression tests for delayed child exit, repeated abort requests, shutdown signals, and transient wait failures
+
+
+0.10.3
+------
+
 Documentation
 ~~~~~~~~~~~~~
 - Add editable Excalidraw source and refresh the database ERD
 
 Tests and CI
 ~~~~~~~~~~~~
-- Add regression tests for delayed child exit, repeated abort requests, shutdown signals, and transient wait failures
 - Format the existing Python codebase with Black so the formatting check passes
 - Run Flake8 and Black for every pull request and push to `main`
 - Wait for Docker readiness and report container logs when the pytest workflow fails
