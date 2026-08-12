@@ -43,6 +43,8 @@ Verified on **PostgreSQL** versions *12.9* to *15.14*
 ### Database ERD
 ![Database ERD](https://github.com/transferwise/cicada/blob/main/docs/erd.png)
 
+[Editable Excalidraw source](docs/erd.excalidraw)
+
 ## Setup Node
 
 Verified on *Ubuntu 18.04, 20.04 LTS and 22.04 LTS*

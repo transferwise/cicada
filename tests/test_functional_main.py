@@ -257,7 +257,7 @@ def test_exec_schedule_send_alert_if_returncode_not_0_and_config_has_setting_for
         """
         slack:
              channel: foo_channel
-             returncodes_alert: *
+             returncodes_alert: "*"
         """,
     )
     with TemporaryDirectory() as temp_dir:
@@ -268,6 +268,7 @@ def test_exec_schedule_send_alert_if_returncode_not_0_and_config_has_setting_for
             mocker.patch("os.path.join", return_value=f"{temp_dir}/definitions.yml")
             exec_schedule.main("FOO_SCHEDULE_ID", "FOO_DB")
             mocked_slack.assert_called_once_with("FOO_SCHEDULE_ID", "FOO_LOG_ID", return_code, None, None)
+            mocked_slack.reset_mock()
 
 
 def test_exec_schedule_send_alert_if_returncode_not_0_and_exists_in_config(

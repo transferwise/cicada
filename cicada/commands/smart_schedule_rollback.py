@@ -3,7 +3,6 @@ from cicada.lib import postgres, utils
 from cicada.lib import scheduler
 
 
-
 def _rollback_to_previous_snapshot(db_cur, server_id):
     """
     Roll back to the previous snapshot for a given server_id. If no previous snapshot exists, perform a full rollback.
@@ -19,7 +18,7 @@ def _rollback_to_previous_snapshot(db_cur, server_id):
         if current_snapshot is not None:
             scheduler.reset_schedule_backups(db_cur, snapshot_id=current_snapshot)
             scheduler.remove_snapshot(db_cur, current_snapshot)
-            
+
         # Restore the previous snapshot if it exists. If no previous snapshot exists, perform a full rollback instead
         if previous_snapshot is not None:
             scheduler.restore_previous_schedules(db_cur, server_id=server_id, snapshot_id=previous_snapshot)
@@ -54,7 +53,7 @@ def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbn
         raise TypeError(f"server_id needs to be of type int. {type(server_id)}")
     if schedule_id is not None and not isinstance(schedule_id, str):
         raise TypeError("schedule_id needs to be of type str")
-    if not(full or previous) or (full and previous):
+    if not (full or previous) or (full and previous):
         raise ValueError("Exactly one of --full or --previous flags must be provided")
     if schedule_id and not full:
         raise ValueError("schedule_id can only be used with --full flag")
@@ -70,9 +69,11 @@ def main(server_id: Optional[int] = None, schedule_id: Optional[str] = None, dbn
                 scheduler.full_rollback(db_cur, server_id, schedule_id)
                 print("Full rollback successful\n")
                 if not schedule_id:
-                    server_ids = [server_id] if server_id else [server[0] for server in scheduler.get_all_server_ids(db_cur)]
+                    server_ids = (
+                        [server_id] if server_id else [server[0] for server in scheduler.get_all_server_ids(db_cur)]
+                    )
                     for server in server_ids:
-                        scheduler.snapshot_schedules(db_cur, server_id=server, reason='Full Rollback')
+                        scheduler.snapshot_schedules(db_cur, server_id=server, reason="Full Rollback")
                 db_cur.execute("COMMIT;")
             except Exception as e:
                 db_cur.execute("ROLLBACK;")

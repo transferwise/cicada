@@ -255,7 +255,7 @@ def update_schedule_details_bulk(db_cur, schedule_list):
 
         for col in sorted(updates.keys()):
             params.append(updates[col])
-        params.append(schedule['schedule_id'])
+        params.append(schedule["schedule_id"])
 
     if not statements:
         print("No fields to update for any schedules. Bulk update skipped.")
@@ -276,7 +276,7 @@ def snapshot_schedules(db_cur, server_id=None, computed_usage=None, reason=None)
         computed_usage: Computed usage for the snapshot
         reason: Optional reason/context for the snapshot
     """
-    
+
     if not server_id:
         raise ValueError("server_id must be provided for snapshot")
 
@@ -292,7 +292,7 @@ def snapshot_schedules(db_cur, server_id=None, computed_usage=None, reason=None)
         FROM schedules WHERE server_id = %s
     """
     db_cur.execute(sqlquery, (snapshot_id, server_id))
-    
+
     # Clean up old snapshots (keep last 5)
     min_snapshot_query = """
             SELECT snapshot_id FROM snapshots
@@ -460,7 +460,6 @@ def delete_schedule(db_cur, schedule_id):
     db_cur.execute(sqlquery)
 
 
-
 def get_all_server_ids(db_cur):
     """Get all possible server_ids from the servers table"""
     sqlquery = "SELECT DISTINCT server_id FROM schedules ORDER BY server_id"
@@ -468,6 +467,7 @@ def get_all_server_ids(db_cur):
     server_ids = db_cur.fetchall()
 
     return server_ids
+
 
 def get_all_schedule_ids_per_server(db_cur, server_id):
     """Get all possible schedule_ids for each server from the schedules table"""
@@ -480,10 +480,10 @@ def get_all_schedule_ids_per_server(db_cur, server_id):
 
 def get_median_run_time(db_cur, schedule_id):
     """
-    Calculate the median runtime in minutes for a schedule_id from the schedule_log table. 
+    Calculate the median runtime in minutes for a schedule_id from the schedule_log table.
 
-    Zero runs => 5 mins (conservative estimate, allows local testing without data and for new schedules to be 
-    scheduled without having to wait for historical data to be collected. 
+    Zero runs => 5 mins (conservative estimate, allows local testing without data and for new schedules to be
+    scheduled without having to wait for historical data to be collected.
     """
 
     sqlquery = f"""
@@ -521,13 +521,15 @@ def retrieve_snapshots(db_cur, server_id):
 
 def full_rollback(db_cur, server_id=None, schedule_id=None):
     """
-        Roll back schedules to original interval_mask by setting smart_interval_mask to NULL for either a server_id or an individual schedule_id.
-        Args:
-            server_id | schedule_id: Optional[int | str] [Mutually exclusive]
-                Target server/schedule to roll back all schedules for. If not provided, will roll back all schedules for all servers.
+    Roll back schedules to original interval_mask by setting smart_interval_mask to NULL for either a server_id or an individual schedule_id.
+    Args:
+        server_id | schedule_id: Optional[int | str] [Mutually exclusive]
+            Target server/schedule to roll back all schedules for. If not provided, will roll back all schedules for all servers.
     """
     if server_id and schedule_id:
-        raise ValueError("Cannot specify both server_id and schedule_id for full rollback, please specify only one to rollback all schedules for a server or an individual schedule respectively")
+        raise ValueError(
+            "Cannot specify both server_id and schedule_id for full rollback, please specify only one to rollback all schedules for a server or an individual schedule respectively"
+        )
     if server_id:
         schedule_ids = [row[0] for row in get_all_schedule_ids_per_server(db_cur, server_id)]
     elif schedule_id:
@@ -535,7 +537,7 @@ def full_rollback(db_cur, server_id=None, schedule_id=None):
         schedule_ids = [schedule_id]
     else:
         print(f"Rolling back schedules for all servers to original interval_mask...")
-        schedule_ids =[row[1] for row in get_all_schedule_ids(db_cur)]
+        schedule_ids = [row[1] for row in get_all_schedule_ids(db_cur)]
 
     print(f"Found {len(schedule_ids)} schedules to rollback for server_id ...")
     print("Removing smart_interval_mask for selected schedules...")
@@ -543,9 +545,10 @@ def full_rollback(db_cur, server_id=None, schedule_id=None):
         UPDATE schedules SET smart_interval_mask = NULL WHERE schedule_id = ANY(%s::text[])
         """
     db_cur.execute(update_all_schedules_query, (schedule_ids,))
-    print(f"Schedules Updated:'{chr(10).join([f'- {sid}' for sid in schedule_ids])}")  
-    
+    print(f"Schedules Updated:'{chr(10).join([f'- {sid}' for sid in schedule_ids])}")
+
     return
+
 
 def restore_previous_schedules(db_cur, server_id, snapshot_id):
     """
@@ -553,7 +556,7 @@ def restore_previous_schedules(db_cur, server_id, snapshot_id):
     """
     if not snapshot_id:
         raise ValueError("snapshot_id is required to restore previous schedules")
-    
+
     schedule_ids = get_all_schedule_ids_per_server(db_cur, server_id)
     print(f"{len(schedule_ids)} schedules found for server_id {server_id}")
     print("Restoring schedules from snapshot...")
@@ -566,7 +569,7 @@ def restore_previous_schedules(db_cur, server_id, snapshot_id):
         AND schedule_backups.snapshot_id = %s
         AND schedules.interval_mask = schedule_backups.interval_mask
     """
-    db_cur.execute(sqlquery, (server_id, snapshot_id))  
+    db_cur.execute(sqlquery, (server_id, snapshot_id))
     rows_updated = db_cur.rowcount
     print(f"{rows_updated} Schedules restored")
 
@@ -585,7 +588,7 @@ def reset_schedule_backups(db_cur, snapshot_id=None, schedule_id=None):
         raise ValueError("Either snapshot_id or schedule_id must be provided to reset schedule_backups")
     if snapshot_id and schedule_id:
         raise ValueError("Cannot specify both snapshot_id and schedule_id to reset schedule_backups")
-    
+
     if schedule_id:
         sqlquery_backups = "DELETE FROM schedule_backups WHERE schedule_id = %s"
         db_cur.execute(sqlquery_backups, (schedule_id,))
@@ -594,7 +597,7 @@ def reset_schedule_backups(db_cur, snapshot_id=None, schedule_id=None):
         sqlquery_snapshots = " DELETE FROM snapshots WHERE snapshot_id = %s"
         db_cur.execute(sqlquery_backups, (snapshot_id,))
         db_cur.execute(sqlquery_snapshots, (snapshot_id,))
-     
+
 
 def blocklist_schedule(db_cur, schedule_id, reason=None):
     """Add a schedule_id to the blocklist"""
@@ -602,11 +605,13 @@ def blocklist_schedule(db_cur, schedule_id, reason=None):
     db_cur.execute(sqlquery, (schedule_id, reason))
     return
 
+
 def remove_blocklist_schedule(db_cur, schedule_id):
     """Remove a schedule_id from the blocklist"""
     sqlquery = "DELETE FROM schedule_blocklist WHERE schedule_id = %s"
     db_cur.execute(sqlquery, (schedule_id,))
     return
+
 
 def remove_snapshot(db_cur, snapshot_id):
     """Remove a snapshot_id from the snapshots table"""
@@ -620,4 +625,4 @@ def validate_server_id(db_cur, server_id):
     sqlquery = "SELECT COUNT(1) FROM servers WHERE server_id = %s"
     db_cur.execute(sqlquery, (server_id,))
     row = db_cur.fetchone()
-    return (row[0] == 1)
+    return row[0] == 1

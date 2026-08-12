@@ -30,10 +30,10 @@ def main(schedule_id: str, remove: bool = False, reason: Optional[str] = None, d
         if remove:
             scheduler.remove_blocklist_schedule(db_cur, schedule_id=schedule_id)
             print(f"Schedule {schedule_id} has been removed from the blocklist successfully.")
-        
+
         else:
             schedule_details = scheduler.get_schedule_details(db_cur, schedule_id)
-            if not schedule_details or not schedule_details.get('schedule_id'):
+            if not schedule_details or not schedule_details.get("schedule_id"):
                 print(f"ERROR: Schedule {schedule_id} not found")
                 return
             scheduler.blocklist_schedule(db_cur, schedule_id=schedule_id, reason=reason)

@@ -119,7 +119,7 @@ def main(spread_details, dbname=None):
 
             scheduler.update_schedule_details(db_cur, new_schedule_details)
             scheduler.reset_schedule_backups(db_cur, schedule_id=schedule_id)
-            
+
         else:
             output_message = (
                 f"'{str(current_schedule_details['schedule_id'])}' will be reassigned : "

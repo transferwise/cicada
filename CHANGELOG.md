@@ -1,16 +1,33 @@
+0.10.3
+------
+
+Documentation
+~~~~~~~~~~~~~
+- Add editable Excalidraw source and refresh the database ERD
+
+Tests and CI
+~~~~~~~~~~~~
+- Format the existing Python codebase with Black so the formatting check passes
+- Run Flake8 and Black for every pull request and push to `main`
+- Wait for Docker readiness and report container logs when the pytest workflow fails
+- Run the full pytest suite once and always clean up its Docker environment
+- Set the minimum test coverage to 78%
+- Update CI to Ubuntu 22.04 and the version 6 checkout and Python setup actions
+
+
 0.10.2
------
+------
 - Prevent disabled taps from being included in smart scheduling calculations
 - Reset the smart_interval_mask when running spread_schedules
 - Modify evaluation criteria to disincentivise overlaps for the first minute of the run
 
 0.10.1
------
+------
 - Fix bug in delete_schedule introduced in 0.10.0
 
 
-0.10.0 
------
+0.10.0
+------
 - Add smart_schedule command with optimise and rollback options (as well as blocklist functionality)
 - Adds new column to existing table and new tables connected to smart_schedule command
 

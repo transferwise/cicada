@@ -1,10 +1,10 @@
 from __future__ import annotations
-from typing import List, Mapping, Optional, Sequence 
-import numpy as np 
+from typing import List, Mapping, Optional, Sequence
+import numpy as np
 import pygad
 
-from cicada.lib.smart_scheduling.config import GAConfig 
-from cicada.lib.smart_scheduling.domain import Schedule 
+from cicada.lib.smart_scheduling.config import GAConfig
+from cicada.lib.smart_scheduling.domain import Schedule
 from cicada.lib.smart_scheduling.evaluation import evaluate_usage_and_peak
 
 
@@ -14,13 +14,13 @@ class GAPyGADScheduler:
     Args:
         config: Optional[GAConfig] : configuration for the genetic algorithm
     Returns:
-        Schedule : optimized schedule for all schedules 
+        Schedule : optimized schedule for all schedules
 
 
-    Implementation Note: We only consider the regular schedules during fitness evaluation to aid simplicity as there are few irregular 
-                         schedules. All regular schedules are fed into the scheduler however those on the blocklist will remain unchanged 
+    Implementation Note: We only consider the regular schedules during fitness evaluation to aid simplicity as there are few irregular
+                         schedules. All regular schedules are fed into the scheduler however those on the blocklist will remain unchanged
                          and are kept purely to ensure the fitness evaluation is accurate to the actual schedule.
-                         
+
                          We cap the max shift of a schedule to within the hour to prevent large shifts for schedules that run daily.
     """
 
@@ -30,7 +30,6 @@ class GAPyGADScheduler:
         else:
             filtered_config = {key: value for key, value in config.items() if value is not None}
             self.cfg = GAConfig(**filtered_config)
-
 
     def _gene_space(self, schedules: Sequence[Schedule]) -> List[dict]:
         # Build gene_space per schedule: each gene space is limited by its frequency
@@ -69,18 +68,20 @@ class GAPyGADScheduler:
 
         # Populate the rest of the initial population randomly within the gene space limits for each schedule
         for _ in range(self.cfg.sol_per_pop - 1):
-            pop.append([int(rng.integers(gene_space[i]["low"], gene_space[i]["high"] + 1)) for i in range(len(schedules))])
+            pop.append(
+                [int(rng.integers(gene_space[i]["low"], gene_space[i]["high"] + 1)) for i in range(len(schedules))]
+            )
         return np.asarray(pop, dtype=int)
 
     def fitness_fn(self, ga, solution, solution_idx):
         _, peak = evaluate_usage_and_peak(solution, self.schedules)
         return -float(peak)
-        
+
     def solve(self, schedules: Sequence[Schedule]) -> tuple[Sequence[Schedule], List[int], float, np.ndarray, float]:
         self.schedules = schedules
         gene_space = self._gene_space(schedules)
         print("Successfully initialised gene space")
-        
+
         initial_population = self._initial_population(schedules, gene_space)
         print("Created initial population. Current Solution Start Times:")
         print(initial_population[0])
@@ -106,7 +107,7 @@ class GAPyGADScheduler:
             random_seed=self.cfg.random_seed,
         )
         ga.run()
-        
+
         best_solution, best_fitness, _ = ga.best_solution()
         start_times = [int(v) for v in best_solution]
         peak_usage = -float(best_fitness)
@@ -119,11 +120,15 @@ class GAPyGADScheduler:
         # Update schedule objects start_time_mins attribute based on GA solution
         for i, schedule in enumerate(schedules):
             if not (start_times[i] >= gene_space[i]["low"] and start_times[i] <= gene_space[i]["high"]):
-                raise RuntimeError(f"Start time for schedule {schedule.schedule_id} is out of gene space bounds. Start time: {start_times[i]}, Gene space: {gene_space[i]}")
+                raise RuntimeError(
+                    f"Start time for schedule {schedule.schedule_id} is out of gene space bounds. Start time: {start_times[i]}, Gene space: {gene_space[i]}"
+                )
             if schedule.is_unsupported() and start_times[i] != schedule.start_time_mins:
-                raise RuntimeError(f"Unsupported schedule {schedule.schedule_id} should not have been shifted in the GA solution. {schedule.start_time_mins} != {start_times[i]}")
+                raise RuntimeError(
+                    f"Unsupported schedule {schedule.schedule_id} should not have been shifted in the GA solution. {schedule.start_time_mins} != {start_times[i]}"
+                )
             elif schedule.start_time_mins != start_times[i]:
                 schedule.shifted = True
                 schedule.start_time_mins = start_times[i]
-            
+
         return schedules, start_times, peak_usage, usage, -initial_fitness
