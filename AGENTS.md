@@ -73,7 +73,8 @@ docker exec cicada_dev make pytest
   counts; an unavailable or skipped check is not a pass.
 - Summarize test changes as **Existing**, **New**, **Updated**, and **Deleted** test cases. Separate coverage of the
   changed behavior from broader regression or supporting coverage, and briefly explain what each updated case now
-  verifies. Report test cases, not test-function counts.
+  verifies. Report test cases, not test-function counts. Include this summary in every PR description, using **None**
+  for categories without test changes.
 
 ## Schema, Configuration, and Releases
 
