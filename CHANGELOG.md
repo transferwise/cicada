@@ -11,6 +11,8 @@ Runtime
 - Use consistent database outage alerts and close database connections after errors
 - Prevent repeated process-check errors from using all available CPU while Cicada waits for the process to stop
 - Save process errors safely when a return code is missing or the error message contains punctuation
+- Keep process error details within the database limit so schedule cleanup can complete
+- Record the process's actual return code when a fallback check confirms it has stopped
 
 Tests
 ~~~~~
@@ -18,8 +20,10 @@ Tests
 - Add coverage that repeated abort requests are cleared while a process is stopping
 - Add coverage for stopping Cicada while a scheduled process is running
 - Add coverage for temporary and repeated process-check failures
+- Add coverage for alternating process-check failures and preserving the process return code
+- Add coverage that fallback process checks preserve an explicit abort result
 - Add coverage for atomic abort handling, database cleanup, and final schedule updates
-- Add coverage for safely saving missing return codes and error messages containing punctuation
+- Add coverage for safely saving missing return codes, long error details, and messages containing punctuation
 
 
 0.10.3

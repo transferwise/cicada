@@ -15,8 +15,8 @@ from cicada.lib import utils
 DB_ALERT_DELAY_MINUTES = 15
 DB_RETRY_DELAY_SECONDS = 5
 CHILD_WAIT_TIMEOUT_SECONDS = 1
-CHILD_WAIT_ERROR_POLL_THRESHOLD = 3
 UNKNOWN_RETURN_CODE = 999
+ERROR_DETAIL_MAX_LENGTH = 255
 
 
 class ExecutionResult(NamedTuple):
@@ -110,6 +110,8 @@ def finalize_schedule_log(db_cur, schedule_log_id, returncode, error_detail):
     """Finalize a schedule log"""
     if returncode is None:
         returncode = UNKNOWN_RETURN_CODE
+    if error_detail is not None:
+        error_detail = str(error_detail)[:ERROR_DETAIL_MAX_LENGTH]
 
     db_cur.execute(
         """
@@ -217,7 +219,7 @@ def execution_result_from_exception(error):
         return ExecutionResult(1, "KeyboardInterrupt")
     if isinstance(error, SystemExit):
         return ExecutionResult(1, "SystemExit")
-    return ExecutionResult(UNKNOWN_RETURN_CODE, "Crazy Unknown Error")
+    return ExecutionResult(UNKNOWN_RETURN_CODE, str(error) or error.__class__.__name__)
 
 
 def supervise_child_process(
@@ -231,42 +233,47 @@ def supervise_child_process(
 ):
     """Wait for one child to exit while handling termination requests."""
     termination_sent = False
-    consecutive_unexpected_wait_errors = 0
+    supervision_error_detail = None
+
+    def confirmed_exit_result(child_returncode):
+        if execution_result is not None:
+            return execution_result
+        return ExecutionResult(child_returncode, supervision_error_detail)
 
     while True:
         try:
-            if execution_result is not None and not termination_sent:
+            if (execution_result is not None or supervision_error_detail is not None) and not termination_sent:
                 termination_sent = terminate_child_process(child_process)
 
             try:
                 child_returncode = child_process.wait(timeout=CHILD_WAIT_TIMEOUT_SECONDS)
             except subprocess.TimeoutExpired:
-                consecutive_unexpected_wait_errors = 0
                 pass
             except OSError:
-                consecutive_unexpected_wait_errors = 0
+                try:
+                    child_returncode = child_process.poll()
+                except Exception:
+                    child_returncode = None
+                if child_returncode is not None:
+                    return confirmed_exit_result(child_returncode), alert_next
                 time.sleep(CHILD_WAIT_TIMEOUT_SECONDS)
             except Exception as error:
-                consecutive_unexpected_wait_errors += 1
-                if execution_result is None:
-                    execution_result = execution_result_from_exception(error)
+                if supervision_error_detail is None:
+                    supervision_error_detail = execution_result_from_exception(error).error_detail
                 if not termination_sent:
                     termination_sent = terminate_child_process(child_process)
 
-                if consecutive_unexpected_wait_errors >= CHILD_WAIT_ERROR_POLL_THRESHOLD:
-                    try:
-                        child_returncode = child_process.poll()
-                    except Exception:
-                        child_returncode = None
-                    if child_returncode is not None:
-                        return execution_result, alert_next
+                try:
+                    child_returncode = child_process.poll()
+                except Exception:
+                    child_returncode = None
+                if child_returncode is not None:
+                    return confirmed_exit_result(child_returncode), alert_next
 
                 time.sleep(CHILD_WAIT_TIMEOUT_SECONDS)
                 continue
             else:
-                if execution_result is None:
-                    execution_result = ExecutionResult(child_returncode)
-                return execution_result, alert_next
+                return confirmed_exit_result(child_returncode), alert_next
 
             signal_number = shutdown_request["signal"]
             if signal_number is not None and execution_result is None:
@@ -285,8 +292,8 @@ def supervise_child_process(
             if execution_result is None:
                 execution_result = execution_result_from_exception(error)
         except Exception as error:
-            if execution_result is None:
-                execution_result = execution_result_from_exception(error)
+            if supervision_error_detail is None:
+                supervision_error_detail = execution_result_from_exception(error).error_detail
             time.sleep(CHILD_WAIT_TIMEOUT_SECONDS)
 
 

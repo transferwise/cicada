@@ -223,6 +223,7 @@ def test_clearing_running_state_also_clears_outstanding_abort_request():
 def test_wait_error_keeps_supervising_until_child_exit(mocker):
     """A transient wait error cannot finalize a schedule while its child may be alive."""
     child_process = MagicMock()
+    child_process.poll.return_value = None
     child_process.wait.side_effect = [
         _wait_timeout(),
         OSError(-15, "wait interrupted"),
@@ -285,6 +286,7 @@ def test_sigterm_terminates_and_supervises_child_until_exit(mocker):
 def test_unexpected_supervision_error_terminates_and_waits_for_child(mocker):
     """The final fallback keeps ownership of a child after an unexpected error."""
     child_process = MagicMock()
+    child_process.poll.return_value = None
     child_process.wait.side_effect = [ValueError("unexpected wait failure"), _wait_timeout(), 143]
 
     collaborators = _run_schedule(
@@ -301,8 +303,8 @@ def test_unexpected_supervision_error_terminates_and_waits_for_child(mocker):
     collaborators["finalize_schedule_log"].assert_called_once_with(
         mocker.ANY,
         "schedule-log-id",
-        999,
-        "Crazy Unknown Error",
+        143,
+        "unexpected wait failure",
     )
 
 
@@ -319,17 +321,69 @@ def test_repeated_unexpected_wait_errors_back_off_and_use_poll_to_confirm_exit(m
         [],
     )
 
-    expected_wait_attempts = exec_schedule.CHILD_WAIT_ERROR_POLL_THRESHOLD + 2
-    assert child_process.wait.call_count == expected_wait_attempts
+    assert child_process.wait.call_count == 3
     child_process.terminate.assert_called_once()
     assert child_process.poll.call_count == 3
-    assert collaborators["sleep"].call_count == expected_wait_attempts - 1
+    assert collaborators["sleep"].call_count == 2
     collaborators["unset_is_running"].assert_called_once()
     collaborators["finalize_schedule_log"].assert_called_once_with(
         mocker.ANY,
         "schedule-log-id",
-        exec_schedule.UNKNOWN_RETURN_CODE,
-        "Crazy Unknown Error",
+        143,
+        "persistent wait failure",
+    )
+
+
+def test_alternating_wait_errors_poll_until_child_exit_is_confirmed(mocker):
+    """Different wait failures cannot prevent the poll fallback from observing exit."""
+    child_process = MagicMock()
+    child_process.wait.side_effect = [
+        ValueError("unexpected wait failure"),
+        _wait_timeout(),
+        ValueError("unexpected wait failure"),
+    ]
+    child_process.poll.side_effect = [None, 137]
+
+    collaborators = _run_schedule(
+        mocker,
+        child_process,
+        {"slack": {"returncodes_alert": []}},
+        [False],
+    )
+
+    assert child_process.wait.call_count == 3
+    assert child_process.poll.call_count == 2
+    assert collaborators["sleep"].call_count == 1
+    collaborators["finalize_schedule_log"].assert_called_once_with(
+        mocker.ANY,
+        "schedule-log-id",
+        137,
+        "unexpected wait failure",
+    )
+
+
+def test_abort_result_is_preserved_when_poll_confirms_exit_after_wait_error(mocker):
+    """A fallback process check cannot replace an explicit abort result."""
+    child_process = MagicMock()
+    child_process.wait.side_effect = [
+        _wait_timeout(),
+        ValueError("unexpected wait failure"),
+    ]
+    child_process.poll.return_value = 143
+
+    collaborators = _run_schedule(
+        mocker,
+        child_process,
+        {"slack": {"returncodes_alert": []}},
+        [True],
+    )
+
+    child_process.terminate.assert_called_once()
+    collaborators["finalize_schedule_log"].assert_called_once_with(
+        mocker.ANY,
+        "schedule-log-id",
+        -15,
+        "Cicada abort_running",
     )
 
 
@@ -359,6 +413,26 @@ def test_finalize_schedule_log_parameterizes_unknown_return_code_and_error_detai
     assert parameters == (
         exec_schedule.UNKNOWN_RETURN_CODE,
         "worker's connection timed out",
+        "schedule-log-id",
+    )
+
+
+def test_finalize_schedule_log_truncates_error_detail_to_database_limit():
+    """An oversized process error cannot prevent schedule finalization."""
+    db_cursor = MagicMock()
+
+    exec_schedule.finalize_schedule_log(
+        db_cursor,
+        "schedule-log-id",
+        exec_schedule.UNKNOWN_RETURN_CODE,
+        "x" * (exec_schedule.ERROR_DETAIL_MAX_LENGTH + 1),
+    )
+
+    _, parameters = db_cursor.execute.call_args.args
+    assert len(parameters[1]) == 255
+    assert parameters == (
+        exec_schedule.UNKNOWN_RETURN_CODE,
+        "x" * 255,
         "schedule-log-id",
     )
 
