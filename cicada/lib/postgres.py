@@ -2,7 +2,10 @@
 
 # 2015-07-01 Louis Pieterse
 
+from contextlib import contextmanager
+
 import psycopg2
+
 from cicada.lib import utils
 
 # Create a PgSQL database connection based on definition requested
@@ -25,6 +28,22 @@ def db_cicada(dbname=None):
     conn.autocommit = True
 
     return conn
+
+
+@contextmanager
+def db_cicada_cursor(dbname=None):
+    """Yield a Cicada connection and cursor, closing both on every exit path."""
+    conn = db_cicada(dbname)
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        yield conn, cursor
+    finally:
+        try:
+            if cursor is not None:
+                cursor.close()
+        finally:
+            conn.close()
 
 
 def escape_upsert_string(regular_string):

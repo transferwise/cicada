@@ -1,12 +1,22 @@
 0.10.3
 ------
 
+Runtime
+~~~~~~~
+- After `abort_running`, keep the schedule marked as `is_running` until the launched child process exits
+- Clear repeated `abort_running` requests while waiting so they cannot affect the next run
+- Keep supervising through transient child wait failures instead of finalizing a live schedule
+- Terminate and supervise the launched child when Cicada receives a handled shutdown signal
+- Consume `abort_running` with one atomic parameterized database statement
+- Consolidate database outage alerts and close connections when cursor creation fails
+
 Documentation
 ~~~~~~~~~~~~~
 - Add editable Excalidraw source and refresh the database ERD
 
 Tests and CI
 ~~~~~~~~~~~~
+- Add regression tests for delayed child exit, repeated abort requests, shutdown signals, and transient wait failures
 - Format the existing Python codebase with Black so the formatting check passes
 - Run Flake8 and Black for every pull request and push to `main`
 - Wait for Docker readiness and report container logs when the pytest workflow fails

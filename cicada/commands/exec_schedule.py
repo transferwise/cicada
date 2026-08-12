@@ -2,14 +2,26 @@
 
 import datetime
 import subprocess
-import os
 import signal
 import time
 import uuid
+from typing import NamedTuple, Optional
 
 from cicada.lib import postgres
 from cicada.lib import scheduler
 from cicada.lib import utils
+
+
+DB_ALERT_DELAY_MINUTES = 15
+DB_RETRY_DELAY_SECONDS = 5
+CHILD_WAIT_TIMEOUT_SECONDS = 1
+
+
+class ExecutionResult(NamedTuple):
+    """A child execution outcome recorded in schedule_log."""
+
+    returncode: int
+    error_detail: Optional[str] = None
 
 
 def get_is_running(db_cur, schedule_id):
@@ -37,13 +49,14 @@ def set_is_running(db_cur, schedule_id):
 
 
 def unset_is_running(db_cur, schedule_id):
-    """Unset is_running status"""
-    sqlquery = f"""
+    """Atomically clear the running state and any outstanding abort request."""
+    sqlquery = """
     UPDATE schedules
-    SET is_running = 0
-    WHERE schedule_id = '{str(schedule_id)}'"""
+    SET is_running = 0,
+        abort_running = 0
+    WHERE schedule_id = %s"""
 
-    db_cur.execute(sqlquery)
+    db_cur.execute(sqlquery, (schedule_id,))
 
 
 def reset_adhoc_details(db_cur, schedule_id):
@@ -57,31 +70,20 @@ def reset_adhoc_details(db_cur, schedule_id):
     db_cur.execute(sqlquery)
 
 
-def get_abort_running(db_cur, schedule_id):
-    """Get abort_running status"""
-    sqlquery = f"""
-    SELECT abort_running
-    FROM schedules
-    WHERE schedule_id = '{str(schedule_id)}'"""
-
-    db_cur.execute(sqlquery)
-    row = db_cur.fetchone()
-    abort_running = row[0]
-
-    if abort_running == 0:
-        return False
-
-    return True
-
-
-def unset_abort_running(db_cur, schedule_id):
-    """unset_abort_running"""
-    sqlquery = f"""
-    UPDATE schedules SET
-        abort_running = 0
-    WHERE schedule_id = '{str(schedule_id)}'"""
-
-    db_cur.execute(sqlquery)
+def consume_abort_running(dbname, schedule_id):
+    """Atomically reset and report an outstanding abort request."""
+    with postgres.db_cicada_cursor(dbname) as (_, db_cur):
+        db_cur.execute(
+            """
+            UPDATE schedules
+            SET abort_running = 0
+            WHERE schedule_id = %s
+              AND abort_running = 1
+            RETURNING schedule_id
+            """,
+            (schedule_id,),
+        )
+        return db_cur.fetchone() is not None
 
 
 def init_schedule_log(db_cur, server_id, schedule_id, full_command):
@@ -131,148 +133,264 @@ def send_slack_error(schedule_id, schedule_log_id, returncode, description, erro
     )
 
 
-def catch_sigterm(signum, frame):
-    """catch_sigterm"""
-    raise OSError(-15, "SIGTERM received")
+def next_db_alert_time(delay_minutes=DB_ALERT_DELAY_MINUTES):
+    """Return the next time a persistent database failure should alert."""
+    return datetime.datetime.utcnow() + datetime.timedelta(minutes=delay_minutes)
 
 
-def catch_sigquit(signum, frame):
-    """catch_sigquit"""
-    raise OSError(-15, "SIGQUIT received")
+def handle_db_unavailable(
+    schedule_id,
+    schedule_log_id,
+    returncode,
+    operation,
+    error,
+    alert_next,
+    alert_delay=DB_ALERT_DELAY_MINUTES,
+):
+    """Rate-limit a consistently formatted database outage alert."""
+    now = datetime.datetime.utcnow()
+    if now >= alert_next:
+        send_slack_error(
+            schedule_id,
+            schedule_log_id,
+            returncode,
+            f"Cicada db unavailable - {operation} - {alert_delay} minutes",
+            error,
+        )
+        alert_next = now + datetime.timedelta(minutes=alert_delay)
+
+    time.sleep(DB_RETRY_DELAY_SECONDS)
+    return alert_next
+
+
+def consume_abort_running_with_retry(
+    dbname,
+    schedule_id,
+    schedule_log_id,
+    returncode,
+    alert_next,
+):
+    """Consume an abort request while keeping database outage handling uniform."""
+    try:
+        abort_requested = consume_abort_running(dbname, schedule_id)
+    except Exception as error:
+        alert_next = handle_db_unavailable(
+            schedule_id,
+            schedule_log_id,
+            returncode,
+            "consume abort_running",
+            error,
+            alert_next,
+        )
+        return False, alert_next
+
+    return abort_requested, next_db_alert_time()
+
+
+def terminate_child_process(child_process):
+    """Request direct-child termination and report whether the signal was accepted."""
+    try:
+        child_process.terminate()
+    except ProcessLookupError:
+        return True
+    except OSError:
+        return False
+    return True
+
+
+def execution_result_from_exception(error):
+    """Map an execution exception to the existing schedule_log result."""
+    if isinstance(error, subprocess.CalledProcessError):
+        return ExecutionResult(error.returncode, "CalledProcessError")
+    if isinstance(error, OSError):
+        return ExecutionResult(error.errno, error.strerror)
+    if isinstance(error, KeyboardInterrupt):
+        return ExecutionResult(1, "KeyboardInterrupt")
+    if isinstance(error, SystemExit):
+        return ExecutionResult(1, "SystemExit")
+    return ExecutionResult(999, "Crazy Unknown Error")
+
+
+def supervise_child_process(
+    child_process,
+    shutdown_request,
+    dbname,
+    schedule_id,
+    schedule_log_id,
+    alert_next,
+    execution_result=None,
+):
+    """Wait for one child to exit while handling termination requests."""
+    termination_sent = False
+
+    while True:
+        try:
+            if execution_result is not None and not termination_sent:
+                termination_sent = terminate_child_process(child_process)
+
+            try:
+                child_returncode = child_process.wait(timeout=CHILD_WAIT_TIMEOUT_SECONDS)
+            except subprocess.TimeoutExpired:
+                pass
+            except OSError:
+                time.sleep(CHILD_WAIT_TIMEOUT_SECONDS)
+            else:
+                if execution_result is None:
+                    execution_result = ExecutionResult(child_returncode)
+                return execution_result, alert_next
+
+            signal_number = shutdown_request["signal"]
+            if signal_number is not None and execution_result is None:
+                execution_result = ExecutionResult(-15, f"{signal.Signals(signal_number).name} received")
+
+            abort_requested, alert_next = consume_abort_running_with_retry(
+                dbname,
+                schedule_id,
+                schedule_log_id,
+                execution_result.returncode if execution_result is not None else None,
+                alert_next,
+            )
+            if abort_requested and execution_result is None:
+                execution_result = ExecutionResult(-15, "Cicada abort_running")
+        except (KeyboardInterrupt, SystemExit) as error:
+            if execution_result is None:
+                execution_result = execution_result_from_exception(error)
+        except Exception as error:
+            if execution_result is None:
+                execution_result = execution_result_from_exception(error)
+
+
+def run_child_process(
+    full_command,
+    shutdown_request,
+    dbname,
+    schedule_id,
+    schedule_log_id,
+    alert_next,
+):
+    """Launch one child and retain supervision until its exit is confirmed."""
+    child_process = subprocess.Popen(full_command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return supervise_child_process(
+        child_process,
+        shutdown_request,
+        dbname,
+        schedule_id,
+        schedule_log_id,
+        alert_next,
+    )
+
+
+def finalize_schedule_with_retry(
+    dbname,
+    schedule_id,
+    schedule_log_id,
+    returncode,
+    error_detail,
+    alert_next,
+):
+    """Atomically finalize schedule state, retrying while the database is unavailable."""
+    while True:
+        try:
+            with postgres.db_cicada_cursor(dbname) as (_, db_cur):
+                db_cur.execute("BEGIN")
+                try:
+                    unset_is_running(db_cur, schedule_id)
+                    finalize_schedule_log(db_cur, schedule_log_id, returncode, error_detail)
+                except Exception:
+                    db_cur.execute("ROLLBACK")
+                    raise
+                db_cur.execute("COMMIT")
+            return
+        except (KeyboardInterrupt, SystemExit):
+            continue
+        except Exception as error:
+            alert_next = handle_db_unavailable(
+                schedule_id,
+                schedule_log_id,
+                returncode,
+                "finalize schedule",
+                error,
+                alert_next,
+            )
 
 
 @utils.named_exception_handler("exec_schedule")
 def main(schedule_id, dbname=None):
     """Execute a using schedule_id."""
-    db_conn = postgres.db_cicada(dbname)
-    db_cur = db_conn.cursor()
-    server_id = scheduler.get_server_id(db_cur)
+    shutdown_request = {"signal": None}
 
-    # Get schedule details and execute
-    obj_schedule_details = scheduler.get_schedule_executable(db_cur, schedule_id)
+    def request_shutdown(signum, _frame):
+        shutdown_request["signal"] = signum
 
-    row = obj_schedule_details.fetchone()
-    command = str(row[0])
-    parameters = str(row[1])
+    execution_result = None
+    schedule_started = False
+    schedule_log_id = None
+    db_conn_alert_next = next_db_alert_time()
+    previous_signal_handlers = {}
 
-    full_command = scheduler.get_full_command(command, parameters)
-
-    human_full_command = str(command + " " + parameters)
-
-    # Check to see that schedule is not already running
-    if get_is_running(db_cur, schedule_id) == 0:
-        # Initiate schedule log
-        schedule_log_id = init_schedule_log(db_cur, server_id, schedule_id, human_full_command)
-        reset_adhoc_details(db_cur, schedule_id)
-
-        set_is_running(db_cur, schedule_id)
-
-        db_cur.close()
-        db_conn.close()
-
-        signal.signal(signal.SIGTERM, catch_sigterm)
-        signal.signal(signal.SIGQUIT, catch_sigquit)
-
-        error_detail = None
-        returncode = None
-
-        db_conn_alert_delay = 15
-        db_conn_alert_next = datetime.datetime.utcnow() + datetime.timedelta(minutes=db_conn_alert_delay)
+    try:
+        for signal_number in (signal.SIGTERM, signal.SIGQUIT):
+            previous_signal_handlers[signal_number] = signal.signal(signal_number, request_shutdown)
 
         try:
-            child_process = subprocess.Popen(full_command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            with postgres.db_cicada_cursor(dbname) as (_, db_cur):
+                server_id = scheduler.get_server_id(db_cur)
+                obj_schedule_details = scheduler.get_schedule_executable(db_cur, schedule_id)
+                row = obj_schedule_details.fetchone()
+                command = str(row[0])
+                parameters = str(row[1])
 
-            # Check if child process has terminated
+                full_command = scheduler.get_full_command(command, parameters)
+                human_full_command = str(command + " " + parameters)
 
-            while returncode is None:
-                time.sleep(1)
-                returncode = child_process.poll()
+                if get_is_running(db_cur, schedule_id) != 0:
+                    return
 
-                # If still running, check if child_process should be aborted
-                if returncode is None:
-                    # protect against db unavailable
-                    try:
-                        db_conn = postgres.db_cicada(dbname)
-                        db_cur = db_conn.cursor()
-                        if get_abort_running(db_cur, schedule_id):
-                            # Terminate main process
-                            returncode = -15
-                            error_detail = "Cicada abort_running"
-                            unset_abort_running(db_cur, schedule_id)
-                            child_process.terminate()
+                schedule_log_id = init_schedule_log(db_cur, server_id, schedule_id, human_full_command)
+                schedule_started = True
+                reset_adhoc_details(db_cur, schedule_id)
+                set_is_running(db_cur, schedule_id)
 
-                        db_cur.close()
-                        db_conn.close()
-                    except Exception as error:
-                        if datetime.datetime.utcnow() >= db_conn_alert_next:
-                            send_slack_error(
-                                schedule_id,
-                                schedule_log_id,
-                                returncode,
-                                f"Cicada db unavailable - check abort_running - {db_conn_alert_delay} minutes",
-                                error,
-                            )
-                            db_conn_alert_next = datetime.datetime.utcnow() + datetime.timedelta(
-                                minutes=db_conn_alert_delay
-                            )
-                        time.sleep(5)
-                    else:
-                        db_conn_alert_next = datetime.datetime.utcnow() + datetime.timedelta(
-                            minutes=db_conn_alert_delay
-                        )
+            signal_number = shutdown_request["signal"]
+            if signal_number is not None:
+                execution_result = ExecutionResult(-15, f"{signal.Signals(signal_number).name} received")
+            else:
+                execution_result, db_conn_alert_next = run_child_process(
+                    full_command,
+                    shutdown_request,
+                    dbname,
+                    schedule_id,
+                    schedule_log_id,
+                    db_conn_alert_next,
+                )
 
-            if returncode != 0:
-                config = utils.load_config()
-                returncodes_alert = config["slack"].get("returncodes_alert", "*")
+                if execution_result.returncode != 0:
+                    config = utils.load_config()
+                    returncodes_alert = config["slack"].get("returncodes_alert", "*")
 
-                if returncodes_alert == "*" or returncode in returncodes_alert:
-                    send_slack_error(
-                        schedule_id,
-                        schedule_log_id,
-                        returncode,
-                        None,
-                        None,
-                    )
-
-        # Capture error
-        except OSError as error:
-            returncode = error.errno
-            error_detail = error.strerror
-        except subprocess.CalledProcessError as error:
-            returncode = error.returncode
-            error_detail = "CalledProcessError"
-        except KeyboardInterrupt:
-            returncode = 1
-            error_detail = "KeyboardInterrupt"
-        except SystemExit:
-            returncode = 1
-            error_detail = "SystemExit"
-        except Exception:
-            returncode = 999
-            error_detail = "Crazy Unknown Error"
-        finally:
-            # Repeatedly attempt to finalize schedule, even if db is unavailable
-            while True:
-                try:
-                    db_conn = postgres.db_cicada(dbname)
-                    db_cur = db_conn.cursor()
-                    break
-                except Exception as error:
-                    if datetime.datetime.utcnow() >= db_conn_alert_next:
+                    if returncodes_alert == "*" or execution_result.returncode in returncodes_alert:
                         send_slack_error(
                             schedule_id,
                             schedule_log_id,
-                            returncode,
-                            f"Cicada db unavailable - finalize schedule - {db_conn_alert_delay} minutes",
-                            error,
+                            execution_result.returncode,
+                            None,
+                            None,
                         )
-                        db_conn_alert_next = datetime.datetime.utcnow() + datetime.timedelta(
-                            minutes=db_conn_alert_delay
-                        )
-                    time.sleep(5)
 
-            unset_is_running(db_cur, schedule_id)
-            finalize_schedule_log(db_cur, schedule_log_id, returncode, error_detail)
-
-    db_cur.close()
-    db_conn.close()
+        except (Exception, KeyboardInterrupt, SystemExit) as error:
+            if not schedule_started:
+                raise
+            execution_result = execution_result_from_exception(error)
+        finally:
+            if schedule_started:
+                finalize_schedule_with_retry(
+                    dbname,
+                    schedule_id,
+                    schedule_log_id,
+                    execution_result.returncode,
+                    execution_result.error_detail,
+                    db_conn_alert_next,
+                )
+    finally:
+        for signal_number, previous_handler in previous_signal_handlers.items():
+            signal.signal(signal_number, previous_handler)

@@ -128,6 +128,8 @@ cicada upsert_schedule --schedule_id={schedule_id} ==adhoc_parameters={do someth
 ### Abort a running schedule
 - abort_running is a **one-time** schedule modification.
 - As soon as abort_running has been used, it is reset.
+- Cicada keeps the schedule marked as running until the launched process exits.
+- Additional abort requests are consumed while Cicada waits for the process to exit.
 
 ```bash
 cicada upsert_schedule --schedule_id={schedule_id} --abort_running={1}
