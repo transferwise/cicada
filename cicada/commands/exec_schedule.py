@@ -175,6 +175,7 @@ def main(schedule_id, dbname=None):
 
         error_detail = None
         returncode = None
+        abort_running_received = False
 
         db_conn_alert_delay = 15
         db_conn_alert_next = datetime.datetime.utcnow() + datetime.timedelta(minutes=db_conn_alert_delay)
@@ -186,20 +187,23 @@ def main(schedule_id, dbname=None):
 
             while returncode is None:
                 time.sleep(1)
-                returncode = child_process.poll()
+                child_returncode = child_process.poll()
+
+                if child_returncode is not None:
+                    returncode = -15 if abort_running_received else child_returncode
 
                 # If still running, check if child_process should be aborted
-                if returncode is None:
+                else:
                     # protect against db unavailable
                     try:
                         db_conn = postgres.db_cicada(dbname)
                         db_cur = db_conn.cursor()
                         if get_abort_running(db_cur, schedule_id):
-                            # Terminate main process
-                            returncode = -15
-                            error_detail = "Cicada abort_running"
                             unset_abort_running(db_cur, schedule_id)
-                            child_process.terminate()
+                            if not abort_running_received:
+                                abort_running_received = True
+                                error_detail = "Cicada abort_running"
+                                child_process.terminate()
 
                         db_cur.close()
                         db_conn.close()

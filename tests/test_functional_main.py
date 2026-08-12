@@ -658,10 +658,20 @@ def test_exec_abort_running_2():
     query_test_db("UPDATE schedules SET abort_running=1 WHERE schedule_id='pytest_abort_running_2'")
     time.sleep(10)
     query_result = query_test_db(
-        """SELECT schedule_id, returncode, error_detail FROM schedule_log WHERE schedule_id = 'pytest_abort_running_2'"""
+        """
+        SELECT
+            schedule_log.schedule_id,
+            schedule_log.returncode,
+            schedule_log.error_detail,
+            schedules.is_running,
+            schedules.abort_running
+        FROM schedule_log
+        INNER JOIN schedules USING (schedule_id)
+        WHERE schedule_log.schedule_id = 'pytest_abort_running_2'
+        """
     )
 
-    assert query_result == [("pytest_abort_running_2", -15, "Cicada abort_running")]
+    assert query_result == [("pytest_abort_running_2", -15, "Cicada abort_running", 0, 0)]
 
 
 def test_insert_faulty_schedule_1():

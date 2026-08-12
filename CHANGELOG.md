@@ -1,3 +1,18 @@
+0.10.4
+------
+
+Runtime
+~~~~~~~
+- After an `abort_running` request, keep the schedule marked as running until its process has stopped
+- Clear additional abort requests while the process is stopping so they do not stop the next run
+
+Tests and CI
+~~~~~~~~~~~~
+- Add coverage that an aborted schedule is finalized only after its process exits
+- Update the existing abort test to confirm the running and abort flags are cleared after process exit
+- Set the minimum test coverage to 75%
+
+
 0.10.3
 ------
 

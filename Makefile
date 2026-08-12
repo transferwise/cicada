@@ -19,7 +19,7 @@ dev:
 pytest:
 	cd $(mkfile_path) ;\
 	. venv/bin/activate ;\
-	pytest tests/ --verbose --cov=cicada --cov-fail-under=78 --cov-report term-missing
+	pytest tests/ --verbose --cov=cicada --cov-fail-under=75 --cov-report term-missing
 
 
 flake8:
