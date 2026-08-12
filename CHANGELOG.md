@@ -13,6 +13,7 @@ Runtime
 - Save process errors safely when a return code is missing or the error message contains punctuation
 - Keep process error details within the database limit so schedule cleanup can complete
 - Record the process's actual return code when a fallback check confirms it has stopped
+- Keep the completed process result if preparing its failure alert also fails
 
 Tests
 ~~~~~
@@ -22,6 +23,7 @@ Tests
 - Add coverage for temporary and repeated process-check failures
 - Add coverage for alternating process-check failures and preserving the process return code
 - Add coverage that fallback process checks preserve an explicit abort result
+- Add coverage that alert configuration failures do not replace a completed process result
 - Add coverage for atomic abort handling, database cleanup, and final schedule updates
 - Add coverage for safely saving missing return codes, long error details, and messages containing punctuation
 

@@ -74,7 +74,10 @@ def _run_schedule(
     if signal_during_set:
         set_is_running.side_effect = lambda *_: signal_handlers[signal.SIGTERM](signal.SIGTERM, None)
     sleep = mocker.patch.object(exec_schedule.time, "sleep")
-    mocker.patch.object(exec_schedule.utils, "load_config", return_value=config)
+    if isinstance(config, Exception):
+        load_config = mocker.patch.object(exec_schedule.utils, "load_config", side_effect=config)
+    else:
+        load_config = mocker.patch.object(exec_schedule.utils, "load_config", return_value=config)
 
     exec_schedule.main("example-schedule")
 
@@ -88,6 +91,7 @@ def _run_schedule(
         "signal_signal": signal_signal,
         "popen": popen,
         "sleep": sleep,
+        "load_config": load_config,
     }
 
 
@@ -387,6 +391,27 @@ def test_abort_result_is_preserved_when_poll_confirms_exit_after_wait_error(mock
     )
 
 
+def test_alert_configuration_error_does_not_replace_child_result(mocker):
+    """A post-exit alert error cannot replace the process's confirmed result."""
+    child_process = MagicMock()
+    child_process.wait.return_value = 137
+
+    collaborators = _run_schedule(
+        mocker,
+        child_process,
+        RuntimeError("alert configuration unavailable"),
+        [],
+    )
+
+    collaborators["finalize_schedule_log"].assert_called_once_with(
+        mocker.ANY,
+        "schedule-log-id",
+        137,
+        None,
+    )
+    collaborators["load_config"].assert_called_once_with()
+
+
 def test_oserror_without_errno_uses_unknown_return_code():
     """An OSError without errno still produces a valid schedule return code."""
     result = exec_schedule.execution_result_from_exception(socket.timeout("worker timed out"))
@@ -552,8 +577,7 @@ def test_finalization_rolls_back_and_retries_as_one_transaction(mocker):
         "example-db",
         "example-schedule",
         "schedule-log-id",
-        -15,
-        "Cicada abort_running",
+        exec_schedule.ExecutionResult(-15, "Cicada abort_running"),
         datetime.datetime.utcnow(),
     )
 

@@ -206,6 +206,14 @@ def terminate_child_process(child_process):
     return True
 
 
+def poll_child_returncode(child_process):
+    """Return the child code, or None if it is still running or polling fails."""
+    try:
+        return child_process.poll()
+    except Exception:
+        return None
+
+
 def execution_result_from_exception(error):
     """Map an execution exception to the existing schedule_log result."""
     if isinstance(error, subprocess.CalledProcessError):
@@ -229,20 +237,20 @@ def supervise_child_process(
     schedule_id,
     schedule_log_id,
     alert_next,
-    execution_result=None,
 ):
     """Wait for one child to exit while handling termination requests."""
     termination_sent = False
+    requested_stop_result = None
     supervision_error_detail = None
 
     def confirmed_exit_result(child_returncode):
-        if execution_result is not None:
-            return execution_result
+        if requested_stop_result is not None:
+            return requested_stop_result
         return ExecutionResult(child_returncode, supervision_error_detail)
 
     while True:
         try:
-            if (execution_result is not None or supervision_error_detail is not None) and not termination_sent:
+            if (requested_stop_result is not None or supervision_error_detail is not None) and not termination_sent:
                 termination_sent = terminate_child_process(child_process)
 
             try:
@@ -250,10 +258,7 @@ def supervise_child_process(
             except subprocess.TimeoutExpired:
                 pass
             except OSError:
-                try:
-                    child_returncode = child_process.poll()
-                except Exception:
-                    child_returncode = None
+                child_returncode = poll_child_returncode(child_process)
                 if child_returncode is not None:
                     return confirmed_exit_result(child_returncode), alert_next
                 time.sleep(CHILD_WAIT_TIMEOUT_SECONDS)
@@ -263,10 +268,7 @@ def supervise_child_process(
                 if not termination_sent:
                     termination_sent = terminate_child_process(child_process)
 
-                try:
-                    child_returncode = child_process.poll()
-                except Exception:
-                    child_returncode = None
+                child_returncode = poll_child_returncode(child_process)
                 if child_returncode is not None:
                     return confirmed_exit_result(child_returncode), alert_next
 
@@ -276,21 +278,21 @@ def supervise_child_process(
                 return confirmed_exit_result(child_returncode), alert_next
 
             signal_number = shutdown_request["signal"]
-            if signal_number is not None and execution_result is None:
-                execution_result = ExecutionResult(-15, f"{signal.Signals(signal_number).name} received")
+            if signal_number is not None and requested_stop_result is None:
+                requested_stop_result = ExecutionResult(-15, f"{signal.Signals(signal_number).name} received")
 
             abort_requested, alert_next = consume_abort_running_with_retry(
                 dbname,
                 schedule_id,
                 schedule_log_id,
-                execution_result.returncode if execution_result is not None else None,
+                requested_stop_result.returncode if requested_stop_result is not None else None,
                 alert_next,
             )
-            if abort_requested and execution_result is None:
-                execution_result = ExecutionResult(-15, "Cicada abort_running")
+            if abort_requested and requested_stop_result is None:
+                requested_stop_result = ExecutionResult(-15, "Cicada abort_running")
         except (KeyboardInterrupt, SystemExit) as error:
-            if execution_result is None:
-                execution_result = execution_result_from_exception(error)
+            if requested_stop_result is None:
+                requested_stop_result = execution_result_from_exception(error)
         except Exception as error:
             if supervision_error_detail is None:
                 supervision_error_detail = execution_result_from_exception(error).error_detail
@@ -321,11 +323,12 @@ def finalize_schedule_with_retry(
     dbname,
     schedule_id,
     schedule_log_id,
-    returncode,
-    error_detail,
+    execution_result,
     alert_next,
 ):
     """Atomically finalize schedule state, retrying while the database is unavailable."""
+    returncode, error_detail = execution_result
+
     while True:
         try:
             with postgres.db_cicada_cursor(dbname) as (_, db_cur):
@@ -417,15 +420,15 @@ def main(schedule_id, dbname=None):
         except (Exception, KeyboardInterrupt, SystemExit) as error:
             if not schedule_started:
                 raise
-            execution_result = execution_result_from_exception(error)
+            if execution_result is None:
+                execution_result = execution_result_from_exception(error)
         finally:
             if schedule_started:
                 finalize_schedule_with_retry(
                     dbname,
                     schedule_id,
                     schedule_log_id,
-                    execution_result.returncode,
-                    execution_result.error_detail,
+                    execution_result,
                     db_conn_alert_next,
                 )
     finally:
