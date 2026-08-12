@@ -89,6 +89,8 @@ docker exec cicada_dev make pytest
 - Add CLI commands in `cicada/commands/`, wire them through `cicada/cli.py`, and cover dispatch plus command behavior.
 - Update `README.md` or `docs/` for user-visible behavior and `CHANGELOG.md` for release-visible changes. Change the
   package version in `setup.py` only as part of a release, keeping it aligned with the changelog and release tag.
+- Every PR description must link directly to its latest CHANGELOG release section. Use a GitHub link that works before
+  merge, preferably an immutable commit permalink with the section anchor.
 - Keep CHANGELOG entries concise and atomic: one independently reviewable change per bullet. Use plain operational
   language that says what users or operators will observe and why it matters; avoid implementation jargon unless it
   helps them act or diagnose a problem. Use headings to keep categories separate, and itemize distinct test coverage
