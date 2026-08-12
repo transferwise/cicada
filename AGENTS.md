@@ -91,7 +91,8 @@ docker exec cicada_dev make pytest
   package version in `setup.py` only as part of a release, keeping it aligned with the changelog and release tag.
 - Keep CHANGELOG entries concise and atomic: one independently reviewable change per bullet. Use plain operational
   language that says what users or operators will observe and why it matters; avoid implementation jargon unless it
-  helps them act or diagnose a problem. Use headings to keep categories separate.
+  helps them act or diagnose a problem. Use headings to keep categories separate, and itemize distinct test coverage
+  rather than combining multiple test areas in one bullet.
 - Write documentation in a concise, authoritative, pragmatic, mildly operations-first engineering tone. Avoid
   repetition except where it prevents operational mistakes.
 

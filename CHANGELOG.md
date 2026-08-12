@@ -14,7 +14,12 @@ Runtime
 
 Tests
 ~~~~~
-- Add tests for slow process shutdown, repeated abort requests, stopping Cicada, process-check failures, and safe error logging
+- Add coverage that a schedule stays marked as running until its process stops
+- Add coverage that repeated abort requests are cleared while a process is stopping
+- Add coverage for stopping Cicada while a scheduled process is running
+- Add coverage for temporary and repeated process-check failures
+- Add coverage for atomic abort handling, database cleanup, and final schedule updates
+- Add coverage for safely saving missing return codes and error messages containing punctuation
 
 
 0.10.3
