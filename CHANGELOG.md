@@ -9,10 +9,12 @@ Runtime
 - When Cicada is asked to shut down, stop the launched process and wait for it to exit
 - Check and clear `abort_running` in one database operation
 - Use consistent database outage alerts and close database connections after errors
+- Prevent repeated process-check errors from using all available CPU while Cicada waits for the process to stop
+- Save process errors safely when a return code is missing or the error message contains punctuation
 
 Tests
 ~~~~~
-- Add tests for slow process shutdown, repeated abort requests, stopping Cicada, and temporary process-check failures
+- Add tests for slow process shutdown, repeated abort requests, stopping Cicada, process-check failures, and safe error logging
 
 
 0.10.3

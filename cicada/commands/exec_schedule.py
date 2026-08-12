@@ -15,6 +15,8 @@ from cicada.lib import utils
 DB_ALERT_DELAY_MINUTES = 15
 DB_RETRY_DELAY_SECONDS = 5
 CHILD_WAIT_TIMEOUT_SECONDS = 1
+CHILD_WAIT_ERROR_POLL_THRESHOLD = 3
+UNKNOWN_RETURN_CODE = 999
 
 
 class ExecutionResult(NamedTuple):
@@ -106,15 +108,19 @@ def init_schedule_log(db_cur, server_id, schedule_id, full_command):
 
 def finalize_schedule_log(db_cur, schedule_log_id, returncode, error_detail):
     """Finalize a schedule log"""
+    if returncode is None:
+        returncode = UNKNOWN_RETURN_CODE
 
-    sqlquery = f"UPDATE schedule_log SET end_time = now() ,returncode = {str(returncode)}"
-
-    if error_detail:
-        sqlquery += f",error_detail = '{str(error_detail)}'"
-
-    sqlquery += f" WHERE schedule_log_id = '{str(schedule_log_id)}'"
-
-    db_cur.execute(sqlquery)
+    db_cur.execute(
+        """
+        UPDATE schedule_log
+        SET end_time = now(),
+            returncode = %s,
+            error_detail = %s
+        WHERE schedule_log_id = %s
+        """,
+        (returncode, error_detail, str(schedule_log_id)),
+    )
 
 
 def send_slack_error(schedule_id, schedule_log_id, returncode, description, error):
@@ -203,12 +209,15 @@ def execution_result_from_exception(error):
     if isinstance(error, subprocess.CalledProcessError):
         return ExecutionResult(error.returncode, "CalledProcessError")
     if isinstance(error, OSError):
-        return ExecutionResult(error.errno, error.strerror)
+        return ExecutionResult(
+            error.errno if error.errno is not None else UNKNOWN_RETURN_CODE,
+            error.strerror or str(error) or error.__class__.__name__,
+        )
     if isinstance(error, KeyboardInterrupt):
         return ExecutionResult(1, "KeyboardInterrupt")
     if isinstance(error, SystemExit):
         return ExecutionResult(1, "SystemExit")
-    return ExecutionResult(999, "Crazy Unknown Error")
+    return ExecutionResult(UNKNOWN_RETURN_CODE, "Crazy Unknown Error")
 
 
 def supervise_child_process(
@@ -222,6 +231,7 @@ def supervise_child_process(
 ):
     """Wait for one child to exit while handling termination requests."""
     termination_sent = False
+    consecutive_unexpected_wait_errors = 0
 
     while True:
         try:
@@ -231,9 +241,28 @@ def supervise_child_process(
             try:
                 child_returncode = child_process.wait(timeout=CHILD_WAIT_TIMEOUT_SECONDS)
             except subprocess.TimeoutExpired:
+                consecutive_unexpected_wait_errors = 0
                 pass
             except OSError:
+                consecutive_unexpected_wait_errors = 0
                 time.sleep(CHILD_WAIT_TIMEOUT_SECONDS)
+            except Exception as error:
+                consecutive_unexpected_wait_errors += 1
+                if execution_result is None:
+                    execution_result = execution_result_from_exception(error)
+                if not termination_sent:
+                    termination_sent = terminate_child_process(child_process)
+
+                if consecutive_unexpected_wait_errors >= CHILD_WAIT_ERROR_POLL_THRESHOLD:
+                    try:
+                        child_returncode = child_process.poll()
+                    except Exception:
+                        child_returncode = None
+                    if child_returncode is not None:
+                        return execution_result, alert_next
+
+                time.sleep(CHILD_WAIT_TIMEOUT_SECONDS)
+                continue
             else:
                 if execution_result is None:
                     execution_result = ExecutionResult(child_returncode)
@@ -258,6 +287,7 @@ def supervise_child_process(
         except Exception as error:
             if execution_result is None:
                 execution_result = execution_result_from_exception(error)
+            time.sleep(CHILD_WAIT_TIMEOUT_SECONDS)
 
 
 def run_child_process(

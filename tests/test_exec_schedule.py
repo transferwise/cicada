@@ -2,6 +2,7 @@
 
 import datetime
 import signal
+import socket
 import subprocess
 from unittest.mock import MagicMock
 
@@ -72,7 +73,7 @@ def _run_schedule(
     )
     if signal_during_set:
         set_is_running.side_effect = lambda *_: signal_handlers[signal.SIGTERM](signal.SIGTERM, None)
-    mocker.patch.object(exec_schedule.time, "sleep")
+    sleep = mocker.patch.object(exec_schedule.time, "sleep")
     mocker.patch.object(exec_schedule.utils, "load_config", return_value=config)
 
     exec_schedule.main("example-schedule")
@@ -86,6 +87,7 @@ def _run_schedule(
         "previous_signal_handlers": previous_signal_handlers,
         "signal_signal": signal_signal,
         "popen": popen,
+        "sleep": sleep,
     }
 
 
@@ -294,12 +296,70 @@ def test_unexpected_supervision_error_terminates_and_waits_for_child(mocker):
 
     child_process.terminate.assert_called_once()
     assert child_process.wait.call_count == 3
+    collaborators["sleep"].assert_called_once_with(exec_schedule.CHILD_WAIT_TIMEOUT_SECONDS)
     collaborators["unset_is_running"].assert_called_once()
     collaborators["finalize_schedule_log"].assert_called_once_with(
         mocker.ANY,
         "schedule-log-id",
         999,
         "Crazy Unknown Error",
+    )
+
+
+def test_repeated_unexpected_wait_errors_back_off_and_use_poll_to_confirm_exit(mocker):
+    """Repeated wait failures use a safe fallback without clearing a live schedule."""
+    child_process = MagicMock()
+    child_process.wait.side_effect = ValueError("persistent wait failure")
+    child_process.poll.side_effect = [None, None, 143]
+
+    collaborators = _run_schedule(
+        mocker,
+        child_process,
+        {"slack": {"returncodes_alert": []}},
+        [],
+    )
+
+    expected_wait_attempts = exec_schedule.CHILD_WAIT_ERROR_POLL_THRESHOLD + 2
+    assert child_process.wait.call_count == expected_wait_attempts
+    child_process.terminate.assert_called_once()
+    assert child_process.poll.call_count == 3
+    assert collaborators["sleep"].call_count == expected_wait_attempts - 1
+    collaborators["unset_is_running"].assert_called_once()
+    collaborators["finalize_schedule_log"].assert_called_once_with(
+        mocker.ANY,
+        "schedule-log-id",
+        exec_schedule.UNKNOWN_RETURN_CODE,
+        "Crazy Unknown Error",
+    )
+
+
+def test_oserror_without_errno_uses_unknown_return_code():
+    """An OSError without errno still produces a valid schedule return code."""
+    result = exec_schedule.execution_result_from_exception(socket.timeout("worker timed out"))
+
+    assert result == exec_schedule.ExecutionResult(exec_schedule.UNKNOWN_RETURN_CODE, "worker timed out")
+
+
+def test_finalize_schedule_log_parameterizes_unknown_return_code_and_error_detail():
+    """Final log values cannot change the SQL statement or make it invalid."""
+    db_cursor = MagicMock()
+
+    exec_schedule.finalize_schedule_log(
+        db_cursor,
+        "schedule-log-id",
+        None,
+        "worker's connection timed out",
+    )
+
+    sqlquery, parameters = db_cursor.execute.call_args.args
+    assert "returncode = %s" in sqlquery
+    assert "error_detail = %s" in sqlquery
+    assert "schedule_log_id = %s" in sqlquery
+    assert "worker's connection timed out" not in sqlquery
+    assert parameters == (
+        exec_schedule.UNKNOWN_RETURN_CODE,
+        "worker's connection timed out",
+        "schedule-log-id",
     )
 
 
