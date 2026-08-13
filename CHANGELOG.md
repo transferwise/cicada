@@ -1,3 +1,33 @@
+0.10.4
+------
+
+Runtime
+~~~~~~~
+- After an `abort_running` request, keep the schedule marked as running until its process has stopped
+- Clear additional abort requests while the process is stopping so they do not stop the next run
+- If Cicada temporarily cannot check the process, keep waiting instead of reporting the schedule as complete
+- When Cicada is asked to shut down, stop the launched process and wait for it to exit
+- Check and clear `abort_running` in one database operation
+- Use consistent database outage alerts and close database connections after errors
+- Prevent repeated process-check errors from using all available CPU while Cicada waits for the process to stop
+- Save process errors safely when a return code is missing or the error message contains punctuation
+- Keep process error details within the database limit so schedule cleanup can complete
+- Record the process's actual return code when a fallback check confirms it has stopped
+- Keep the completed process result if preparing its failure alert also fails
+
+Tests
+~~~~~
+- Add coverage that a schedule stays marked as running until its process stops
+- Add coverage that repeated abort requests are cleared while a process is stopping
+- Add coverage for stopping Cicada while a scheduled process is running
+- Add coverage for temporary and repeated process-check failures
+- Add coverage for alternating process-check failures and preserving the process return code
+- Add coverage that fallback process checks preserve an explicit abort result
+- Add coverage that alert configuration failures do not replace a completed process result
+- Add coverage for atomic abort handling, database cleanup, and final schedule updates
+- Add coverage for safely saving missing return codes, long error details, and messages containing punctuation
+
+
 0.10.3
 ------
 
