@@ -267,7 +267,9 @@ def test_exec_schedule_send_alert_if_returncode_not_0_and_config_has_setting_for
 
             mocker.patch("os.path.join", return_value=f"{temp_dir}/definitions.yml")
             exec_schedule.main("FOO_SCHEDULE_ID", "FOO_DB")
-            mocked_slack.assert_called_once_with("FOO_SCHEDULE_ID", "FOO_LOG_ID", return_code, None, None)
+            mocked_slack.assert_called_once_with(
+                "FOO_SCHEDULE_ID", 7, "*/5 * * * *", "FOO_LOG_ID", return_code, None, None
+            )
             mocked_slack.reset_mock()
 
 
@@ -289,7 +291,7 @@ def test_exec_schedule_send_alert_if_returncode_not_0_and_exists_in_config(
 
         mocker.patch("os.path.join", return_value=f"{temp_dir}/definitions.yml")
         exec_schedule.main("FOO_SCHEDULE_ID", "FOO_DB")
-        mocked_slack.assert_called_once_with("FOO_SCHEDULE_ID", "FOO_LOG_ID", return_code, None, None)
+        mocked_slack.assert_called_once_with("FOO_SCHEDULE_ID", 7, "*/5 * * * *", "FOO_LOG_ID", return_code, None, None)
 
 
 def test_exec_schedule_not_send_alert_if_returncode_0_but_not_in_config(mocker):  # noqa

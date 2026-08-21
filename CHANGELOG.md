@@ -1,3 +1,15 @@
+0.10.5
+------
+
+Runtime
+~~~~~~~
+- Include the server ID and schedule interval in Slack execution-error alerts
+
+Tests
+~~~~~
+- Add coverage for server and interval details in Slack execution-error alerts
+
+
 0.10.4
 ------
 
