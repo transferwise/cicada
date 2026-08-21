@@ -323,20 +323,17 @@ def snapshot_schedules(db_cur, server_id=None, computed_usage=None, reason=None)
 
 def get_schedule_executable(db_cur, schedule_id):
     """Extract details of executable of a schedule"""
-    sqlquery = (
-        """
+    sqlquery = """
     SELECT
         exec_command,
-        COALESCE(adhoc_parameters, parameters, '') AS parameters
+        COALESCE(adhoc_parameters, parameters, '') AS parameters,
+        interval_mask
     FROM schedules
-        WHERE schedule_id = '"""
-        + str(schedule_id)
-        + """'
+    WHERE schedule_id = %s
     LIMIT 1
     """
-    )
 
-    db_cur.execute(sqlquery)
+    db_cur.execute(sqlquery, (schedule_id,))
     obj_schedule_executable = db_cur
     return obj_schedule_executable
 

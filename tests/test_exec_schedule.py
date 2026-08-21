@@ -33,7 +33,7 @@ def _run_schedule(
     db_context.__exit__.return_value = False
 
     schedule_executable = MagicMock()
-    schedule_executable.fetchone.return_value = ("example-command", "example-parameter")
+    schedule_executable.fetchone.return_value = ("example-command", "example-parameter", "*/5 * * * *")
 
     mocker.patch.object(exec_schedule.postgres, "db_cicada_cursor", return_value=db_context)
     mocker.patch.object(exec_schedule.scheduler, "get_server_id", return_value=1)
@@ -499,6 +499,28 @@ def test_db_cursor_creation_failure_closes_connection(mocker):
     db_connection.close.assert_called_once()
 
 
+def test_slack_error_includes_server_and_interval(mocker):
+    """Execution alerts identify the server and schedule interval."""
+    send_slack_message = mocker.patch.object(exec_schedule.utils, "send_slack_message")
+
+    exec_schedule.send_slack_error(
+        "example-schedule",
+        7,
+        "*/5 * * * *",
+        "schedule-log-id",
+        125,
+        None,
+        None,
+    )
+
+    message = send_slack_message.call_args.args[1]
+    assert "server_id       : 7" in message
+    assert "interval_mask   : */5 * * * *" in message
+    assert message.index("server utc time") < message.index("schedule_log_id")
+    assert message.index("schedule_log_id") < message.index("server_id")
+    assert message.index("server_id") < message.index("interval_mask")
+
+
 def test_db_unavailable_alert_is_rate_limited_and_consistent(mocker):
     """Shared outage handling emits one consistently worded alert when due."""
     send_slack_error = mocker.patch.object(exec_schedule, "send_slack_error")
@@ -507,6 +529,8 @@ def test_db_unavailable_alert_is_rate_limited_and_consistent(mocker):
 
     next_alert = exec_schedule.handle_db_unavailable(
         "example-schedule",
+        1,
+        "*/5 * * * *",
         "schedule-log-id",
         -15,
         "consume abort_running",
@@ -516,6 +540,8 @@ def test_db_unavailable_alert_is_rate_limited_and_consistent(mocker):
 
     send_slack_error.assert_called_once_with(
         "example-schedule",
+        1,
+        "*/5 * * * *",
         "schedule-log-id",
         -15,
         "Cicada db unavailable - consume abort_running - 15 minutes",
@@ -529,6 +555,8 @@ def test_db_unavailable_alert_is_rate_limited_and_consistent(mocker):
 
     unchanged_alert = exec_schedule.handle_db_unavailable(
         "example-schedule",
+        1,
+        "*/5 * * * *",
         "schedule-log-id",
         -15,
         "finalize schedule",
@@ -576,6 +604,8 @@ def test_finalization_rolls_back_and_retries_as_one_transaction(mocker):
     exec_schedule.finalize_schedule_with_retry(
         "example-db",
         "example-schedule",
+        1,
+        "*/5 * * * *",
         "schedule-log-id",
         exec_schedule.ExecutionResult(-15, "Cicada abort_running"),
         datetime.datetime.utcnow(),

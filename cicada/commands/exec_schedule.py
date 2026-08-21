@@ -125,13 +125,15 @@ def finalize_schedule_log(db_cur, schedule_log_id, returncode, error_detail):
     )
 
 
-def send_slack_error(schedule_id, schedule_log_id, returncode, description, error):
+def send_slack_error(schedule_id, server_id, interval_mask, schedule_log_id, returncode, description, error):
     """send_slack_error"""
     utils.send_slack_message(
         f":exclamation: *ERROR* schedule_id `{schedule_id}` execution failure",
         f"```"
         f"server utc time : {datetime.datetime.utcnow()}\n"
         f"schedule_log_id : {schedule_log_id}\n"
+        f"server_id       : {server_id}\n"
+        f"interval_mask   : {interval_mask}\n"
         f"returncode      : {returncode}\n"
         f"description     : {description}\n"
         f"\n"
@@ -148,6 +150,8 @@ def next_db_alert_time(delay_minutes=DB_ALERT_DELAY_MINUTES):
 
 def handle_db_unavailable(
     schedule_id,
+    server_id,
+    interval_mask,
     schedule_log_id,
     returncode,
     operation,
@@ -160,6 +164,8 @@ def handle_db_unavailable(
     if now >= alert_next:
         send_slack_error(
             schedule_id,
+            server_id,
+            interval_mask,
             schedule_log_id,
             returncode,
             f"Cicada db unavailable - {operation} - {alert_delay} minutes",
@@ -174,6 +180,8 @@ def handle_db_unavailable(
 def consume_abort_running_with_retry(
     dbname,
     schedule_id,
+    server_id,
+    interval_mask,
     schedule_log_id,
     returncode,
     alert_next,
@@ -184,6 +192,8 @@ def consume_abort_running_with_retry(
     except Exception as error:
         alert_next = handle_db_unavailable(
             schedule_id,
+            server_id,
+            interval_mask,
             schedule_log_id,
             returncode,
             "consume abort_running",
@@ -235,6 +245,8 @@ def supervise_child_process(
     shutdown_request,
     dbname,
     schedule_id,
+    server_id,
+    interval_mask,
     schedule_log_id,
     alert_next,
 ):
@@ -284,6 +296,8 @@ def supervise_child_process(
             abort_requested, alert_next = consume_abort_running_with_retry(
                 dbname,
                 schedule_id,
+                server_id,
+                interval_mask,
                 schedule_log_id,
                 requested_stop_result.returncode if requested_stop_result is not None else None,
                 alert_next,
@@ -304,6 +318,8 @@ def run_child_process(
     shutdown_request,
     dbname,
     schedule_id,
+    server_id,
+    interval_mask,
     schedule_log_id,
     alert_next,
 ):
@@ -314,6 +330,8 @@ def run_child_process(
         shutdown_request,
         dbname,
         schedule_id,
+        server_id,
+        interval_mask,
         schedule_log_id,
         alert_next,
     )
@@ -322,6 +340,8 @@ def run_child_process(
 def finalize_schedule_with_retry(
     dbname,
     schedule_id,
+    server_id,
+    interval_mask,
     schedule_log_id,
     execution_result,
     alert_next,
@@ -346,6 +366,8 @@ def finalize_schedule_with_retry(
         except Exception as error:
             alert_next = handle_db_unavailable(
                 schedule_id,
+                server_id,
+                interval_mask,
                 schedule_log_id,
                 returncode,
                 "finalize schedule",
@@ -379,6 +401,7 @@ def main(schedule_id, dbname=None):
                 row = obj_schedule_details.fetchone()
                 command = str(row[0])
                 parameters = str(row[1])
+                interval_mask = str(row[2])
 
                 full_command = scheduler.get_full_command(command, parameters)
                 human_full_command = str(command + " " + parameters)
@@ -400,6 +423,8 @@ def main(schedule_id, dbname=None):
                     shutdown_request,
                     dbname,
                     schedule_id,
+                    server_id,
+                    interval_mask,
                     schedule_log_id,
                     db_conn_alert_next,
                 )
@@ -411,6 +436,8 @@ def main(schedule_id, dbname=None):
                     if returncodes_alert == "*" or execution_result.returncode in returncodes_alert:
                         send_slack_error(
                             schedule_id,
+                            server_id,
+                            interval_mask,
                             schedule_log_id,
                             execution_result.returncode,
                             None,
@@ -427,6 +454,8 @@ def main(schedule_id, dbname=None):
                 finalize_schedule_with_retry(
                     dbname,
                     schedule_id,
+                    server_id,
+                    interval_mask,
                     schedule_log_id,
                     execution_result,
                     db_conn_alert_next,
