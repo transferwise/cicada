@@ -4,6 +4,8 @@ import datetime
 import signal
 import socket
 import subprocess
+import sys
+from io import BytesIO
 from unittest.mock import MagicMock
 
 import pytest
@@ -24,6 +26,7 @@ def _run_schedule(
     signal_handlers=None,
     events=None,
     signal_during_set=False,
+    child_stderr=b"",
 ):
     """Run one mocked schedule and return its lifecycle collaborators."""
     db_cursor = MagicMock()
@@ -78,6 +81,7 @@ def _run_schedule(
         load_config = mocker.patch.object(exec_schedule.utils, "load_config", side_effect=config)
     else:
         load_config = mocker.patch.object(exec_schedule.utils, "load_config", return_value=config)
+    child_process.stderr = BytesIO(child_stderr)
 
     exec_schedule.main("example-schedule")
 
@@ -172,6 +176,84 @@ def test_natural_child_exit_does_not_request_termination(mocker):
         0,
         None,
     )
+
+
+def test_failed_child_stderr_is_saved_and_sent_to_slack(mocker):
+    """A Docker launch error is retained in schedule_log and its Slack alert."""
+    child_process = MagicMock()
+    child_process.wait.return_value = 125
+    docker_error = (
+        b'docker: Error response from daemon: Conflict. The container name "pipelinewise-tap-one" is in use.\n'
+    )
+
+    collaborators = _run_schedule(
+        mocker,
+        child_process,
+        {"slack": {"returncodes_alert": "*"}},
+        [],
+        child_stderr=docker_error,
+    )
+
+    error_detail = docker_error.decode().strip()
+    collaborators["finalize_schedule_log"].assert_called_once_with(
+        mocker.ANY,
+        "schedule-log-id",
+        125,
+        error_detail,
+    )
+    collaborators["send_slack_error"].assert_called_once_with(
+        "example-schedule",
+        1,
+        "*/5 * * * *",
+        "schedule-log-id",
+        125,
+        None,
+        error_detail,
+    )
+
+
+def test_failed_child_stderr_is_bounded(mocker):
+    """Only the final database-sized portion of verbose child stderr is retained."""
+    child_process = MagicMock()
+    child_process.wait.return_value = 125
+    final_error = b"final Docker error"
+
+    collaborators = _run_schedule(
+        mocker,
+        child_process,
+        {"slack": {"returncodes_alert": []}},
+        [],
+        child_stderr=(b"x" * (exec_schedule.CHILD_STDERR_CAPTURE_MAX_BYTES + 1000)) + final_error,
+    )
+
+    error_detail = collaborators["finalize_schedule_log"].call_args.args[3]
+    assert len(error_detail) == exec_schedule.ERROR_DETAIL_MAX_LENGTH
+    assert error_detail.endswith(final_error.decode())
+
+
+def test_large_child_stderr_is_drained_without_blocking(mocker):
+    """A child can exceed the OS pipe buffer and still exit cleanly."""
+    mocker.patch.object(exec_schedule, "consume_abort_running", return_value=False)
+    final_error = "final Docker error"
+
+    execution_result, _ = exec_schedule.run_child_process(
+        [
+            sys.executable,
+            "-c",
+            f"import sys; sys.stderr.write('x' * 100000 + {final_error!r}); raise SystemExit(125)",
+        ],
+        {"signal": None},
+        None,
+        "example-schedule",
+        1,
+        "*/5 * * * *",
+        "schedule-log-id",
+        datetime.datetime.utcnow(),
+    )
+
+    assert execution_result.returncode == 125
+    assert len(execution_result.error_detail) == exec_schedule.ERROR_DETAIL_MAX_LENGTH
+    assert execution_result.error_detail.endswith(final_error)
 
 
 def test_failed_termination_is_retried_while_supervision_continues(mocker):

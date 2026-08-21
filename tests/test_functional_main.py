@@ -767,7 +767,13 @@ def test_exec_faulty_schedule_2():
         """SELECT schedule_id, returncode, error_detail FROM schedule_log WHERE schedule_id = 'pytest_faulty_2'"""
     )
 
-    assert query_result == [("pytest_faulty_2", 1, None)]
+    assert query_result == [
+        (
+            "pytest_faulty_2",
+            1,
+            "/usr/bin/sleep: missing operand\nTry '/usr/bin/sleep --help' for more information.",
+        )
+    ]
 
 
 def test_db_teardown():
