@@ -4,7 +4,7 @@
 Runtime
 ~~~~~~~
 - Include the launched process's error output in failed schedule records and Slack alerts
-- Show the error output immediately after the return code in Slack alerts
+- Show `error_detail` immediately after the return code in Slack alerts and omit empty context
 
 Tests
 ~~~~~

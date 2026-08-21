@@ -128,19 +128,24 @@ def finalize_schedule_log(db_cur, schedule_log_id, returncode, error_detail):
     )
 
 
-def send_slack_error(schedule_id, server_id, interval_mask, schedule_log_id, returncode, description, error):
-    """send_slack_error"""
-    utils.send_slack_message(
-        f":exclamation: *ERROR* schedule_id `{schedule_id}` execution failure",
+def send_slack_error(schedule_id, server_id, interval_mask, schedule_log_id, returncode, context, error_detail):
+    """Send a schedule execution error with its diagnostic context."""
+    details = (
         f"```"
         f"server utc time : {datetime.datetime.utcnow()}\n"
         f"schedule_log_id : {schedule_log_id}\n"
         f"server_id       : {server_id}\n"
         f"interval_mask   : {interval_mask}\n"
         f"returncode      : {returncode}\n"
-        f"error           : {error}\n"
-        f"description     : {description}"
-        f"```",
+        f"error_detail    : {error_detail}"
+    )
+    if context is not None:
+        details += f"\ncontext         : {context}"
+    details += "```"
+
+    utils.send_slack_message(
+        f":exclamation: *ERROR* schedule_id `{schedule_id}` execution failure",
+        details,
         "danger",
     )
 

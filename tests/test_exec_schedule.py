@@ -602,8 +602,23 @@ def test_slack_error_includes_server_and_interval(mocker):
     assert message.index("schedule_log_id") < message.index("server_id")
     assert message.index("server_id") < message.index("interval_mask")
     assert message.index("interval_mask") < message.index("returncode")
-    assert message.index("returncode") < message.index("error")
-    assert message.index("error") < message.index("description")
+    assert message.index("returncode") < message.index("error_detail")
+    assert "error_detail    : process error" in message
+    assert "context" not in message
+
+    exec_schedule.send_slack_error(
+        "example-schedule",
+        7,
+        "*/5 * * * *",
+        "schedule-log-id",
+        125,
+        "Cicada db unavailable - finalize schedule - 15 minutes",
+        "database unavailable",
+    )
+
+    message = send_slack_message.call_args.args[1]
+    assert message.index("error_detail") < message.index("context")
+    assert "context         : Cicada db unavailable - finalize schedule - 15 minutes" in message
 
 
 def test_db_unavailable_alert_is_rate_limited_and_consistent(mocker):
