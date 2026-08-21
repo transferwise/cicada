@@ -138,9 +138,8 @@ def send_slack_error(schedule_id, server_id, interval_mask, schedule_log_id, ret
         f"server_id       : {server_id}\n"
         f"interval_mask   : {interval_mask}\n"
         f"returncode      : {returncode}\n"
-        f"description     : {description}\n"
-        f"\n"
-        f"error           : {error}"
+        f"error           : {error}\n"
+        f"description     : {description}"
         f"```",
         "danger",
     )
@@ -370,6 +369,7 @@ def run_child_process(
         schedule_log_id,
         alert_next,
     )
+    # A descendant may inherit stderr after the supervised child exits, so do not wait indefinitely for pipe EOF.
     stderr_reader.join(timeout=CHILD_STDERR_DRAIN_TIMEOUT_SECONDS)
 
     if execution_result.returncode != 0 and execution_result.error_detail is None:

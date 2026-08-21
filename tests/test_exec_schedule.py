@@ -582,7 +582,7 @@ def test_db_cursor_creation_failure_closes_connection(mocker):
 
 
 def test_slack_error_includes_server_and_interval(mocker):
-    """Execution alerts identify the server and schedule interval."""
+    """Execution alerts present schedule context and error details in diagnostic order."""
     send_slack_message = mocker.patch.object(exec_schedule.utils, "send_slack_message")
 
     exec_schedule.send_slack_error(
@@ -592,7 +592,7 @@ def test_slack_error_includes_server_and_interval(mocker):
         "schedule-log-id",
         125,
         None,
-        None,
+        "process error",
     )
 
     message = send_slack_message.call_args.args[1]
@@ -601,6 +601,9 @@ def test_slack_error_includes_server_and_interval(mocker):
     assert message.index("server utc time") < message.index("schedule_log_id")
     assert message.index("schedule_log_id") < message.index("server_id")
     assert message.index("server_id") < message.index("interval_mask")
+    assert message.index("interval_mask") < message.index("returncode")
+    assert message.index("returncode") < message.index("error")
+    assert message.index("error") < message.index("description")
 
 
 def test_db_unavailable_alert_is_rate_limited_and_consistent(mocker):
