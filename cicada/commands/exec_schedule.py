@@ -3,6 +3,7 @@
 import datetime
 import subprocess
 import signal
+import threading
 import time
 import uuid
 from typing import NamedTuple, Optional
@@ -15,6 +16,8 @@ from cicada.lib import utils
 DB_ALERT_DELAY_MINUTES = 15
 DB_RETRY_DELAY_SECONDS = 5
 CHILD_WAIT_TIMEOUT_SECONDS = 1
+CHILD_STDERR_CAPTURE_MAX_BYTES = 4096
+CHILD_STDERR_DRAIN_TIMEOUT_SECONDS = 1
 UNKNOWN_RETURN_CODE = 999
 ERROR_DETAIL_MAX_LENGTH = 255
 
@@ -125,20 +128,24 @@ def finalize_schedule_log(db_cur, schedule_log_id, returncode, error_detail):
     )
 
 
-def send_slack_error(schedule_id, server_id, interval_mask, schedule_log_id, returncode, description, error):
-    """send_slack_error"""
-    utils.send_slack_message(
-        f":exclamation: *ERROR* schedule_id `{schedule_id}` execution failure",
+def send_slack_error(schedule_id, server_id, interval_mask, schedule_log_id, returncode, context, error_detail):
+    """Send a schedule execution error with its diagnostic context."""
+    details = (
         f"```"
         f"server utc time : {datetime.datetime.utcnow()}\n"
         f"schedule_log_id : {schedule_log_id}\n"
         f"server_id       : {server_id}\n"
         f"interval_mask   : {interval_mask}\n"
         f"returncode      : {returncode}\n"
-        f"description     : {description}\n"
-        f"\n"
-        f"error           : {error}"
-        f"```",
+        f"error_detail    : {error_detail}"
+    )
+    if context is not None:
+        details += f"\ncontext         : {context}"
+    details += "```"
+
+    utils.send_slack_message(
+        f":exclamation: *ERROR* schedule_id `{schedule_id}` execution failure",
+        details,
         "danger",
     )
 
@@ -240,6 +247,30 @@ def execution_result_from_exception(error):
     return ExecutionResult(UNKNOWN_RETURN_CODE, str(error) or error.__class__.__name__)
 
 
+def capture_stream_tail(stream, captured, max_bytes=CHILD_STDERR_CAPTURE_MAX_BYTES):
+    """Drain a binary stream while retaining only its most recent bytes."""
+    try:
+        while True:
+            chunk = stream.read(1024)
+            if not chunk:
+                return
+            captured.extend(chunk)
+            if len(captured) > max_bytes:
+                del captured[:-max_bytes]
+    except (OSError, ValueError):
+        return
+    finally:
+        stream.close()
+
+
+def stderr_error_detail(captured):
+    """Return a bounded child error suitable for schedule_log and Slack."""
+    detail = bytes(captured).decode("utf-8", errors="replace").strip()
+    if not detail:
+        return None
+    return detail[-ERROR_DETAIL_MAX_LENGTH:]
+
+
 def supervise_child_process(
     child_process,
     shutdown_request,
@@ -324,8 +355,16 @@ def run_child_process(
     alert_next,
 ):
     """Launch one child and retain supervision until its exit is confirmed."""
-    child_process = subprocess.Popen(full_command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return supervise_child_process(
+    child_process = subprocess.Popen(full_command, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    captured_stderr = bytearray()
+    stderr_reader = threading.Thread(
+        target=capture_stream_tail,
+        args=(child_process.stderr, captured_stderr),
+        daemon=True,
+    )
+    stderr_reader.start()
+
+    execution_result, alert_next = supervise_child_process(
         child_process,
         shutdown_request,
         dbname,
@@ -335,6 +374,13 @@ def run_child_process(
         schedule_log_id,
         alert_next,
     )
+    # A descendant may inherit stderr after the supervised child exits, so do not wait indefinitely for pipe EOF.
+    stderr_reader.join(timeout=CHILD_STDERR_DRAIN_TIMEOUT_SECONDS)
+
+    if execution_result.returncode != 0 and execution_result.error_detail is None:
+        execution_result = ExecutionResult(execution_result.returncode, stderr_error_detail(captured_stderr))
+
+    return execution_result, alert_next
 
 
 def finalize_schedule_with_retry(
@@ -441,7 +487,7 @@ def main(schedule_id, dbname=None):
                             schedule_log_id,
                             execution_result.returncode,
                             None,
-                            None,
+                            execution_result.error_detail,
                         )
 
         except (Exception, KeyboardInterrupt, SystemExit) as error:

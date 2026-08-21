@@ -767,7 +767,12 @@ def test_exec_faulty_schedule_2():
         """SELECT schedule_id, returncode, error_detail FROM schedule_log WHERE schedule_id = 'pytest_faulty_2'"""
     )
 
-    assert query_result == [("pytest_faulty_2", 1, None)]
+    assert len(query_result) == 1
+    schedule_id, returncode, error_detail = query_result[0]
+    assert schedule_id == "pytest_faulty_2"
+    assert returncode == 1
+    assert error_detail is not None
+    assert "missing operand" in error_detail
 
 
 def test_db_teardown():

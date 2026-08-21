@@ -1,6 +1,10 @@
+from io import BytesIO
+
+
 class MockPopen:
     def __init__(self, return_code, *args, **kwargs):
         self.return_code = return_code
+        self.stderr = BytesIO()
 
     def wait(self, timeout=None):
         return self.return_code

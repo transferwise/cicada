@@ -1,3 +1,19 @@
+0.10.6
+------
+
+Runtime
+~~~~~~~
+- Include the launched process's error output in failed schedule records and Slack alerts
+- Show `error_detail` immediately after the return code in Slack alerts and omit empty context
+
+Tests
+~~~~~
+- Add coverage for capturing and bounding launched process error output
+- Add coverage that large error output cannot block process completion
+- Update the faulty-command case to verify its error output is saved
+- Update the Slack alert case to verify diagnostic details are shown in sequence
+
+
 0.10.5
 ------
 
